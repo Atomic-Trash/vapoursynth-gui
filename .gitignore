@@ -20,3 +20,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Utility scripts
+take-screenshot.ps1
+capture-all-screenshots.ps1
+list-windows.ps1
