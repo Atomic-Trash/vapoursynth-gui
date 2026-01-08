@@ -195,34 +195,68 @@ public partial class CurvesControl : UserControl
         CurvesCanvas.Children.Add(curve);
 
         // Draw control points
-        foreach (var point in points)
+        for (int i = 0; i < points.Count; i++)
         {
+            var point = points[i];
             double x = point.X * width;
             double y = height - point.Y * height;
 
-            // Outer circle (border)
-            var outerCircle = new Ellipse
-            {
-                Width = PointRadius * 2 + 2,
-                Height = PointRadius * 2 + 2,
-                Stroke = new SolidColorBrush(Colors.White),
-                StrokeThickness = 1,
-                Fill = new SolidColorBrush(Color.FromArgb(200, 0, 0, 0))
-            };
-            Canvas.SetLeft(outerCircle, x - PointRadius - 1);
-            Canvas.SetTop(outerCircle, y - PointRadius - 1);
-            CurvesCanvas.Children.Add(outerCircle);
+            bool isEndpoint = (i == 0 || i == points.Count - 1);
 
-            // Inner circle (fill)
-            var innerCircle = new Ellipse
+            if (isEndpoint)
             {
-                Width = PointRadius,
-                Height = PointRadius,
-                Fill = new SolidColorBrush(curveColor)
-            };
-            Canvas.SetLeft(innerCircle, x - PointRadius / 2);
-            Canvas.SetTop(innerCircle, y - PointRadius / 2);
-            CurvesCanvas.Children.Add(innerCircle);
+                // Draw locked endpoints as squares with lock indicator
+                var outerSquare = new Rectangle
+                {
+                    Width = PointRadius * 2,
+                    Height = PointRadius * 2,
+                    Stroke = new SolidColorBrush(Color.FromRgb(128, 128, 128)),
+                    StrokeThickness = 2,
+                    Fill = new SolidColorBrush(Color.FromArgb(200, 40, 40, 40)),
+                    ToolTip = "Endpoint locked (Y-axis only)"
+                };
+                Canvas.SetLeft(outerSquare, x - PointRadius);
+                Canvas.SetTop(outerSquare, y - PointRadius);
+                CurvesCanvas.Children.Add(outerSquare);
+
+                // Inner fill
+                var innerSquare = new Rectangle
+                {
+                    Width = PointRadius - 2,
+                    Height = PointRadius - 2,
+                    Fill = new SolidColorBrush(Color.FromRgb(100, 100, 100))
+                };
+                Canvas.SetLeft(innerSquare, x - (PointRadius - 2) / 2);
+                Canvas.SetTop(innerSquare, y - (PointRadius - 2) / 2);
+                CurvesCanvas.Children.Add(innerSquare);
+            }
+            else
+            {
+                // Outer circle (border) for regular points
+                var outerCircle = new Ellipse
+                {
+                    Width = PointRadius * 2 + 2,
+                    Height = PointRadius * 2 + 2,
+                    Stroke = new SolidColorBrush(Colors.White),
+                    StrokeThickness = 1,
+                    Fill = new SolidColorBrush(Color.FromArgb(200, 0, 0, 0)),
+                    ToolTip = "Drag to adjust | Right-click to delete"
+                };
+                Canvas.SetLeft(outerCircle, x - PointRadius - 1);
+                Canvas.SetTop(outerCircle, y - PointRadius - 1);
+                CurvesCanvas.Children.Add(outerCircle);
+
+                // Inner circle (fill)
+                var innerCircle = new Ellipse
+                {
+                    Width = PointRadius,
+                    Height = PointRadius,
+                    Fill = new SolidColorBrush(curveColor)
+                };
+                Canvas.SetLeft(innerCircle, x - PointRadius / 2);
+                Canvas.SetTop(innerCircle, y - PointRadius / 2);
+                CurvesCanvas.Children.Add(innerCircle);
+            }
         }
     }
 
@@ -340,6 +374,30 @@ public partial class CurvesControl : UserControl
 
         InputValueText.Text = $"{(int)(inputVal * 255)}";
         OutputValueText.Text = $"{(int)(outputVal * 255)}";
+
+        // Update cursor based on whether hovering over a deletable point
+        if (_draggedPointIndex < 0) // Not dragging
+        {
+            var points = _curvePoints[_currentChannel];
+            bool overDeletablePoint = false;
+
+            // Check middle points (not first or last - those are locked)
+            for (int i = 1; i < points.Count - 1; i++)
+            {
+                double px = points[i].X * width;
+                double py = height - points[i].Y * height;
+                double dist = Math.Sqrt(Math.Pow(pos.X - px, 2) + Math.Pow(pos.Y - py, 2));
+
+                if (dist <= PointRadius + 4)
+                {
+                    overDeletablePoint = true;
+                    break;
+                }
+            }
+
+            // Show different cursor when over deletable point (right-click to delete)
+            CurvesCanvas.Cursor = overDeletablePoint ? Cursors.Hand : Cursors.Cross;
+        }
 
         if (_draggedPointIndex >= 0 && _draggedPoint.HasValue)
         {

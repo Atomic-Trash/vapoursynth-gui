@@ -47,7 +47,8 @@
                         MouseLeftButtonUp="Canvas_MouseLeftButtonUp"
                         MouseRightButtonDown="Canvas_MouseRightButtonDown"
                         SizeChanged="CurvesCanvas_SizeChanged"
-                        Background="Transparent"/>
+                        Background="Transparent"
+                        ToolTip="Left-click: Add/drag points | Right-click: Delete points"/>
             </Grid>
         </Border>
 

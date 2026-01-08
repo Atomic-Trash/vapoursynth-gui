@@ -106,8 +106,8 @@ public partial class ColorWheelControl : UserControl
                     // Saturation based on distance from center
                     double saturation = Math.Min(1.0, distance / radius);
 
-                    // Convert HSV to RGB (value = 0.8 for subdued look)
-                    var color = HsvToRgb(hue * 360, saturation, 0.7);
+                    // Convert HSV to RGB (value = 0.85 for better visibility)
+                    var color = HsvToRgb(hue * 360, saturation, 0.85);
 
                     // Fade out at edges
                     double alpha = distance > radius - 2 ? Math.Max(0, (radius - distance) / 2) : 1.0;
@@ -115,7 +115,7 @@ public partial class ColorWheelControl : UserControl
                     pixels[index + 0] = (byte)(color.B * alpha); // B
                     pixels[index + 1] = (byte)(color.G * alpha); // G
                     pixels[index + 2] = (byte)(color.R * alpha); // R
-                    pixels[index + 3] = (byte)(255 * alpha * 0.6); // A (semi-transparent)
+                    pixels[index + 3] = (byte)(255 * alpha * 0.85); // A (85% opacity for better visibility)
                 }
                 else
                 {

@@ -39,8 +39,8 @@
                          Canvas.Left="2" Canvas.Top="2" Opacity="0.7" IsHitTestVisible="False"/>
 
                 <!-- Center crosshair -->
-                <Line X1="60" Y1="55" X2="60" Y2="65" Stroke="#555" StrokeThickness="1"/>
-                <Line X1="55" Y1="60" X2="65" Y2="60" Stroke="#555" StrokeThickness="1"/>
+                <Line X1="60" Y1="55" X2="60" Y2="65" Stroke="#777" StrokeThickness="2"/>
+                <Line X1="55" Y1="60" X2="65" Y2="60" Stroke="#777" StrokeThickness="2"/>
 
                 <!-- Position indicator -->
                 <Ellipse x:Name="PositionIndicator" Width="14" Height="14"
