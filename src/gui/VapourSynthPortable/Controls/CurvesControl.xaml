@@ -26,8 +26,8 @@
                          Checked="Channel_Changed"
                          Foreground="#6688FF" Margin="0,0,12,0"/>
             <Button Content="Reset" Click="Reset_Click"
-                    Background="#333" Foreground="#AAA" BorderBrush="#444"
-                    Padding="8,2" FontSize="10"/>
+                    Background="#333" Foreground="#DDD" BorderBrush="#444"
+                    Padding="8,2" FontSize="11"/>
         </StackPanel>
 
         <!-- Curves Canvas -->
@@ -60,14 +60,14 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                <TextBlock Text="In:" Foreground="#888" FontSize="10" VerticalAlignment="Center"/>
-                <TextBlock x:Name="InputValueText" Text="--" Foreground="#AAA" FontSize="10"
+                <TextBlock Text="In:" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock x:Name="InputValueText" Text="--" Foreground="#CCC" FontSize="11"
                            VerticalAlignment="Center" Margin="4,0,0,0"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                <TextBlock Text="Out:" Foreground="#888" FontSize="10" VerticalAlignment="Center"/>
-                <TextBlock x:Name="OutputValueText" Text="--" Foreground="#AAA" FontSize="10"
+                <TextBlock Text="Out:" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock x:Name="OutputValueText" Text="--" Foreground="#CCC" FontSize="11"
                            VerticalAlignment="Center" Margin="4,0,0,0"/>
             </StackPanel>
         </Grid>

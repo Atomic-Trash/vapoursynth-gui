@@ -70,7 +70,7 @@ public partial class CurvesControl : UserControl
 
         if (width <= 0 || height <= 0) return;
 
-        var lineBrush = new SolidColorBrush(Color.FromArgb(30, 255, 255, 255));
+        var lineBrush = new SolidColorBrush(Color.FromArgb(50, 255, 255, 255));
 
         // Draw grid lines (quarters)
         for (int i = 1; i < 4; i++)
