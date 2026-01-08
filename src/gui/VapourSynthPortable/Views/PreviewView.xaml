@@ -1,0 +1,271 @@
+<UserControl x:Class="VapourSynthPortable.Views.PreviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:VapourSynthPortable.ViewModels"
+             Focusable="True"
+             KeyDown="UserControl_KeyDown">
+
+    <UserControl.DataContext>
+        <vm:PreviewViewModel />
+    </UserControl.DataContext>
+
+    <UserControl.Resources>
+        <!-- Button style for toolbar -->
+        <Style x:Key="ToolbarButton" TargetType="Button">
+            <Setter Property="Background" Value="#3E3E42"/>
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#505054"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#007ACC"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Navigation button style -->
+        <Style x:Key="NavButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="FontFamily" Value="Segoe UI Symbol"/>
+        </Style>
+
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </UserControl.Resources>
+
+    <Grid Background="#1E1E1E">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Background="#252526" Padding="8">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Refresh" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding RefreshCommand}"
+                        ToolTip="Reload video (F5)"/>
+                <Rectangle Width="1" Fill="#3E3E42" Margin="8,2"/>
+                <Button Content="-" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding ZoomOutCommand}"
+                        ToolTip="Zoom out (-)"/>
+                <TextBlock Text="{Binding ZoomLevel, StringFormat={}{0:P0}}"
+                           Foreground="#999" VerticalAlignment="Center"
+                           Width="50" TextAlignment="Center"/>
+                <Button Content="+" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding ZoomInCommand}"
+                        ToolTip="Zoom in (+)"/>
+                <Rectangle Width="1" Fill="#3E3E42" Margin="8,2"/>
+                <Button Content="Fit"
+                        Command="{Binding ToggleFitToWindowCommand}"
+                        ToolTip="Fit to window (0)">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding FitToWindow}" Value="True">
+                                    <Setter Property="Background" Value="#007ACC"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Content="100%" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding ResetZoomCommand}"
+                        ToolTip="Actual size (1)"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Frame Display -->
+        <Border Grid.Row="1" Background="#0D0D0D" Margin="8">
+            <Grid>
+                <!-- Loading indicator -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Loading..." Foreground="#007ACC" FontSize="16"
+                               HorizontalAlignment="Center"/>
+                    <ProgressBar IsIndeterminate="True" Width="100" Height="4" Margin="0,10,0,0"
+                                 Background="#252526" Foreground="#007ACC"/>
+                </StackPanel>
+
+                <!-- Error display -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Error" Foreground="#E74C3C" FontSize="18" FontWeight="SemiBold"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding ErrorMessage}" Foreground="#999"
+                               TextWrapping="Wrap" MaxWidth="300"
+                               HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                    <Button Content="Retry" Style="{StaticResource ToolbarButton}"
+                            Command="{Binding RefreshCommand}"
+                            HorizontalAlignment="Center" Margin="0,15,0,0"/>
+                </StackPanel>
+
+                <!-- No video placeholder -->
+                <TextBlock Text="No video loaded"
+                           Foreground="#555" FontSize="14"
+                           VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding HasVideo}" Value="False"/>
+                                        <Condition Binding="{Binding IsLoading}" Value="False"/>
+                                        <Condition Binding="{Binding HasError}" Value="False"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <!-- Frame image -->
+                <ScrollViewer x:Name="FrameScrollViewer"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto"
+                              Visibility="{Binding HasVideo, Converter={StaticResource BoolToVis}}">
+                    <Viewbox x:Name="FrameViewbox"
+                             Stretch="Uniform"
+                             StretchDirection="Both">
+                        <Image x:Name="FrameImage"
+                               Source="{Binding CurrentFrame}"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor"
+                               RenderOptions.EdgeMode="Aliased"/>
+                    </Viewbox>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- Navigation Controls -->
+        <Border Grid.Row="2" Background="#252526" Padding="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- First/Previous buttons -->
+                <Button Grid.Column="0" Content="⏮" Style="{StaticResource NavButton}"
+                        Command="{Binding FirstFrameCommand}"
+                        ToolTip="First frame (Home)"
+                        IsEnabled="{Binding CanNavigate}"/>
+                <Button Grid.Column="1" Content="◀" Style="{StaticResource NavButton}"
+                        Command="{Binding PreviousFrameCommand}"
+                        ToolTip="Previous frame (Left)"
+                        IsEnabled="{Binding CanNavigate}"/>
+
+                <!-- Frame Slider -->
+                <Slider Grid.Column="2"
+                        Minimum="0"
+                        Maximum="{Binding TotalFrames}"
+                        Value="{Binding CurrentFrameNumber, Mode=TwoWay}"
+                        IsEnabled="{Binding HasVideo}"
+                        Margin="10,0"
+                        VerticalAlignment="Center"
+                        Style="{x:Null}">
+                    <Slider.Resources>
+                        <Style TargetType="Slider">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Slider">
+                                        <Grid>
+                                            <Border Height="4" Background="#3E3E42" CornerRadius="2"
+                                                    VerticalAlignment="Center"/>
+                                            <Track x:Name="PART_Track">
+                                                <Track.Thumb>
+                                                    <Thumb>
+                                                        <Thumb.Style>
+                                                            <Style TargetType="Thumb">
+                                                                <Setter Property="Template">
+                                                                    <Setter.Value>
+                                                                        <ControlTemplate TargetType="Thumb">
+                                                                            <Ellipse Width="16" Height="16"
+                                                                                     Fill="#007ACC"
+                                                                                     Stroke="#005A9E"
+                                                                                     StrokeThickness="1"/>
+                                                                        </ControlTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                            </Style>
+                                                        </Thumb.Style>
+                                                    </Thumb>
+                                                </Track.Thumb>
+                                            </Track>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Slider.Resources>
+                </Slider>
+
+                <!-- Next/Last buttons -->
+                <Button Grid.Column="3" Content="▶" Style="{StaticResource NavButton}"
+                        Command="{Binding NextFrameCommand}"
+                        ToolTip="Next frame (Right)"
+                        IsEnabled="{Binding CanNavigate}"/>
+                <Button Grid.Column="4" Content="⏭" Style="{StaticResource NavButton}"
+                        Command="{Binding LastFrameCommand}"
+                        ToolTip="Last frame (End)"
+                        IsEnabled="{Binding CanNavigate}"/>
+            </Grid>
+        </Border>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="3" Background="#007ACC" Padding="8,4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="{Binding FrameInfoText}"
+                           Foreground="White" FontSize="12"/>
+
+                <TextBlock Grid.Column="1"
+                           Text="{Binding ResolutionText}"
+                           Foreground="White" FontSize="12"
+                           Margin="20,0,0,0"/>
+
+                <TextBlock Grid.Column="2"
+                           Text="{Binding FormatText}"
+                           Foreground="White" FontSize="12"
+                           Margin="20,0,0,0"/>
+
+                <TextBlock Grid.Column="3"
+                           Text="{Binding StatusMessage}"
+                           Foreground="#FFFFFF99" FontSize="12"
+                           Margin="20,0,0,0"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

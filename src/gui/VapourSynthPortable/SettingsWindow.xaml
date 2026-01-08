@@ -1,0 +1,146 @@
+<Window x:Class="VapourSynthPortable.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings"
+        Height="500" Width="550"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{StaticResource BackgroundBrush}">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Text="Settings"
+                   FontSize="22" FontWeight="Bold"
+                   Foreground="{StaticResource TextBrush}"
+                   Margin="0,0,0,20"/>
+
+        <!-- Settings Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Directories Section -->
+                <Border Background="{StaticResource SurfaceBrush}"
+                        CornerRadius="8" Padding="20" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="Directories"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBrush}"
+                                   Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Output Directory"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding OutputDirectory}"
+                                 Padding="10,8" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Cache Directory"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding CacheDirectory}"
+                                 Padding="10,8" Margin="0,0,0,15"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Cache Size"
+                                           Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="{Binding CacheSize}"
+                                           FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextBrush}"
+                                           Margin="0,4,0,0"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Clear Cache"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding ClearCacheCommand}"
+                                    VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Build Defaults Section -->
+                <Border Background="{StaticResource SurfaceBrush}"
+                        CornerRadius="8" Padding="20" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="Build Defaults"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBrush}"
+                                   Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Default Plugin Set"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Margin="0,0,0,5"/>
+                        <ComboBox SelectedItem="{Binding DefaultPluginSet}"
+                                  ItemsSource="{Binding PluginSets}"
+                                  Padding="10,8" Width="200"
+                                  HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Version Info Section -->
+                <Border Background="{StaticResource SurfaceBrush}"
+                        CornerRadius="8" Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="Version Information"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBrush}"
+                                   Margin="0,0,0,15"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Python Version"
+                                           Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="{Binding PythonVersion}"
+                                           FontSize="16" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextBrush}"
+                                           Margin="0,4,0,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="VapourSynth Version"
+                                           Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="{Binding VapourSynthVersion}"
+                                           FontSize="16" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextBrush}"
+                                           Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="Project Root"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Margin="0,15,0,5"/>
+                        <TextBlock Text="{Binding ProjectRoot}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextBrush}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Cancel"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding CancelCommand}"
+                    Margin="0,0,10,0"/>
+            <Button Content="Save"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding SaveCommand}"
+                    Padding="24,10"/>
+        </StackPanel>
+    </Grid>
+</Window>

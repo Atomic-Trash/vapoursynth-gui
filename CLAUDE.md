@@ -1,0 +1,100 @@
+# VapourSynth Portable - Claude Code Context
+
+## Project Overview
+
+This project creates a portable VapourSynth distribution for Windows 11. It bundles VapourSynth, embedded Python, and popular plugins into a self-contained package that runs without installation.
+
+## Key Technologies
+
+- **VapourSynth**: Video processing framework (Python-scriptable)
+- **Python 3.12**: Embedded distribution for portability
+- **PowerShell**: Build and utility scripts
+- **Windows 11 x64**: Target platform
+
+## Project Structure
+
+```
+vapoursynth-portable/
+├── scripts/          # Build scripts (PowerShell)
+│   ├── Build-Portable.ps1      # Main build script
+│   └── Check-Dependencies.ps1  # Dependency analyzer
+├── config/           # Configuration files
+│   └── plugins.json            # Plugin definitions
+├── dist/             # Output distribution
+│   ├── python/       # Embedded Python
+│   ├── vapoursynth/  # VS core files
+│   ├── plugins/      # VS plugins (.dll)
+│   └── scripts/      # Python scripts (.vpy)
+├── Launch-VapourSynth.bat      # Batch launcher
+└── VSPortable.ps1              # PowerShell launcher
+```
+
+## Common Tasks
+
+### Adding a New Plugin
+
+1. Find the plugin's GitHub releases page
+2. Add entry to `config/plugins.json`:
+   ```json
+   {
+     "name": "plugin-name",
+     "description": "What it does",
+     "set": "standard",
+     "url": "https://github.com/.../releases/download/.../plugin.zip",
+     "version": "vX.Y",
+     "files": ["plugin.dll"]
+   }
+   ```
+3. Run `.\scripts\Build-Portable.ps1 -Components plugins`
+
+### Creating VapourSynth Scripts
+
+VapourSynth scripts use `.vpy` extension and are Python files:
+
+```python
+import vapoursynth as vs
+core = vs.core
+
+# Load video
+clip = core.lsmas.LWLibavSource("video.mp4")
+
+# Apply filters
+clip = core.std.Crop(clip, left=2, right=2)
+clip = core.resize.Lanczos(clip, width=1920, height=1080)
+
+# Output
+clip.set_output()
+```
+
+### Common Plugin APIs
+
+- **Source filters**: `core.lsmas.LWLibavSource()`, `core.ffms2.Source()`
+- **Resize**: `core.resize.Bicubic()`, `core.resize.Lanczos()`
+- **Denoise**: `core.bm3d.VAggregate()`, `core.knlm.KNLMeansCL()`
+- **Deinterlace**: `core.nnedi3.nnedi3()`, `core.eedi3.eedi3()`
+
+## Build System Notes
+
+- PowerShell 5.1+ required (7+ recommended)
+- Build downloads ~200-500MB depending on plugin set
+- Plugin sets: `minimal`, `standard` (default), `full`
+- Use `-Clean` flag to rebuild from scratch
+
+## Troubleshooting
+
+### Plugin Won't Load
+1. Check architecture (must be x64)
+2. Run `Check-Dependencies.ps1`
+3. Ensure VC++ Runtime is installed
+4. Check VapourSynth version compatibility
+
+### Python Import Errors
+1. Verify PYTHONPATH includes `dist/vapoursynth`
+2. Use bundled Python, not system Python
+3. Check `python*._pth` file has correct paths
+
+## Resources
+
+- [VapourSynth Docs](http://www.vapoursynth.com/doc/)
+- [Plugin Database](https://vsdb.top/)
+- [VapourSynth GitHub](https://github.com/vapoursynth/vapoursynth)

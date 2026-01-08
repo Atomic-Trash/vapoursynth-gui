@@ -1,0 +1,229 @@
+{
+  "$schema": "./plugins-schema.json",
+  "version": "1.0.0",
+  "description": "VapourSynth plugins configuration for portable distribution",
+  "plugins": [
+    {
+      "name": "ffms2",
+      "description": "FFmpeg-based source filter for video files",
+      "set": "minimal",
+      "url": "https://github.com/FFMS/ffms2/releases/download/5.0/ffms2-5.0-msvc.7z",
+      "version": "5.0",
+      "files": ["ffms2.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "lsmashsource",
+      "description": "L-SMASH based source filter",
+      "set": "minimal",
+      "url": "https://github.com/HomeOfAviSynthPlusEvolution/L-SMASH-Works/releases/download/1266.0.0.0/L-SMASH-Works-r1266.0.0.0.7z",
+      "version": "1266",
+      "files": ["LSMASHSource.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "mvtools",
+      "description": "Motion compensation and frame interpolation",
+      "set": "standard",
+      "url": "https://github.com/dubhater/vapoursynth-mvtools/releases/download/v24/vapoursynth-mvtools-v24-win64.7z",
+      "version": "24",
+      "files": ["libmvtools.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "fmtconv",
+      "description": "High quality format conversion and resampling",
+      "set": "standard",
+      "url": "https://github.com/EleonoreMizo/fmtconv/releases/download/r30/fmtconv-r30.zip",
+      "version": "r30",
+      "files": ["fmtconv.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "znedi3",
+      "description": "Neural network edge directed interpolation",
+      "set": "standard",
+      "url": "https://github.com/sekrit-twc/znedi3/releases/download/r2.1/znedi3_r2.1.7z",
+      "version": "r2.1",
+      "files": ["vsznedi3.dll"],
+      "dependencies": ["nnedi3_weights.bin"]
+    },
+    {
+      "name": "nnedi3cl",
+      "description": "OpenCL NNEDI3 implementation",
+      "set": "standard",
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-NNEDI3CL/releases/download/r8/NNEDI3CL-r8.7z",
+      "version": "r8",
+      "files": ["NNEDI3CL.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "bm3d",
+      "description": "Block-matching 3D denoising filter",
+      "set": "standard",
+      "url": "https://github.com/AmusementClub/VapourSynth-BM3D/releases/download/r9.AC/release-amd64.zip",
+      "version": "r9.AC",
+      "files": ["BM3D.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "bm3dcuda",
+      "description": "CUDA-accelerated BM3D denoising",
+      "set": "full",
+      "url": "https://github.com/WolframRhodworst/VapourSynth-BM3DCUDA/releases/latest/download/VapourSynth-BM3DCUDA.zip",
+      "version": "latest",
+      "files": ["libbm3dcuda.dll"],
+      "dependencies": ["CUDA Runtime"]
+    },
+    {
+      "name": "knlmeanscl",
+      "description": "OpenCL Non-local means denoising",
+      "set": "standard",
+      "url": "https://github.com/Khanattila/KNLMeansCL/releases/download/v1.1.1/KNLMeansCL-v1.1.1.zip",
+      "version": "1.1.1",
+      "files": ["KNLMeansCL.dll"],
+      "dependencies": ["OpenCL Runtime"]
+    },
+    {
+      "name": "descale",
+      "description": "Attempts to reverse scaling operations",
+      "set": "standard",
+      "url": "https://github.com/Jaded-Encoding-Thaumaturgy/vapoursynth-descale/releases/download/r11/descale-win64.zip",
+      "version": "r11",
+      "files": ["descale.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "eedi3",
+      "description": "Edge directed interpolation",
+      "set": "standard",
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3/releases/download/r8/EEDI3-r8.7z",
+      "version": "r8",
+      "files": ["EEDI3.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "dfttest",
+      "description": "2D/3D frequency domain denoiser",
+      "set": "standard",
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-DFTTest/releases/download/r7/DFTTest-r7.7z",
+      "version": "r7",
+      "files": ["DFTTest.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "tcanny",
+      "description": "Edge detection filter",
+      "set": "full",
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-TCanny/releases/download/r14/VapourSynth-TCanny-r14.zip",
+      "version": "r14",
+      "files": ["TCanny.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "bilateral",
+      "description": "Bilateral filtering",
+      "set": "full",
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Bilateral/releases/download/r4/VapourSynth-Bilateral-r4.zip",
+      "version": "r4",
+      "files": ["Bilateral.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "ctmf",
+      "description": "Constant time median filtering",
+      "set": "full",
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-CTMF/releases/download/r5/VapourSynth-CTMF-r5.zip",
+      "version": "r5",
+      "files": ["CTMF.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "retinex",
+      "description": "Retinex color correction",
+      "set": "full",
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Retinex/releases/download/r4/VapourSynth-Retinex-r4.zip",
+      "version": "r4",
+      "files": ["Retinex.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "cas",
+      "description": "AMD Contrast Adaptive Sharpening",
+      "set": "full",
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-CAS/releases/download/r2/VapourSynth-CAS-r2.zip",
+      "version": "r2",
+      "files": ["CAS.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "vsfiltermod",
+      "description": "Subtitle rendering (ASS/SSA)",
+      "set": "standard",
+      "url": "https://github.com/sorayuki/VSFilterMod/releases/download/r5.2.6/VSFilterMod_bin.zip",
+      "version": "5.2.6",
+      "files": ["VSFilterMod.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "subtext",
+      "description": "libass based subtitle rendering",
+      "set": "standard",
+      "url": "https://github.com/vapoursynth/subtext/releases/download/R5/subtext-r5.7z",
+      "version": "R5",
+      "files": ["subtext.dll"],
+      "dependencies": []
+    },
+    {
+      "name": "remap",
+      "description": "Frame remapping filter",
+      "set": "full",
+      "url": "https://github.com/Irrational-Encoding-Wizardry/vapoursynth-remap/releases/download/v1.1/remap-v1.1-win64.zip",
+      "version": "1.1",
+      "files": ["libremap.dll"],
+      "dependencies": []
+    }
+  ],
+  "pythonPackages": [
+    {
+      "name": "vapoursynth",
+      "description": "VapourSynth Python bindings",
+      "set": "minimal"
+    },
+    {
+      "name": "vsutil",
+      "description": "VapourSynth utility functions",
+      "set": "minimal"
+    },
+    {
+      "name": "havsfunc",
+      "description": "Holy's AviSynth functions ported to VS",
+      "set": "standard"
+    },
+    {
+      "name": "mvsfunc",
+      "description": "mawen1250's VapourSynth functions",
+      "set": "standard"
+    },
+    {
+      "name": "nnedi3-resample",
+      "description": "High quality resampling using NNEDI3",
+      "set": "standard"
+    },
+    {
+      "name": "vsdenoise",
+      "description": "Denoising helper functions",
+      "set": "full"
+    },
+    {
+      "name": "vsdehalo",
+      "description": "Dehalo helper functions",
+      "set": "full"
+    },
+    {
+      "name": "vsaa",
+      "description": "Anti-aliasing helper functions",
+      "set": "full"
+    }
+  ]
+}

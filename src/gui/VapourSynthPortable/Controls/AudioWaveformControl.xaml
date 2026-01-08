@@ -1,0 +1,8 @@
+<UserControl x:Class="VapourSynthPortable.Controls.AudioWaveformControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="WaveformRoot">
+
+    <Canvas x:Name="WaveformCanvas" ClipToBounds="True"
+            SizeChanged="WaveformCanvas_SizeChanged"/>
+</UserControl>

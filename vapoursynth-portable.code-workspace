@@ -1,0 +1,95 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.defaultInterpreterPath": "${workspaceFolder}/dist/python/python.exe",
+		"python.analysis.extraPaths": [
+			"${workspaceFolder}/dist/vapoursynth",
+			"${workspaceFolder}/dist/scripts"
+		],
+		"python.analysis.typeCheckingMode": "basic",
+		"files.associations": {
+			"*.vpy": "python"
+		},
+		"terminal.integrated.defaultProfile.windows": "PowerShell",
+		"terminal.integrated.env.windows": {
+			"PYTHONPATH": "${workspaceFolder}/dist/vapoursynth;${workspaceFolder}/dist/scripts",
+			"VAPOURSYNTH_PLUGINS": "${workspaceFolder}/dist/plugins",
+			"PATH": "${workspaceFolder}/dist/python;${workspaceFolder}/dist/vapoursynth;${env:PATH}"
+		},
+		"editor.formatOnSave": true,
+		"[python]": {
+			"editor.defaultFormatter": "ms-python.black-formatter",
+			"editor.tabSize": 4
+		},
+		"[powershell]": {
+			"editor.tabSize": 4
+		}
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-python.python",
+			"ms-python.vscode-pylance",
+			"ms-python.black-formatter",
+			"ms-vscode.powershell",
+			"redhat.vscode-yaml"
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Run VapourSynth Script",
+				"type": "python",
+				"request": "launch",
+				"program": "${file}",
+				"console": "integratedTerminal",
+				"python": "${workspaceFolder}/dist/python/python.exe",
+				"env": {
+					"PYTHONPATH": "${workspaceFolder}/dist/vapoursynth;${workspaceFolder}/dist/scripts",
+					"VAPOURSYNTH_PLUGINS": "${workspaceFolder}/dist/plugins"
+				}
+			},
+			{
+				"name": "Python: Current File",
+				"type": "python",
+				"request": "launch",
+				"program": "${file}",
+				"console": "integratedTerminal"
+			}
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "Build Portable Distribution",
+				"type": "shell",
+				"command": "powershell",
+				"args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/Build-Portable.ps1"],
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				},
+				"problemMatcher": []
+			},
+			{
+				"label": "Build (Clean)",
+				"type": "shell",
+				"command": "powershell",
+				"args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/Build-Portable.ps1", "-Clean"],
+				"problemMatcher": []
+			},
+			{
+				"label": "Check Dependencies",
+				"type": "shell",
+				"command": "powershell",
+				"args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/Check-Dependencies.ps1"],
+				"problemMatcher": []
+			}
+		]
+	}
+}

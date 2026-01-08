@@ -1,0 +1,61 @@
+<UserControl x:Class="VapourSynthPortable.Controls.ScopesControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="ScopeRoot">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Scope Mode Selector -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="12,12,12,8">
+            <RadioButton Content="Waveform" GroupName="ScopeModes" x:Name="WaveformRadio"
+                         IsChecked="True" Checked="ScopeMode_Changed"
+                         Foreground="#AAA" Margin="0,0,15,0"/>
+            <RadioButton Content="Parade" GroupName="ScopeModes" x:Name="ParadeRadio"
+                         Checked="ScopeMode_Changed"
+                         Foreground="#AAA" Margin="0,0,15,0"/>
+            <RadioButton Content="Vector" GroupName="ScopeModes" x:Name="VectorRadio"
+                         Checked="ScopeMode_Changed"
+                         Foreground="#AAA"/>
+        </StackPanel>
+
+        <!-- Main Scope Display -->
+        <Border Grid.Row="1" Background="#0A0A0A" Margin="10,5" CornerRadius="4">
+            <Grid>
+                <!-- Waveform Scope -->
+                <Canvas x:Name="WaveformCanvas" Visibility="Visible"
+                        SizeChanged="Canvas_SizeChanged"/>
+
+                <!-- Parade (RGB) Scope -->
+                <Canvas x:Name="ParadeCanvas" Visibility="Collapsed"
+                        SizeChanged="Canvas_SizeChanged"/>
+
+                <!-- Vectorscope -->
+                <Canvas x:Name="VectorCanvas" Visibility="Collapsed"
+                        SizeChanged="Canvas_SizeChanged"/>
+
+                <!-- Graticule lines -->
+                <Canvas x:Name="GraticuleCanvas" IsHitTestVisible="False"/>
+            </Grid>
+        </Border>
+
+        <!-- Histogram -->
+        <Border Grid.Row="2" Background="#0A0A0A" Margin="10,5,10,10" CornerRadius="4">
+            <Grid>
+                <Canvas x:Name="HistogramCanvas" SizeChanged="Canvas_SizeChanged"/>
+
+                <!-- Labels -->
+                <TextBlock Text="0" Foreground="#333" FontSize="9"
+                           HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                           Margin="5,0,0,2"/>
+                <TextBlock Text="255" Foreground="#333" FontSize="9"
+                           HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                           Margin="0,0,5,2"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
