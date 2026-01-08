@@ -6,7 +6,7 @@
 
     <UserControl.Resources>
         <!-- Log level colors -->
-        <SolidColorBrush x:Key="TraceColor" Color="#808080"/>
+        <SolidColorBrush x:Key="TraceColor" Color="#A0A0A0"/>
         <SolidColorBrush x:Key="DebugColor" Color="#569CD6"/>
         <SolidColorBrush x:Key="InfoColor" Color="#4EC9B0"/>
         <SolidColorBrush x:Key="WarningColor" Color="#DCDCAA"/>
@@ -37,7 +37,8 @@
                     <!-- Level filter -->
                     <ComboBox x:Name="LevelFilter" Width="100" SelectedIndex="0"
                               SelectionChanged="LevelFilter_SelectionChanged"
-                              Background="#3C3C3C" Foreground="#CCCCCC" BorderBrush="#3C3C3C">
+                              Background="#3C3C3C" Foreground="#CCCCCC" BorderBrush="#3C3C3C"
+                              ToolTip="Filter logs by severity level">
                         <ComboBoxItem Content="All Levels"/>
                         <ComboBoxItem Content="Information"/>
                         <ComboBoxItem Content="Warning"/>
@@ -56,7 +57,7 @@
                                             <Setter.Value>
                                                 <VisualBrush Stretch="None" AlignmentX="Left">
                                                     <VisualBrush.Visual>
-                                                        <TextBlock Text="Search logs..." Foreground="#666666" Margin="6,3"/>
+                                                        <TextBlock Text="Search logs..." Foreground="#BBBBBB" Margin="6,3"/>
                                                     </VisualBrush.Visual>
                                                 </VisualBrush>
                                             </Setter.Value>
@@ -70,21 +71,45 @@
 
                 <!-- Center: Stats -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock x:Name="StatsText" Foreground="#666666" FontSize="11"
+                    <TextBlock x:Name="StatsText" Foreground="#AAAAAA" FontSize="11"
                                VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Right: Actions -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <CheckBox x:Name="AutoScrollCheck" Content="Auto-scroll" IsChecked="True"
-                              Foreground="#888888" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                              Foreground="#999999" VerticalAlignment="Center" Margin="0,0,10,0"
+                              ToolTip="Automatically scroll to new log entries"/>
 
                     <Button Content="Clear" Click="ClearButton_Click" Padding="8,3"
-                            Background="#3C3C3C" Foreground="#CCCCCC" BorderBrush="#3C3C3C"
-                            Margin="0,0,5,0"/>
+                            Background="#3C3C3C" Foreground="#CCCCCC" BorderBrush="#4A4A4A"
+                            Margin="0,0,5,0" ToolTip="Clear all log entries from the viewer"
+                            Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#4A4A4A"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
 
                     <Button Content="Open Logs" Click="OpenLogsButton_Click" Padding="8,3"
-                            Background="#3C3C3C" Foreground="#CCCCCC" BorderBrush="#3C3C3C"/>
+                            Background="#3C3C3C" Foreground="#CCCCCC" BorderBrush="#4A4A4A"
+                            ToolTip="Open the log directory in Windows Explorer"
+                            Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#4A4A4A"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
@@ -108,7 +133,7 @@
                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                     <Style.Triggers>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="#264F78"/>
+                            <Setter Property="Background" Value="#3E6BA8"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="#2A2D2E"/>
@@ -127,7 +152,7 @@
 
                         <!-- Timestamp -->
                         <TextBlock Grid.Column="0" Text="{Binding TimestampShort}"
-                                   Foreground="#666666" Margin="0,0,8,0"/>
+                                   Foreground="#AAAAAA" Margin="0,0,8,0"/>
 
                         <!-- Level -->
                         <TextBlock Grid.Column="1" Text="{Binding LevelShort}" FontWeight="Bold"
@@ -136,7 +161,7 @@
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding LevelShort}" Value="TRC">
-                                            <Setter Property="Foreground" Value="#808080"/>
+                                            <Setter Property="Foreground" Value="#A0A0A0"/>
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding LevelShort}" Value="DBG">
                                             <Setter Property="Foreground" Value="#569CD6"/>
@@ -169,7 +194,7 @@
 
         <!-- Empty state - shown when list is empty -->
         <TextBlock x:Name="EmptyStateText" Grid.Row="1" Text="No log entries"
-                   Foreground="#666666" FontStyle="Italic"
+                   Foreground="#AAAAAA" FontStyle="Italic"
                    HorizontalAlignment="Center" VerticalAlignment="Center"
                    Visibility="Collapsed"/>
     </Grid>
