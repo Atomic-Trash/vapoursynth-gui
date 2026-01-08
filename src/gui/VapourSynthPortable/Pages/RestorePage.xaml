@@ -27,9 +27,10 @@
                 <!-- Source Controls -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <Button Content="Load Source" Command="{Binding LoadSourceAsyncCommand}"
+                            ToolTip="Select a video file to restore"
                             Style="{StaticResource SecondaryButton}" Margin="0,0,15,0"/>
 
-                    <TextBlock Text="{Binding SourcePath}" Foreground="#AAA" FontSize="11"
+                    <TextBlock Text="{Binding SourcePath}" Foreground="#DDD" FontSize="11"
                                VerticalAlignment="Center" MaxWidth="300" TextTrimming="CharacterEllipsis"
                                ToolTip="{Binding SourcePath}"
                                Visibility="{Binding HasSource, Converter={StaticResource BoolToVisibilityConverter}}"/>
@@ -38,39 +39,42 @@
                 <!-- Source Info -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center"
                             Visibility="{Binding HasSource, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0">
-                        <TextBlock Foreground="#888" FontSize="10">
+                    <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0" ToolTip="Resolution">
+                        <TextBlock Foreground="#AAA" FontSize="10">
                             <Run Text="{Binding SourceWidth}"/>x<Run Text="{Binding SourceHeight}"/>
                         </TextBlock>
                     </Border>
-                    <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0">
+                    <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0" ToolTip="Frame rate">
                         <TextBlock Text="{Binding SourceFps, StringFormat='{}{0:F2} fps'}"
-                                   Foreground="#888" FontSize="10"/>
+                                   Foreground="#AAA" FontSize="10"/>
                     </Border>
-                    <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0">
-                        <TextBlock Text="{Binding SourceDuration}" Foreground="#888" FontSize="10"/>
+                    <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0" ToolTip="Duration">
+                        <TextBlock Text="{Binding SourceDuration}" Foreground="#AAA" FontSize="10"/>
                     </Border>
-                    <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0">
-                        <TextBlock Text="{Binding SourceCodec}" Foreground="#888" FontSize="10"/>
+                    <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0" ToolTip="Video codec">
+                        <TextBlock Text="{Binding SourceCodec}" Foreground="#AAA" FontSize="10"/>
                     </Border>
                 </StackPanel>
 
                 <!-- Mode Toggle -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <Border Background="#2A2A2A" CornerRadius="3" Padding="6,3" Margin="0,0,15,0"
+                            ToolTip="GPU available for hardware acceleration"
                             Visibility="{Binding GpuAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal">
                             <Ellipse Width="8" Height="8" Fill="#4ADE80" Margin="0,0,6,0"/>
-                            <TextBlock Text="{Binding GpuName}" Foreground="#888" FontSize="10"
+                            <TextBlock Text="{Binding GpuName}" Foreground="#AAA" FontSize="10"
                                        MaxWidth="150" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                     </Border>
 
                     <RadioButton Content="Simple" GroupName="RestoreMode"
                                  IsChecked="{Binding IsSimpleMode}"
+                                 ToolTip="Use preset-based restoration"
                                  Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <RadioButton Content="Advanced" GroupName="RestoreMode"
                                  IsChecked="{Binding IsSimpleMode, Converter={StaticResource InverseBool}}"
+                                 ToolTip="Use node-based editor for custom scripts"
                                  Foreground="#CCC" VerticalAlignment="Center"/>
                 </StackPanel>
             </Grid>
@@ -99,6 +103,7 @@
                     <!-- Category Filter -->
                     <ComboBox Grid.Row="1" ItemsSource="{Binding Categories}"
                               SelectedItem="{Binding SelectedCategory}"
+                              ToolTip="Filter presets by category"
                               Margin="12,0,12,10"/>
 
                     <!-- Presets List -->
@@ -125,12 +130,13 @@
 
                                         <StackPanel Grid.Column="1">
                                             <TextBlock Text="{Binding Name}" Foreground="#DDD" FontSize="12"/>
-                                            <TextBlock Text="{Binding Description}" Foreground="#666"
+                                            <TextBlock Text="{Binding Description}" Foreground="#888"
                                                        FontSize="10" TextWrapping="Wrap"/>
                                         </StackPanel>
 
                                         <Border Grid.Column="2" Background="#333" CornerRadius="2"
                                                 Padding="4,2" VerticalAlignment="Center"
+                                                ToolTip="This preset requires GPU acceleration"
                                                 Visibility="{Binding RequiresGpu, Converter={StaticResource BoolToVisibilityConverter}}">
                                             <TextBlock Text="GPU" Foreground="#4ADE80" FontSize="9"/>
                                         </Border>
@@ -157,12 +163,12 @@
                                     Visibility="{Binding HasSource, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                             <TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets" FontSize="48"
                                        Foreground="#333" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Load a video to restore" FontSize="14" Foreground="#555"
+                            <TextBlock Text="Load a video to restore" FontSize="14" Foreground="#888"
                                        HorizontalAlignment="Center" Margin="0,15,0,5"/>
                             <TextBlock Text="AI-powered restoration for upscaling, denoising," FontSize="11"
-                                       Foreground="#444" HorizontalAlignment="Center"/>
+                                       Foreground="#666" HorizontalAlignment="Center"/>
                             <TextBlock Text="deinterlacing, and frame interpolation" FontSize="11"
-                                       Foreground="#444" HorizontalAlignment="Center"/>
+                                       Foreground="#666" HorizontalAlignment="Center"/>
                             <Button Content="Load Source Video" Command="{Binding LoadSourceAsyncCommand}"
                                     Style="{StaticResource PrimaryButton}" Margin="0,20,0,0"/>
                         </StackPanel>
@@ -195,8 +201,10 @@
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                                         <Button Content="Process Now" Command="{Binding ProcessNowCommand}"
+                                                ToolTip="Process immediately with selected preset"
                                                 Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"/>
                                         <Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"
+                                                ToolTip="Add to processing queue for batch processing"
                                                 Style="{StaticResource SecondaryButton}"/>
                                     </StackPanel>
                                 </Grid>
@@ -220,6 +228,7 @@
                                  Background="#1E1E1E" Foreground="#CCC" BorderBrush="#3A3A3A"
                                  Padding="8,6" FontSize="11"/>
                         <Button Grid.Column="2" Content="Browse..." Command="{Binding SelectOutputCommand}"
+                                ToolTip="Select output file location"
                                 Style="{StaticResource SecondaryButton}" Margin="10,0,0,0"/>
                     </Grid>
                 </Border>
@@ -239,7 +248,7 @@
                             <TextBlock Text="Processing Queue" FontSize="13" FontWeight="SemiBold"
                                        Foreground="#F1F1F1"/>
                             <TextBlock Text="{Binding JobQueue.Count, StringFormat='({0})'}"
-                                       Foreground="#666" FontSize="11" HorizontalAlignment="Right"
+                                       Foreground="#888" FontSize="11" HorizontalAlignment="Right"
                                        VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
@@ -260,7 +269,7 @@
 
                                         <Grid Grid.Row="0">
                                             <TextBlock Text="{Binding Preset.Name}" Foreground="#DDD" FontSize="11"/>
-                                            <TextBlock Text="{Binding StatusText}" Foreground="#888" FontSize="10"
+                                            <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="10"
                                                        HorizontalAlignment="Right"/>
                                         </Grid>
 
@@ -269,9 +278,9 @@
                                                      Foreground="#0E639C"/>
 
                                         <Grid Grid.Row="2">
-                                            <TextBlock Text="{Binding ProgressText}" Foreground="#666" FontSize="9"/>
+                                            <TextBlock Text="{Binding ProgressText}" Foreground="#888" FontSize="9"/>
                                             <TextBlock Text="{Binding EstimatedTimeRemaining, StringFormat='ETA: {0:mm\\:ss}'}"
-                                                       Foreground="#666" FontSize="9" HorizontalAlignment="Right"/>
+                                                       Foreground="#888" FontSize="9" HorizontalAlignment="Right"/>
                                         </Grid>
                                     </Grid>
                                 </Border>
@@ -283,8 +292,8 @@
                     <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
                                 Visibility="{Binding JobQueue.Count, Converter={StaticResource CountToVis}}">
                         <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="24"
-                                   Foreground="#333" HorizontalAlignment="Center"/>
-                        <TextBlock Text="No jobs in queue" Foreground="#555" FontSize="11"
+                                   Foreground="#555" HorizontalAlignment="Center"/>
+                        <TextBlock Text="No jobs in queue" Foreground="#888" FontSize="11"
                                    HorizontalAlignment="Center" Margin="0,8,0,0"/>
                     </StackPanel>
 
@@ -292,12 +301,15 @@
                     <Border Grid.Row="2" Background="#2D2D2D" Padding="10">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <Button Content="Process All" Command="{Binding ProcessQueueCommand}"
+                                    ToolTip="Start processing all queued jobs"
                                     Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
                                     IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"/>
                             <Button Content="Cancel" Command="{Binding CancelProcessingCommand}"
+                                    ToolTip="Cancel current processing"
                                     Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
                                     IsEnabled="{Binding IsProcessing}"/>
                             <Button Content="Clear" Command="{Binding ClearQueueCommand}"
+                                    ToolTip="Remove completed jobs from queue"
                                     Style="{StaticResource SecondaryButton}"/>
                         </StackPanel>
                     </Border>
@@ -313,11 +325,11 @@
         <Border Grid.Row="1" VerticalAlignment="Bottom"
                 Background="#2D2D30" Height="24" Margin="10,0,10,10">
             <Grid Margin="10,0">
-                <TextBlock Text="{Binding StatusText}" Foreground="#888" FontSize="10"
+                <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="10"
                            VerticalAlignment="Center"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
                             Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <TextBlock Text="Processing: " Foreground="#555" FontSize="10"/>
+                    <TextBlock Text="Processing: " Foreground="#888" FontSize="10"/>
                     <TextBlock Text="{Binding CurrentJob.ProgressText}" Foreground="#0E639C" FontSize="10"/>
                 </StackPanel>
             </Grid>
