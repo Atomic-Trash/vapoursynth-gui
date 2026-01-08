@@ -4,7 +4,6 @@ A DaVinci Resolve-style video processing application built with WPF/.NET 8, feat
 
 ![VapourSynth Studio](https://img.shields.io/badge/.NET-8.0-purple) ![License](https://img.shields.io/badge/license-MIT-blue) ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 
-<!--
 ## Screenshots
 
 ### Edit Page - Timeline Editing
@@ -15,7 +14,6 @@ A DaVinci Resolve-style video processing application built with WPF/.NET 8, feat
 
 ### Restore Page - AI Processing
 ![Restore Page](docs/screenshots/restore-page.png)
--->
 
 ## Features
 
