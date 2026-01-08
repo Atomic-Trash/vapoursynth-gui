@@ -1,5 +1,6 @@
 using System.IO;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 
 namespace VapourSynthPortable.Services.LibMpv;
 
@@ -8,6 +9,8 @@ namespace VapourSynthPortable.Services.LibMpv;
 /// </summary>
 public class MpvPlayer : IDisposable
 {
+    private static readonly ILogger<MpvPlayer> _logger = LoggingService.GetLogger<MpvPlayer>();
+
     private IntPtr _handle;
     private bool _disposed;
     private Thread? _eventThread;
@@ -33,6 +36,19 @@ public class MpvPlayer : IDisposable
 
     public static bool IsLibraryAvailable => FindLibrary() != null;
 
+    private static string? FindProjectRoot(string startDir)
+    {
+        var dir = new DirectoryInfo(startDir);
+        for (int i = 0; i < 10 && dir != null; i++)
+        {
+            // Look for plugins.json as marker for project root
+            if (File.Exists(Path.Combine(dir.FullName, "plugins.json")))
+                return dir.FullName;
+            dir = dir.Parent;
+        }
+        return null;
+    }
+
     private static string? FindLibrary()
     {
         if (_libPath != null) return _libPath;
@@ -44,7 +60,15 @@ public class MpvPlayer : IDisposable
         searchPaths.Add(Path.Combine(appDir, "libmpv-2.dll"));
         searchPaths.Add(Path.Combine(appDir, "mpv-2.dll"));
 
-        // Dist folder structure
+        // Project root dist folder (reliable method using plugins.json marker)
+        var projectRoot = FindProjectRoot(appDir);
+        if (projectRoot != null)
+        {
+            searchPaths.Add(Path.Combine(projectRoot, "dist", "mpv", "libmpv-2.dll"));
+            searchPaths.Add(Path.Combine(projectRoot, "dist", "mpv", "mpv-2.dll"));
+        }
+
+        // Fallback: relative path from app directory (for deployed apps)
         var distPath = Path.GetFullPath(Path.Combine(appDir, "..", "..", "..", "..", "..", "dist"));
         searchPaths.Add(Path.Combine(distPath, "mpv", "libmpv-2.dll"));
         searchPaths.Add(Path.Combine(distPath, "mpv", "mpv-2.dll"));
@@ -66,10 +90,13 @@ public class MpvPlayer : IDisposable
             if (File.Exists(path))
             {
                 _libPath = Path.GetDirectoryName(path);
+                _logger.LogInformation("Found libmpv at: {Path}", path);
                 return _libPath;
             }
         }
 
+        _logger.LogWarning("libmpv-2.dll not found in any search path. Searched: {Paths}",
+            string.Join(", ", searchPaths.Take(5)));
         return null;
     }
 
@@ -83,6 +110,11 @@ public class MpvPlayer : IDisposable
             // Add to DLL search path
             SetDllDirectory(libDir);
             _libLoaded = true;
+            _logger.LogInformation("libmpv library directory set: {Directory}", libDir);
+        }
+        else
+        {
+            _logger.LogError("Failed to find libmpv library. Video playback will not work");
         }
     }
 
@@ -99,14 +131,19 @@ public class MpvPlayer : IDisposable
         if (_handle != IntPtr.Zero)
             return true;
 
+        _logger.LogInformation("Initializing MpvPlayer with window handle: {Handle}", windowHandle);
+
         try
         {
             _handle = LibMpvInterop.mpv_create();
             if (_handle == IntPtr.Zero)
             {
+                _logger.LogError("Failed to create mpv instance - mpv_create returned null");
                 Error?.Invoke(this, "Failed to create mpv instance");
                 return false;
             }
+
+            _logger.LogDebug("mpv instance created, setting options...");
 
             // Set window handle for video output
             var wid = windowHandle.ToInt64();
@@ -125,7 +162,9 @@ public class MpvPlayer : IDisposable
             var result = LibMpvInterop.mpv_initialize(_handle);
             if (result < 0)
             {
-                Error?.Invoke(this, $"Failed to initialize mpv: {LibMpvInterop.GetErrorString(result)}");
+                var errorMsg = LibMpvInterop.GetErrorString(result);
+                _logger.LogError("Failed to initialize mpv: {Error} (code: {Code})", errorMsg, result);
+                Error?.Invoke(this, $"Failed to initialize mpv: {errorMsg}");
                 LibMpvInterop.mpv_destroy(_handle);
                 _handle = IntPtr.Zero;
                 return false;
@@ -140,10 +179,12 @@ public class MpvPlayer : IDisposable
             // Start event loop
             StartEventLoop();
 
+            _logger.LogInformation("MpvPlayer initialized successfully");
             return true;
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Exception initializing mpv");
             Error?.Invoke(this, $"Exception initializing mpv: {ex.Message}");
             return false;
         }
@@ -192,9 +233,9 @@ public class MpvPlayer : IDisposable
                         break;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore event processing errors
+                _logger.LogError(ex, "mpv event processing error");
             }
         }
     }
@@ -240,8 +281,13 @@ public class MpvPlayer : IDisposable
 
     public void LoadFile(string path)
     {
-        if (_handle == IntPtr.Zero) return;
+        if (_handle == IntPtr.Zero)
+        {
+            _logger.LogWarning("LoadFile called but mpv not initialized");
+            return;
+        }
 
+        _logger.LogInformation("Loading file: {Path}", path);
         CurrentFile = path;
         Command($"loadfile \"{path.Replace("\\", "/")}\"");
     }
@@ -339,7 +385,7 @@ public class MpvPlayer : IDisposable
         var result = LibMpvInterop.mpv_command_string(_handle, cmd);
         if (result < 0)
         {
-            System.Diagnostics.Debug.WriteLine($"mpv command failed: {cmd} - {LibMpvInterop.GetErrorString(result)}");
+            _logger.LogWarning("mpv command failed: {Command} - {Error}", cmd, LibMpvInterop.GetErrorString(result));
         }
     }
 
@@ -384,6 +430,7 @@ public class MpvPlayer : IDisposable
     {
         if (_disposed) return;
 
+        _logger.LogInformation("Disposing MpvPlayer");
         _eventThreadRunning = false;
 
         if (_handle != IntPtr.Zero)
@@ -392,13 +439,17 @@ public class MpvPlayer : IDisposable
             {
                 LibMpvInterop.mpv_terminate_destroy(_handle);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error terminating mpv");
+            }
             _handle = IntPtr.Zero;
         }
 
         _eventThread?.Join(1000);
 
         _disposed = true;
+        _logger.LogInformation("MpvPlayer disposed");
     }
 
     ~MpvPlayer()

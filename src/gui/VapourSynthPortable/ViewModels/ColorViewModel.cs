@@ -4,11 +4,15 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using VapourSynthPortable.Models;
+using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable.ViewModels;
 
-public partial class ColorViewModel : ObservableObject
+public partial class ColorViewModel : ObservableObject, IDisposable
 {
+    private readonly IMediaPoolService _mediaPool;
+    private bool _disposed;
+
     [ObservableProperty]
     private ColorGrade _currentGrade = new();
 
@@ -42,11 +46,9 @@ public partial class ColorViewModel : ObservableObject
     [ObservableProperty]
     private string _selectedLutCategory = "All";
 
-    [ObservableProperty]
-    private string _sourcePath = "";
-
-    [ObservableProperty]
-    private bool _hasSource;
+    // Source is now managed by MediaPoolService
+    public string SourcePath => _mediaPool.CurrentSource?.FilePath ?? "";
+    public bool HasSource => _mediaPool.HasSource;
 
     [ObservableProperty]
     private bool _showScopes = true;
@@ -82,10 +84,26 @@ public partial class ColorViewModel : ObservableObject
     public bool CanUndo => _undoStack.Count > 0;
     public bool CanRedo => _redoStack.Count > 0;
 
-    public ColorViewModel()
+    public ColorViewModel(IMediaPoolService mediaPool)
     {
+        _mediaPool = mediaPool;
+        _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
+
         LoadPresets();
         LoadLuts();
+    }
+
+    // Parameterless constructor for XAML design-time support
+    public ColorViewModel() : this(App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService
+        ?? new MediaPoolService())
+    {
+    }
+
+    private void OnCurrentSourceChanged(object? sender, MediaItem? item)
+    {
+        OnPropertyChanged(nameof(SourcePath));
+        OnPropertyChanged(nameof(HasSource));
+        StatusText = item != null ? $"Source: {item.Name}" : "No clip loaded";
     }
 
     private void LoadPresets()
@@ -176,7 +194,7 @@ public partial class ColorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void LoadSource()
+    private async Task LoadSourceAsync()
     {
         var dialog = new OpenFileDialog
         {
@@ -186,9 +204,12 @@ public partial class ColorViewModel : ObservableObject
 
         if (dialog.ShowDialog() == true)
         {
-            SourcePath = dialog.FileName;
-            HasSource = true;
-            StatusText = $"Loaded: {Path.GetFileName(SourcePath)}";
+            var item = await _mediaPool.ImportMediaAsync(dialog.FileName);
+            if (item != null)
+            {
+                _mediaPool.SetCurrentSource(item);
+                StatusText = $"Loaded: {item.Name}";
+            }
         }
     }
 
@@ -497,6 +518,14 @@ public partial class ColorViewModel : ObservableObject
         lut.IsFavorite = !lut.IsFavorite;
         OnPropertyChanged(nameof(FilteredLuts));
         StatusText = lut.IsFavorite ? $"Added {lut.Name} to favorites" : $"Removed {lut.Name} from favorites";
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _mediaPool.CurrentSourceChanged -= OnCurrentSourceChanged;
     }
 }
 

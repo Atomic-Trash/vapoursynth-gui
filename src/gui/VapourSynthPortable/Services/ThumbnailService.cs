@@ -3,12 +3,15 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using Microsoft.Extensions.Logging;
 using VapourSynthPortable.Models;
 
 namespace VapourSynthPortable.Services;
 
 public class ThumbnailService
 {
+    private static readonly ILogger<ThumbnailService> _logger = LoggingService.GetLogger<ThumbnailService>();
+
     private readonly string _ffmpegPath;
     private readonly string _ffprobePath;
     private readonly string _cacheDir;
@@ -25,6 +28,9 @@ public class ThumbnailService
 
         _cacheDir = Path.Combine(Path.GetTempPath(), "VapourSynthStudio", "thumbnails");
         Directory.CreateDirectory(_cacheDir);
+
+        _logger.LogInformation("ThumbnailService initialized. FFmpeg: {FFmpegPath}, Cache: {CacheDir}",
+            _ffmpegPath, _cacheDir);
     }
 
     private static string FindExecutable(string name, string distPath)
@@ -56,11 +62,17 @@ public class ThumbnailService
 
     public async Task<MediaInfo?> GetMediaInfoAsync(string filePath)
     {
-        if (!File.Exists(filePath)) return null;
+        if (!File.Exists(filePath))
+        {
+            _logger.LogWarning("GetMediaInfoAsync: File not found: {FilePath}", filePath);
+            return null;
+        }
 
         await _semaphore.WaitAsync();
         try
         {
+            _logger.LogDebug("Getting media info for: {FilePath}", filePath);
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = _ffprobePath,
@@ -77,12 +89,23 @@ public class ThumbnailService
             var output = await process.StandardOutput.ReadToEndAsync();
             await process.WaitForExitAsync();
 
-            if (string.IsNullOrEmpty(output)) return null;
+            if (string.IsNullOrEmpty(output))
+            {
+                _logger.LogWarning("FFprobe returned empty output for: {FilePath}", filePath);
+                return null;
+            }
 
-            return ParseMediaInfo(output);
+            var info = ParseMediaInfo(output, filePath);
+            if (info != null)
+            {
+                _logger.LogDebug("Media info parsed: {Width}x{Height}, {Duration:F1}s, {Codec}",
+                    info.Width, info.Height, info.Duration, info.VideoCodec);
+            }
+            return info;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to get media info for: {FilePath}", filePath);
             return null;
         }
         finally
@@ -91,7 +114,7 @@ public class ThumbnailService
         }
     }
 
-    private static MediaInfo? ParseMediaInfo(string json)
+    private static MediaInfo? ParseMediaInfo(string json, string filePath)
     {
         try
         {
@@ -170,35 +193,46 @@ public class ThumbnailService
 
             return info;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to parse FFprobe JSON for: {FilePath}", filePath);
             return null;
         }
     }
 
-    public async Task<BitmapSource?> GenerateThumbnailAsync(string filePath, int width = 160, int height = 90)
+    public async Task<BitmapSource?> GenerateThumbnailAsync(string filePath, int maxWidth = 160, int maxHeight = 90, CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(filePath)) return null;
+        if (!File.Exists(filePath))
+        {
+            _logger.LogWarning("GenerateThumbnailAsync: File not found: {FilePath}", filePath);
+            return null;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         // Create cache key based on file path and modification time
         var fileInfo = new FileInfo(filePath);
-        var cacheKey = $"{filePath}_{fileInfo.LastWriteTimeUtc.Ticks}_{width}x{height}".GetHashCode();
+        var cacheKey = $"{filePath}_{fileInfo.LastWriteTimeUtc.Ticks}_{maxWidth}x{maxHeight}".GetHashCode();
         var cachePath = Path.Combine(_cacheDir, $"{cacheKey:X8}.jpg");
 
         // Check cache
         if (File.Exists(cachePath))
         {
+            _logger.LogDebug("Loading cached thumbnail for: {FilePath}", filePath);
             return await LoadThumbnailFromFileAsync(cachePath);
         }
 
-        await _semaphore.WaitAsync();
+        await _semaphore.WaitAsync(cancellationToken);
         try
         {
-            // Generate thumbnail with FFmpeg
+            cancellationToken.ThrowIfCancellationRequested();
+            _logger.LogDebug("Generating thumbnail for: {FilePath}", filePath);
+
+            // Generate thumbnail with FFmpeg - preserve aspect ratio without padding
             var startInfo = new ProcessStartInfo
             {
                 FileName = _ffmpegPath,
-                Arguments = $"-i \"{filePath}\" -ss 00:00:01 -vframes 1 -vf \"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:black\" -y \"{cachePath}\"",
+                Arguments = $"-i \"{filePath}\" -ss 00:00:01 -vframes 1 -vf \"scale='min({maxWidth},iw)':'min({maxHeight},ih)':force_original_aspect_ratio=decrease\" -y \"{cachePath}\"",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -209,18 +243,40 @@ public class ThumbnailService
             process.Start();
 
             // Read stderr to prevent blocking
-            await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
+            // Wait with cancellation support
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(30)); // 30 second timeout
+
+            try
+            {
+                await process.WaitForExitAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                try { process.Kill(); } catch { }
+                throw;
+            }
 
             if (File.Exists(cachePath))
             {
+                _logger.LogDebug("Thumbnail generated successfully for: {FilePath}", filePath);
                 return await LoadThumbnailFromFileAsync(cachePath);
             }
 
+            _logger.LogWarning("FFmpeg failed to generate thumbnail for: {FilePath}. Exit code: {ExitCode}",
+                filePath, process.ExitCode);
             return null;
         }
-        catch
+        catch (OperationCanceledException)
         {
+            _logger.LogDebug("Thumbnail generation cancelled for: {FilePath}", filePath);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate thumbnail for: {FilePath}", filePath);
             return null;
         }
         finally
@@ -244,8 +300,9 @@ public class ThumbnailService
                 return bitmap;
             });
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to load thumbnail from file: {Path}", path);
             return null;
         }
     }
@@ -263,8 +320,9 @@ public class ThumbnailService
             bitmap.Freeze();
             return bitmap;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to load image thumbnail: {FilePath}", filePath);
             return null;
         }
     }
@@ -277,9 +335,13 @@ public class ThumbnailService
             {
                 Directory.Delete(_cacheDir, true);
                 Directory.CreateDirectory(_cacheDir);
+                _logger.LogInformation("Thumbnail cache cleared");
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to clear thumbnail cache at: {CacheDir}", _cacheDir);
+        }
     }
 }
 

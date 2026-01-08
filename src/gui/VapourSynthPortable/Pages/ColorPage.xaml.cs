@@ -12,8 +12,14 @@ public partial class ColorPage : UserControl
     public ColorPage()
     {
         InitializeComponent();
+
+        // Get ViewModel from DI to ensure shared MediaPoolService singleton
+        DataContext = App.Services?.GetService(typeof(ColorViewModel))
+            ?? new ColorViewModel();
+
         Loaded += ColorPage_Loaded;
         Unloaded += ColorPage_Unloaded;
+        IsVisibleChanged += ColorPage_IsVisibleChanged;
     }
 
     private void ColorPage_Loaded(object sender, RoutedEventArgs e)
@@ -35,6 +41,22 @@ public partial class ColorPage : UserControl
         if (DataContext is ColorViewModel viewModel)
         {
             viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        }
+    }
+
+    private void ColorPage_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        // When page becomes visible, check if there's a source to load
+        if ((bool)e.NewValue && DataContext is ColorViewModel viewModel)
+        {
+            if (viewModel.HasSource && !string.IsNullOrEmpty(viewModel.SourcePath))
+            {
+                // Only load if different from current
+                if (_currentSource != viewModel.SourcePath)
+                {
+                    LoadVideo(viewModel.SourcePath);
+                }
+            }
         }
     }
 

@@ -12,8 +12,14 @@ public partial class RestorePage : UserControl
     public RestorePage()
     {
         InitializeComponent();
+
+        // Get ViewModel from DI to ensure shared MediaPoolService singleton
+        DataContext = App.Services?.GetService(typeof(RestoreViewModel))
+            ?? new RestoreViewModel();
+
         Loaded += RestorePage_Loaded;
         Unloaded += RestorePage_Unloaded;
+        IsVisibleChanged += RestorePage_IsVisibleChanged;
     }
 
     private void RestorePage_Loaded(object sender, RoutedEventArgs e)
@@ -35,6 +41,22 @@ public partial class RestorePage : UserControl
         if (DataContext is RestoreViewModel viewModel)
         {
             viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        }
+    }
+
+    private void RestorePage_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        // When page becomes visible, check if there's a source to load
+        if ((bool)e.NewValue && DataContext is RestoreViewModel viewModel)
+        {
+            if (viewModel.HasSource && !string.IsNullOrEmpty(viewModel.SourcePath))
+            {
+                // Only load if different from current
+                if (_currentSource != viewModel.SourcePath)
+                {
+                    LoadVideo(viewModel.SourcePath);
+                }
+            }
         }
     }
 

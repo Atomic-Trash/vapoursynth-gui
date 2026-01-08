@@ -12,12 +12,19 @@ public partial class EditPage : UserControl
     private bool _syncingFromPlayer;
     private bool _syncingFromTimeline;
     private string? _currentProgramSource;
+    private string? _currentSourceMonitor;
 
     public EditPage()
     {
         InitializeComponent();
+
+        // Get ViewModel from DI to ensure shared MediaPoolService singleton
+        DataContext = App.Services?.GetService(typeof(EditViewModel))
+            ?? new EditViewModel();
+
         Loaded += EditPage_Loaded;
         Unloaded += EditPage_Unloaded;
+        IsVisibleChanged += EditPage_IsVisibleChanged;
     }
 
     private void EditPage_Loaded(object sender, RoutedEventArgs e)
@@ -52,6 +59,25 @@ public partial class EditPage : UserControl
         }
     }
 
+    private void EditPage_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        // When page becomes visible, check if there's a source to load
+        if ((bool)e.NewValue && DataContext is EditViewModel viewModel)
+        {
+            if (viewModel.SourceMonitorItem != null)
+            {
+                var filePath = viewModel.SourceMonitorItem.FilePath;
+                if (!string.IsNullOrEmpty(filePath) &&
+                    viewModel.SourceMonitorItem.MediaType == MediaType.Video &&
+                    _currentSourceMonitor != filePath)
+                {
+                    _currentSourceMonitor = filePath;
+                    SourcePlayer.LoadFile(filePath);
+                }
+            }
+        }
+    }
+
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(EditViewModel.SourceMonitorItem))
@@ -69,8 +95,11 @@ public partial class EditPage : UserControl
         if (DataContext is EditViewModel viewModel && viewModel.SourceMonitorItem != null)
         {
             var filePath = viewModel.SourceMonitorItem.FilePath;
-            if (!string.IsNullOrEmpty(filePath) && viewModel.SourceMonitorItem.MediaType == MediaType.Video)
+            if (!string.IsNullOrEmpty(filePath) &&
+                viewModel.SourceMonitorItem.MediaType == MediaType.Video &&
+                _currentSourceMonitor != filePath)
             {
+                _currentSourceMonitor = filePath;
                 SourcePlayer.LoadFile(filePath);
             }
         }

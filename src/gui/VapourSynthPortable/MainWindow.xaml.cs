@@ -22,6 +22,9 @@ public partial class MainWindow : Window
         UpdateTitle();
         LoadRecentProjects();
 
+        // Register toast notification with service
+        ToastService.Instance.SetToastControl(ToastNotification);
+
         // Setup keyboard shortcuts
         CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => NewProject_Click(s, e)));
         CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenProject_Click(s, e)));
@@ -253,6 +256,20 @@ public partial class MainWindow : Window
     private void Exit_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void LogPanelToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (LogPanelToggle.IsChecked == true)
+        {
+            LogPanelRow.Height = new GridLength(180);
+            LogViewer.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            LogPanelRow.Height = new GridLength(0);
+            LogViewer.Visibility = Visibility.Collapsed;
+        }
     }
 
     protected override async void OnClosing(System.ComponentModel.CancelEventArgs e)

@@ -13,6 +13,11 @@ public partial class MediaPage : UserControl
     public MediaPage()
     {
         InitializeComponent();
+
+        // Get ViewModel from DI to ensure shared MediaPoolService singleton
+        DataContext = App.Services?.GetService(typeof(MediaViewModel))
+            ?? new MediaViewModel();
+
         AllowDrop = true;
         Drop += MediaPage_Drop;
         DragOver += MediaPage_DragOver;
@@ -95,6 +100,38 @@ public partial class MediaPage : UserControl
             {
                 VideoPlayer.LoadFile(selectedItem.FilePath);
             }
+        }
+    }
+
+    // Handle Enter/Escape for inline bin rename
+    private void BinNameTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox textBox) return;
+        if (textBox.DataContext is not MediaBin bin) return;
+
+        if (e.Key == Key.Enter)
+        {
+            // Confirm rename
+            ViewModel?.EndEditBinCommand.Execute(bin);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            // Cancel rename (restore original name would require storing it, for now just end edit)
+            ViewModel?.EndEditBinCommand.Execute(bin);
+            e.Handled = true;
+        }
+    }
+
+    // Confirm rename when focus is lost
+    private void BinNameTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is not TextBox textBox) return;
+        if (textBox.DataContext is not MediaBin bin) return;
+
+        if (bin.IsEditing)
+        {
+            ViewModel?.EndEditBinCommand.Execute(bin);
         }
     }
 }

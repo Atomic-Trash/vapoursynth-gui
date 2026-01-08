@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
@@ -330,6 +331,67 @@ public class BoolToFavoriteColorConverter : IValueConverter
             return new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x00)); // Gold
         }
         return new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55)); // Gray
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts ListSortDirection to arrow icon (for sort headers)
+/// </summary>
+public class SortDirectionToArrowConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is ListSortDirection direction)
+        {
+            return direction == ListSortDirection.Ascending ? "\uE70E" : "\uE70D"; // Up / Down arrow
+        }
+        return "\uE70E"; // Default up
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts enum value to Visibility (Visible if matches parameter, Collapsed otherwise)
+/// </summary>
+public class EnumToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value == null || parameter == null) return Visibility.Collapsed;
+
+        var enumValue = value.ToString();
+        var targetValue = parameter.ToString();
+        var matches = enumValue?.Equals(targetValue, StringComparison.OrdinalIgnoreCase) ?? false;
+        return matches ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts string to Visibility (Visible if matches parameter, Collapsed otherwise)
+/// </summary>
+public class StringToVisibilityMatchConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string str && parameter is string param)
+        {
+            return str.Equals(param, StringComparison.OrdinalIgnoreCase) ? Visibility.Visible : Visibility.Collapsed;
+        }
+        return Visibility.Collapsed;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

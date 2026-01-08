@@ -12,7 +12,7 @@
         <!-- Text Overlay Template -->
         <DataTemplate x:Key="TextOverlayTemplate" DataType="{x:Type models:TimelineTextOverlay}">
             <Border x:Name="OverlayBorder"
-                    Background="#7B68EE" BorderBrush="#222" BorderThickness="1" CornerRadius="3"
+                    Background="#7B68EE" BorderBrush="#333" BorderThickness="1" CornerRadius="3"
                     Margin="1,4" Cursor="Hand" MinWidth="30">
                 <Grid>
                     <!-- Text preview -->
@@ -21,18 +21,42 @@
                                TextTrimming="CharacterEllipsis" Margin="6,2"
                                ToolTip="{Binding Text}"/>
 
+                    <!-- Hover indicator -->
+                    <Border x:Name="HoverBorder" BorderBrush="#A5A0F0" BorderThickness="1.5" CornerRadius="3"
+                            Opacity="0"/>
+
                     <!-- Selection indicator -->
-                    <Border BorderBrush="#FFF" BorderThickness="2" CornerRadius="3"
-                            Visibility="{Binding IsSelected, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <Border x:Name="SelectionBorder" BorderBrush="#FFF" BorderThickness="2" CornerRadius="3"
+                            Visibility="Collapsed"/>
                 </Grid>
             </Border>
+            <DataTemplate.Triggers>
+                <!-- Hover effect -->
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="HoverBorder" Property="Opacity" Value="1"/>
+                    <Setter TargetName="OverlayBorder" Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect ShadowDepth="0" BlurRadius="6" Color="#7B68EE" Opacity="0.5"/>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+                <!-- Selection effect -->
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter TargetName="SelectionBorder" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="OverlayBorder" Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect ShadowDepth="0" BlurRadius="8" Color="#FFFFFF" Opacity="0.3"/>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </DataTemplate.Triggers>
         </DataTemplate>
 
         <!-- Clip Template -->
         <DataTemplate x:Key="ClipTemplate" DataType="{x:Type models:TimelineClip}">
             <Border x:Name="ClipBorder"
                     Background="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
-                    BorderBrush="#222" BorderThickness="1" CornerRadius="3"
+                    BorderBrush="#333" BorderThickness="1" CornerRadius="3"
                     Margin="1,2" Cursor="Hand" MinWidth="20">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -42,7 +66,7 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Left trim handle -->
-                    <Border Grid.Column="0" Background="#40000000" Cursor="SizeWE"
+                    <Border x:Name="LeftTrimHandle" Grid.Column="0" Background="#40000000" Cursor="SizeWE"
                             MouseLeftButtonDown="TrimHandle_LeftMouseDown"/>
 
                     <!-- Clip content -->
@@ -67,12 +91,16 @@
                     </Grid>
 
                     <!-- Right trim handle -->
-                    <Border Grid.Column="2" Background="#40000000" Cursor="SizeWE"
+                    <Border x:Name="RightTrimHandle" Grid.Column="2" Background="#40000000" Cursor="SizeWE"
                             MouseLeftButtonDown="TrimHandle_RightMouseDown"/>
 
+                    <!-- Hover indicator (subtle glow effect) -->
+                    <Border x:Name="HoverBorder" Grid.ColumnSpan="3" BorderBrush="#6366F1" BorderThickness="1.5"
+                            CornerRadius="3" Opacity="0"/>
+
                     <!-- Selection indicator -->
-                    <Border Grid.ColumnSpan="3" BorderBrush="#FFF" BorderThickness="2"
-                            CornerRadius="3" Visibility="{Binding IsSelected, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <Border x:Name="SelectionBorder" Grid.ColumnSpan="3" BorderBrush="#FFF" BorderThickness="2"
+                            CornerRadius="3" Visibility="Collapsed"/>
 
                     <!-- Muted overlay -->
                     <Border Grid.ColumnSpan="3" Background="#80000000" CornerRadius="3"
@@ -82,6 +110,28 @@
                     </Border>
                 </Grid>
             </Border>
+            <DataTemplate.Triggers>
+                <!-- Hover effect -->
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="HoverBorder" Property="Opacity" Value="1"/>
+                    <Setter TargetName="ClipBorder" Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect ShadowDepth="0" BlurRadius="8" Color="#6366F1" Opacity="0.4"/>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter TargetName="LeftTrimHandle" Property="Background" Value="#60FFFFFF"/>
+                    <Setter TargetName="RightTrimHandle" Property="Background" Value="#60FFFFFF"/>
+                </Trigger>
+                <!-- Selection effect -->
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter TargetName="SelectionBorder" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="ClipBorder" Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect ShadowDepth="0" BlurRadius="10" Color="#FFFFFF" Opacity="0.3"/>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </DataTemplate.Triggers>
         </DataTemplate>
     </UserControl.Resources>
 

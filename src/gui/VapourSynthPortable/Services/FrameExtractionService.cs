@@ -2,12 +2,15 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using VapourSynthPortable.Models;
 
 namespace VapourSynthPortable.Services;
 
 public class FrameExtractionService
 {
+    private static readonly ILogger<FrameExtractionService> _logger = LoggingService.GetLogger<FrameExtractionService>();
+
     private readonly string _projectRoot;
     private readonly string _vspipePath;
     private readonly string _pythonPath;
@@ -20,6 +23,9 @@ public class FrameExtractionService
         _vspipePath = Path.Combine(_projectRoot, "dist", "vapoursynth", "VSPipe.exe");
         _pythonPath = Path.Combine(_projectRoot, "dist", "python");
         _vapourSynthPath = Path.Combine(_projectRoot, "dist", "vapoursynth");
+
+        _logger.LogInformation("FrameExtractionService initialized. VSPipe: {VSPipePath}, Available: {IsAvailable}",
+            _vspipePath, IsAvailable);
     }
 
     public bool IsAvailable => File.Exists(_vspipePath);
@@ -38,8 +44,13 @@ public class FrameExtractionService
 
     public async Task<VideoInfo> GetVideoInfoAsync(string scriptPath, CancellationToken ct = default)
     {
+        _logger.LogInformation("Getting video info for script: {ScriptPath}", scriptPath);
+
         if (!IsAvailable)
+        {
+            _logger.LogError("VSPipe.exe not found at: {VSPipePath}", _vspipePath);
             throw new FileNotFoundException("VSPipe.exe not found. Please build the distribution first.", _vspipePath);
+        }
 
         var startInfo = CreateProcessStartInfo("-i", scriptPath);
         var output = new StringBuilder();
@@ -57,16 +68,25 @@ public class FrameExtractionService
 
         if (process.ExitCode != 0)
         {
+            _logger.LogError("VSPipe failed with exit code {ExitCode}: {Error}", process.ExitCode, error);
             throw new InvalidOperationException($"VSPipe failed: {error}");
         }
 
-        return ParseVideoInfo(output.ToString());
+        var info = ParseVideoInfo(output.ToString());
+        _logger.LogInformation("Video info: {Width}x{Height}, {FrameCount} frames, {Fps:F3} fps",
+            info.Width, info.Height, info.FrameCount, info.Fps);
+        return info;
     }
 
     public async Task<byte[]> ExtractFrameAsync(string scriptPath, int frameNumber, VideoInfo videoInfo, CancellationToken ct = default)
     {
+        _logger.LogDebug("Extracting frame {FrameNumber} from: {ScriptPath}", frameNumber, scriptPath);
+
         if (!IsAvailable)
+        {
+            _logger.LogError("VSPipe.exe not found at: {VSPipePath}", _vspipePath);
             throw new FileNotFoundException("VSPipe.exe not found.", _vspipePath);
+        }
 
         // Create a wrapper script that converts to RGB24 for consistent output
         var wrapperScript = CreatePreviewScript(scriptPath, frameNumber);
@@ -98,14 +118,21 @@ public class FrameExtractionService
 
             if (process.ExitCode != 0)
             {
+                _logger.LogError("Frame extraction failed with exit code {ExitCode}: {Error}",
+                    process.ExitCode, errorOutput);
                 throw new InvalidOperationException($"Frame extraction failed: {errorOutput}");
             }
 
+            _logger.LogDebug("Frame {FrameNumber} extracted, {Size} bytes", frameNumber, frameData.Length);
             return frameData.ToArray();
         }
         finally
         {
-            try { File.Delete(tempScriptPath); } catch { }
+            try { File.Delete(tempScriptPath); }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete temp script: {TempPath}", tempScriptPath);
+            }
         }
     }
 
@@ -115,10 +142,14 @@ public class FrameExtractionService
         {
             if (_currentProcess != null && !_currentProcess.HasExited)
             {
+                _logger.LogInformation("Cancelling frame extraction");
                 _currentProcess.Kill();
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error cancelling frame extraction");
+        }
     }
 
     private ProcessStartInfo CreateProcessStartInfo(params string[] args)

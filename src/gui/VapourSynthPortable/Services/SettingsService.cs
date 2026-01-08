@@ -40,9 +40,9 @@ public class SettingsService
                 return JsonConvert.DeserializeObject<AppSettings>(json) ?? new AppSettings();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fall through to default
+            System.Diagnostics.Debug.WriteLine($"Failed to load settings from {_settingsPath}: {ex.Message}");
         }
         return new AppSettings();
     }
@@ -82,7 +82,14 @@ public class SettingsService
         {
             foreach (var file in Directory.GetFiles(cachePath, "*", SearchOption.AllDirectories))
             {
-                try { File.Delete(file); } catch { }
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to delete cache file {file}: {ex.Message}");
+                }
             }
         }
     }

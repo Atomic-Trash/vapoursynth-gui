@@ -3,11 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:VapourSynthPortable.Controls"
              xmlns:views="clr-namespace:VapourSynthPortable.Views"
-             xmlns:vm="clr-namespace:VapourSynthPortable.ViewModels">
-
-    <UserControl.DataContext>
-        <vm:RestoreViewModel/>
-    </UserControl.DataContext>
+             xmlns:vm="clr-namespace:VapourSynthPortable.ViewModels"
+             d:DataContext="{d:DesignInstance Type=vm:RestoreViewModel}"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -26,7 +26,7 @@
 
                 <!-- Source Controls -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <Button Content="Load Source" Command="{Binding LoadSourceCommand}"
+                    <Button Content="Load Source" Command="{Binding LoadSourceAsyncCommand}"
                             Style="{StaticResource SecondaryButton}" Margin="0,0,15,0"/>
 
                     <TextBlock Text="{Binding SourcePath}" Foreground="#AAA" FontSize="11"
@@ -163,7 +163,7 @@
                                        Foreground="#444" HorizontalAlignment="Center"/>
                             <TextBlock Text="deinterlacing, and frame interpolation" FontSize="11"
                                        Foreground="#444" HorizontalAlignment="Center"/>
-                            <Button Content="Load Source Video" Command="{Binding LoadSourceCommand}"
+                            <Button Content="Load Source Video" Command="{Binding LoadSourceAsyncCommand}"
                                     Style="{StaticResource PrimaryButton}" Margin="0,20,0,0"/>
                         </StackPanel>
 

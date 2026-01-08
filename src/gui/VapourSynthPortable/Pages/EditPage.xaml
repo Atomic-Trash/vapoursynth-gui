@@ -2,11 +2,11 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:VapourSynthPortable.Controls"
-             xmlns:vm="clr-namespace:VapourSynthPortable.ViewModels">
-
-    <UserControl.DataContext>
-        <vm:EditViewModel/>
-    </UserControl.DataContext>
+             xmlns:vm="clr-namespace:VapourSynthPortable.ViewModels"
+             d:DataContext="{d:DesignInstance Type=vm:EditViewModel}"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
 
     <UserControl.InputBindings>
         <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}"/>

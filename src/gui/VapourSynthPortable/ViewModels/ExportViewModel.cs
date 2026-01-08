@@ -8,16 +8,23 @@ using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable.ViewModels;
 
-public partial class ExportViewModel : ObservableObject
+public partial class ExportViewModel : ObservableObject, IDisposable
 {
+    private readonly IMediaPoolService _mediaPool;
     private readonly FFmpegService _ffmpegService = new();
     private CancellationTokenSource? _cancellationTokenSource;
+    private bool _disposed;
 
+    // InputPath now delegates to MediaPoolService, but can be overridden
     [ObservableProperty]
     private string _inputPath = "";
 
     [ObservableProperty]
     private string _outputPath = "";
+
+    // Convenience property for current source from media pool
+    public bool HasCurrentSource => _mediaPool.HasSource;
+    public string CurrentSourcePath => _mediaPool.CurrentSource?.FilePath ?? "";
 
     [ObservableProperty]
     private string _outputFileName = "output";
@@ -107,8 +114,11 @@ public partial class ExportViewModel : ObservableObject
     [ObservableProperty]
     private double _inputDuration;
 
-    public ExportViewModel()
+    public ExportViewModel(IMediaPoolService mediaPool)
     {
+        _mediaPool = mediaPool;
+        _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
+
         LoadPresets();
         InitializeResolutions();
 
@@ -116,6 +126,24 @@ public partial class ExportViewModel : ObservableObject
         _ffmpegService.LogMessage += OnLogMessage;
         _ffmpegService.EncodingStarted += OnEncodingStarted;
         _ffmpegService.EncodingCompleted += OnEncodingCompleted;
+    }
+
+    // Parameterless constructor for XAML design-time support
+    public ExportViewModel() : this(App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService
+        ?? new MediaPoolService())
+    {
+    }
+
+    private void OnCurrentSourceChanged(object? sender, MediaItem? item)
+    {
+        OnPropertyChanged(nameof(HasCurrentSource));
+        OnPropertyChanged(nameof(CurrentSourcePath));
+
+        // Auto-populate input from current source if not already set
+        if (item != null && string.IsNullOrEmpty(InputPath))
+        {
+            InputPath = item.FilePath;
+        }
     }
 
     private void LoadPresets()
@@ -546,6 +574,23 @@ public partial class ExportViewModel : ObservableObject
             size /= 1024;
         }
         return $"{size:0.##} {sizes[order]}";
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        // Unsubscribe from MediaPoolService events
+        _mediaPool.CurrentSourceChanged -= OnCurrentSourceChanged;
+
+        // Unsubscribe from FFmpeg service events
+        _ffmpegService.ProgressChanged -= OnProgressChanged;
+        _ffmpegService.LogMessage -= OnLogMessage;
+        _ffmpegService.EncodingStarted -= OnEncodingStarted;
+        _ffmpegService.EncodingCompleted -= OnEncodingCompleted;
+
+        _cancellationTokenSource?.Dispose();
     }
 }
 

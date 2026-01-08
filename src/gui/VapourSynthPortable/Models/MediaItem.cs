@@ -28,6 +28,12 @@ public partial class MediaItem : ObservableObject
     [ObservableProperty]
     private bool _isLoadingThumbnail;
 
+    [ObservableProperty]
+    private bool _thumbnailLoadFailed;
+
+    [ObservableProperty]
+    private string _thumbnailErrorMessage = "";
+
     // Video/Image properties
     [ObservableProperty]
     private int _width;

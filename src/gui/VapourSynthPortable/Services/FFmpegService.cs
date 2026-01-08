@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 
 namespace VapourSynthPortable.Services;
 
@@ -9,6 +10,8 @@ namespace VapourSynthPortable.Services;
 /// </summary>
 public class FFmpegService
 {
+    private static readonly ILogger<FFmpegService> _logger = LoggingService.GetLogger<FFmpegService>();
+
     private readonly string _ffmpegPath;
     private readonly string _ffprobePath;
     private Process? _currentProcess;
@@ -25,6 +28,9 @@ public class FFmpegService
     {
         _ffmpegPath = FindExecutable("ffmpeg.exe");
         _ffprobePath = FindExecutable("ffprobe.exe");
+
+        _logger.LogInformation("FFmpegService initialized. FFmpeg: {FFmpegPath}, Available: {IsAvailable}",
+            _ffmpegPath, IsAvailable);
     }
 
     private static string FindExecutable(string name)
@@ -74,13 +80,20 @@ public class FFmpegService
             p?.WaitForExit(1000);
             return p?.ExitCode == 0;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to check {Exe} in PATH", exe);
+            return false;
+        }
     }
 
     public async Task<bool> EncodeAsync(ExportSettings settings, CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("Starting encode: {InputPath} -> {OutputPath}", settings.InputPath, settings.OutputPath);
+
         if (!File.Exists(settings.InputPath))
         {
+            _logger.LogError("Input file not found: {InputPath}", settings.InputPath);
             LogMessage?.Invoke(this, $"Error: Input file not found: {settings.InputPath}");
             return false;
         }
@@ -88,6 +101,7 @@ public class FFmpegService
         _isCancelled = false;
         var args = BuildFFmpegArguments(settings);
 
+        _logger.LogDebug("FFmpeg args: {Args}", args);
         LogMessage?.Invoke(this, $"Starting encode: {Path.GetFileName(settings.InputPath)}");
         LogMessage?.Invoke(this, $"Output: {settings.OutputPath}");
         LogMessage?.Invoke(this, $"FFmpeg args: {args}");
@@ -129,19 +143,26 @@ public class FFmpegService
 
             if (success)
             {
+                _logger.LogInformation("Encoding completed successfully: {OutputPath}", settings.OutputPath);
                 LogMessage?.Invoke(this, "Encoding completed successfully!");
             }
             else if (_isCancelled)
             {
+                _logger.LogInformation("Encoding cancelled by user");
                 LogMessage?.Invoke(this, "Encoding cancelled.");
                 // Clean up partial file
                 if (File.Exists(settings.OutputPath))
                 {
-                    try { File.Delete(settings.OutputPath); } catch { }
+                    try { File.Delete(settings.OutputPath); }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to delete partial output file: {OutputPath}", settings.OutputPath);
+                    }
                 }
             }
             else
             {
+                _logger.LogError("Encoding failed with exit code: {ExitCode}", _currentProcess.ExitCode);
                 LogMessage?.Invoke(this, $"Encoding failed with exit code: {_currentProcess.ExitCode}");
             }
 
@@ -149,11 +170,13 @@ public class FFmpegService
         }
         catch (OperationCanceledException)
         {
+            _logger.LogInformation("Encoding operation cancelled");
             Cancel();
             return false;
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Encoding failed with exception");
             LogMessage?.Invoke(this, $"Error: {ex.Message}");
             return false;
         }
@@ -329,16 +352,21 @@ public class FFmpegService
 
             if (double.TryParse(output.Trim(), out var duration))
             {
+                _logger.LogDebug("Duration of {FilePath}: {Duration:F2}s", filePath, duration);
                 return duration;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get duration for: {FilePath}", filePath);
+        }
 
         return 0;
     }
 
     public void Cancel()
     {
+        _logger.LogInformation("Cancelling encoding");
         _isCancelled = true;
         if (_currentProcess != null && !_currentProcess.HasExited)
         {
@@ -346,7 +374,10 @@ public class FFmpegService
             {
                 _currentProcess.Kill();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error killing FFmpeg process");
+            }
         }
     }
 

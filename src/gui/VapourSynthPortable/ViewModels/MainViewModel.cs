@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Management.Automation;
@@ -11,11 +12,13 @@ using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly BuildService _buildService;
     private readonly PluginService _pluginService;
     private CancellationTokenSource? _buildCts;
+    private readonly List<(PluginViewModel vm, PropertyChangedEventHandler handler)> _pluginHandlers = [];
+    private bool _disposed;
 
     public MainViewModel()
     {
@@ -140,8 +143,8 @@ public partial class MainViewModel : ObservableObject
                 vm.IsInstalled = _pluginService.IsPluginInstalled(plugin);
                 vm.Status = _pluginService.GetPluginStatus(plugin, false);
 
-                // Subscribe to IsEnabled changes to auto-save
-                vm.PropertyChanged += (s, e) =>
+                // Subscribe to IsEnabled changes to auto-save (store handler for cleanup)
+                PropertyChangedEventHandler handler = (s, e) =>
                 {
                     if (e.PropertyName == nameof(PluginViewModel.IsEnabled))
                     {
@@ -149,6 +152,8 @@ public partial class MainViewModel : ObservableObject
                         OnPropertyChanged(nameof(EnabledPluginCount));
                     }
                 };
+                vm.PropertyChanged += handler;
+                _pluginHandlers.Add((vm, handler));
 
                 Plugins.Add(vm);
             }
@@ -448,5 +453,20 @@ public partial class MainViewModel : ObservableObject
     {
         BuildLog += text;
         OnPropertyChanged(nameof(BuildLog));
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        // Unsubscribe all plugin handlers
+        foreach (var (vm, handler) in _pluginHandlers)
+        {
+            vm.PropertyChanged -= handler;
+        }
+        _pluginHandlers.Clear();
+
+        _buildCts?.Dispose();
     }
 }

@@ -6,11 +6,15 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using VapourSynthPortable.Models;
+using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable.ViewModels;
 
-public partial class RestoreViewModel : ObservableObject
+public partial class RestoreViewModel : ObservableObject, IDisposable
 {
+    private readonly IMediaPoolService _mediaPool;
+    private bool _disposed;
+
     [ObservableProperty]
     private bool _isSimpleMode = true;
 
@@ -29,14 +33,12 @@ public partial class RestoreViewModel : ObservableObject
     [ObservableProperty]
     private RestorePreset? _selectedPreset;
 
-    [ObservableProperty]
-    private string _sourcePath = "";
+    // Source is now managed by MediaPoolService
+    public string SourcePath => _mediaPool.CurrentSource?.FilePath ?? "";
+    public bool HasSource => _mediaPool.HasSource;
 
     [ObservableProperty]
     private string _outputPath = "";
-
-    [ObservableProperty]
-    private bool _hasSource;
 
     [ObservableProperty]
     private ObservableCollection<RestoreJob> _jobQueue = [];
@@ -82,15 +84,66 @@ public partial class RestoreViewModel : ObservableObject
     private readonly string _vapourSynthPath;
     private readonly string _pythonPath;
 
-    public RestoreViewModel()
+    public RestoreViewModel(IMediaPoolService mediaPool)
     {
+        _mediaPool = mediaPool;
+        _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
+
         LoadPresets();
         DetectGpu();
 
         var basePath = AppDomain.CurrentDomain.BaseDirectory;
-        var distPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "..", "dist"));
+        var distPath = FindProjectRoot(basePath) ?? basePath;
+        distPath = Path.Combine(distPath, "dist");
         _vapourSynthPath = Path.Combine(distPath, "vapoursynth");
         _pythonPath = Path.Combine(distPath, "python", "python.exe");
+    }
+
+    // Parameterless constructor for XAML design-time support
+    public RestoreViewModel() : this(App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService
+        ?? new MediaPoolService())
+    {
+    }
+
+    private static string? FindProjectRoot(string startDir)
+    {
+        var dir = new DirectoryInfo(startDir);
+        for (int i = 0; i < 10 && dir != null; i++)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "plugins.json")))
+                return dir.FullName;
+            dir = dir.Parent;
+        }
+        return null;
+    }
+
+    private void OnCurrentSourceChanged(object? sender, MediaItem? item)
+    {
+        OnPropertyChanged(nameof(SourcePath));
+        OnPropertyChanged(nameof(HasSource));
+
+        if (item != null)
+        {
+            // Update source info from the media item
+            SourceWidth = item.Width;
+            SourceHeight = item.Height;
+            SourceFps = item.FrameRate;
+            SourceFrameCount = item.FrameCount;
+            SourceDuration = item.DurationFormatted;
+            SourceCodec = item.Codec;
+
+            // Auto-generate output path
+            var dir = Path.GetDirectoryName(item.FilePath) ?? "";
+            var name = Path.GetFileNameWithoutExtension(item.FilePath);
+            var ext = Path.GetExtension(item.FilePath);
+            OutputPath = Path.Combine(dir, $"{name}_restored{ext}");
+
+            StatusText = $"Source: {item.Name}";
+        }
+        else
+        {
+            StatusText = "Ready";
+        }
     }
 
     private void LoadPresets()
@@ -168,7 +221,7 @@ public partial class RestoreViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task LoadSource()
+    private async Task LoadSourceAsync()
     {
         var dialog = new OpenFileDialog
         {
@@ -178,19 +231,12 @@ public partial class RestoreViewModel : ObservableObject
 
         if (dialog.ShowDialog() == true)
         {
-            SourcePath = dialog.FileName;
-            HasSource = true;
-
-            // Get source info
-            await LoadSourceInfo(dialog.FileName);
-
-            // Auto-generate output path
-            var dir = Path.GetDirectoryName(dialog.FileName) ?? "";
-            var name = Path.GetFileNameWithoutExtension(dialog.FileName);
-            var ext = Path.GetExtension(dialog.FileName);
-            OutputPath = Path.Combine(dir, $"{name}_restored{ext}");
-
-            StatusText = $"Loaded: {Path.GetFileName(SourcePath)}";
+            var item = await _mediaPool.ImportMediaAsync(dialog.FileName);
+            if (item != null)
+            {
+                _mediaPool.SetCurrentSource(item);
+                // OnCurrentSourceChanged will handle the rest
+            }
         }
     }
 
@@ -494,5 +540,14 @@ video_in = core.lsmas.LWLibavSource(r'{job.SourcePath.Replace("'", "\\'")}')
     private void ToggleMode()
     {
         IsSimpleMode = !IsSimpleMode;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _mediaPool.CurrentSourceChanged -= OnCurrentSourceChanged;
+        _cancellationTokenSource?.Dispose();
     }
 }

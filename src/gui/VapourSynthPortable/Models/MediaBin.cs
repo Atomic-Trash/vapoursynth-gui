@@ -6,6 +6,9 @@ namespace VapourSynthPortable.Models;
 public partial class MediaBin : ObservableObject
 {
     [ObservableProperty]
+    private string _id = Guid.NewGuid().ToString();
+
+    [ObservableProperty]
     private string _name = "";
 
     [ObservableProperty]
@@ -16,6 +19,9 @@ public partial class MediaBin : ObservableObject
 
     [ObservableProperty]
     private bool _isSelected;
+
+    [ObservableProperty]
+    private bool _isEditing;
 
     [ObservableProperty]
     private MediaBin? _parent;
@@ -41,4 +47,7 @@ public partial class MediaBin : ObservableObject
     public MediaType? FilterType { get; set; }
 
     public bool IsSmartBin => FilterType.HasValue;
+
+    // Custom bins can be renamed/deleted
+    public bool IsCustomBin { get; set; }
 }

@@ -9,17 +9,18 @@ using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable.ViewModels;
 
-public partial class EditViewModel : ObservableObject
+public partial class EditViewModel : ObservableObject, IDisposable
 {
-    private readonly ThumbnailService _thumbnailService;
+    private readonly IMediaPoolService _mediaPoolService;
     private readonly Stack<TimelineAction> _undoStack = new();
     private readonly Stack<TimelineAction> _redoStack = new();
+    private bool _disposed;
 
     [ObservableProperty]
     private Timeline _timeline = new();
 
-    [ObservableProperty]
-    private ObservableCollection<MediaItem> _mediaPool = [];
+    // Media pool is now shared across all pages via IMediaPoolService
+    public ObservableCollection<MediaItem> MediaPool => _mediaPoolService.MediaPool;
 
     [ObservableProperty]
     private MediaItem? _selectedMediaItem;
@@ -57,11 +58,39 @@ public partial class EditViewModel : ObservableObject
     [ObservableProperty]
     private TransitionPreset? _selectedTransitionPreset;
 
-    public EditViewModel()
+    public EditViewModel(IMediaPoolService mediaPoolService)
     {
-        _thumbnailService = new ThumbnailService();
+        _mediaPoolService = mediaPoolService;
+        _mediaPoolService.CurrentSourceChanged += OnCurrentSourceChanged;
+        _mediaPoolService.MediaPoolChanged += OnMediaPoolChanged;
+
         InitializeTimeline();
         LoadTransitionPresets();
+    }
+
+    // Parameterless constructor for XAML design-time support
+    public EditViewModel() : this(App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService
+        ?? new MediaPoolService())
+    {
+    }
+
+    private void OnCurrentSourceChanged(object? sender, MediaItem? item)
+    {
+        // When current source changes (from any page), update the source monitor
+        if (item != null)
+        {
+            SourceMonitorItem = item;
+            SourceInPoint = 0;
+            SourceOutPoint = item.Duration;
+            SelectedMediaItem = item;
+            StatusText = $"Source: {item.Name}";
+        }
+    }
+
+    private void OnMediaPoolChanged(object? sender, EventArgs e)
+    {
+        // Notify UI that the media pool has changed (media imported from another page)
+        OnPropertyChanged(nameof(MediaPool));
     }
 
     private void LoadTransitionPresets()
@@ -100,62 +129,18 @@ public partial class EditViewModel : ObservableObject
 
         if (dialog.ShowDialog() == true)
         {
-            foreach (var file in dialog.FileNames)
-            {
-                await AddMediaItem(file);
-            }
+            // Import via the shared service
+            await _mediaPoolService.ImportMediaAsync(dialog.FileNames);
             StatusText = $"Imported {dialog.FileNames.Length} file(s)";
         }
-    }
-
-    private async Task AddMediaItem(string filePath)
-    {
-        var mediaItem = new MediaItem
-        {
-            Name = Path.GetFileName(filePath),
-            FilePath = filePath,
-            MediaType = GetMediaType(filePath),
-            DateModified = File.GetLastWriteTime(filePath),
-            FileSize = new FileInfo(filePath).Length
-        };
-
-        // Get metadata via FFprobe
-        var mediaInfo = await _thumbnailService.GetMediaInfoAsync(filePath);
-        if (mediaInfo != null)
-        {
-            mediaItem.Width = mediaInfo.Width;
-            mediaItem.Height = mediaInfo.Height;
-            mediaItem.Duration = mediaInfo.Duration;
-            mediaItem.FrameRate = mediaInfo.FrameRate;
-            mediaItem.FrameCount = mediaInfo.FrameCount;
-            mediaItem.Codec = mediaInfo.VideoCodec;
-        }
-
-        // Generate thumbnail
-        if (mediaItem.MediaType == MediaType.Video || mediaItem.MediaType == MediaType.Image)
-        {
-            mediaItem.Thumbnail = await _thumbnailService.GenerateThumbnailAsync(filePath);
-        }
-
-        MediaPool.Add(mediaItem);
-    }
-
-    private MediaType GetMediaType(string filePath)
-    {
-        var ext = Path.GetExtension(filePath).ToLowerInvariant();
-        return ext switch
-        {
-            ".mp4" or ".mkv" or ".avi" or ".mov" or ".webm" or ".mxf" or ".m2ts" or ".ts" => MediaType.Video,
-            ".mp3" or ".wav" or ".aac" or ".flac" or ".ogg" or ".m4a" => MediaType.Audio,
-            ".jpg" or ".jpeg" or ".png" or ".bmp" or ".tiff" or ".gif" => MediaType.Image,
-            _ => MediaType.Unknown
-        };
     }
 
     partial void OnSelectedMediaItemChanged(MediaItem? value)
     {
         if (value != null)
         {
+            // Set as current source in the shared service (updates all pages)
+            _mediaPoolService.SetCurrentSource(value);
             SourceMonitorItem = value;
             SourceInPoint = 0;
             SourceOutPoint = value.Duration;
@@ -322,6 +307,7 @@ public partial class EditViewModel : ObservableObject
 
         containingTrack.Clips.Add(secondClip);
         StatusText = "Clip split at playhead";
+        ToastService.Instance.ShowSuccess("Split", clip.Name);
     }
 
     [RelayCommand]
@@ -336,6 +322,7 @@ public partial class EditViewModel : ObservableObject
         var clipName = Timeline.SelectedClip.Name;
         Timeline.DeleteSelectedClip();
         StatusText = $"Cut {clipName}";
+        ToastService.Instance.ShowInfo("Cut", clipName);
     }
 
     [RelayCommand]
@@ -345,6 +332,7 @@ public partial class EditViewModel : ObservableObject
 
         _clipboardClip = Timeline.SelectedClip.Clone();
         StatusText = $"Copied {Timeline.SelectedClip.Name}";
+        ToastService.Instance.ShowInfo("Copied", Timeline.SelectedClip.Name);
     }
 
     private TimelineClip? _clipboardClip;
@@ -376,6 +364,7 @@ public partial class EditViewModel : ObservableObject
         targetTrack.Clips.Add(newClip);
         Timeline.SelectedClip = newClip;
         StatusText = "Pasted clip";
+        ToastService.Instance.ShowSuccess("Pasted", newClip.Name);
     }
 
     [RelayCommand]
@@ -390,6 +379,7 @@ public partial class EditViewModel : ObservableObject
         OnPropertyChanged(nameof(CanUndo));
         OnPropertyChanged(nameof(CanRedo));
         StatusText = $"Undo: {action.Description}";
+        ToastService.Instance.ShowInfo("Undo", action.Description);
     }
 
     [RelayCommand]
@@ -404,6 +394,7 @@ public partial class EditViewModel : ObservableObject
         OnPropertyChanged(nameof(CanUndo));
         OnPropertyChanged(nameof(CanRedo));
         StatusText = $"Redo: {action.Description}";
+        ToastService.Instance.ShowInfo("Redo", action.Description);
     }
 
     private void SaveUndoState(string description)
@@ -777,6 +768,15 @@ public partial class EditViewModel : ObservableObject
         SaveUndoState("Resize text overlay");
         overlay.DurationFrames = Math.Max(1, newDuration);
         StatusText = "Resized text overlay";
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _mediaPoolService.CurrentSourceChanged -= OnCurrentSourceChanged;
+        _mediaPoolService.MediaPoolChanged -= OnMediaPoolChanged;
     }
 }
 

@@ -9,29 +9,32 @@ using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable.ViewModels;
 
-public partial class PreviewViewModel : ObservableObject
+public partial class PreviewViewModel : ObservableObject, IDisposable
 {
     private readonly FrameExtractionService _frameService;
     private readonly FrameCacheService _cacheService;
     private CancellationTokenSource? _loadCts;
     private readonly DispatcherTimer _debounceTimer;
     private int _pendingFrameNumber;
+    private EventHandler? _debounceTickHandler;
+    private bool _disposed;
 
     public PreviewViewModel()
     {
         _frameService = new FrameExtractionService();
         _cacheService = new FrameCacheService(50);
 
-        // Debounce timer for slider changes
+        // Debounce timer for slider changes (store handler for cleanup)
         _debounceTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromMilliseconds(150)
         };
-        _debounceTimer.Tick += async (s, e) =>
+        _debounceTickHandler = async (s, e) =>
         {
             _debounceTimer.Stop();
             await LoadFrameInternalAsync(_pendingFrameNumber);
         };
+        _debounceTimer.Tick += _debounceTickHandler;
     }
 
     // State Properties
@@ -289,5 +292,21 @@ public partial class PreviewViewModel : ObservableObject
     {
         _loadCts?.Cancel();
         _frameService.Cancel();
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        // Stop and unsubscribe from debounce timer
+        _debounceTimer.Stop();
+        if (_debounceTickHandler != null)
+        {
+            _debounceTimer.Tick -= _debounceTickHandler;
+        }
+
+        _loadCts?.Dispose();
+        _cacheService.Clear();
     }
 }

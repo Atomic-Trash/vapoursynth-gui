@@ -50,7 +50,10 @@ public class PluginService
                 return list != null ? new HashSet<string>(list) : new HashSet<string>();
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load enabled plugins from {_enabledPluginsPath}: {ex.Message}");
+        }
 
         // Default: all plugins enabled
         return LoadPlugins().Select(p => p.Name).ToHashSet();
