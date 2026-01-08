@@ -222,6 +222,10 @@
 
                 <!-- Preview Area -->
                 <Grid Grid.Row="0">
+                    <!-- Video Player -->
+                    <controls:VideoPlayerControl x:Name="PreviewPlayer"
+                                                 Visibility="{Binding HasSource, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
                     <!-- No source placeholder -->
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                                 Visibility="{Binding HasSource, Converter={StaticResource InverseBoolToVisibilityConverter}}">
@@ -234,21 +238,6 @@
                         <Button Content="Load Source Video" Command="{Binding LoadSourceCommand}"
                                 Style="{StaticResource SecondaryButton}" Margin="0,20,0,0"/>
                     </StackPanel>
-
-                    <!-- Source loaded indicator -->
-                    <Border Background="#111" CornerRadius="4" Padding="20"
-                            VerticalAlignment="Center" HorizontalAlignment="Center"
-                            Visibility="{Binding HasSource, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel>
-                            <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="36"
-                                       Foreground="#0E639C" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding SourcePath}" FontSize="11" Foreground="#AAA"
-                                       HorizontalAlignment="Center" Margin="0,8,0,0"
-                                       MaxWidth="400" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="Preview requires mpv integration" FontSize="10"
-                                       Foreground="#666" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
 
                     <!-- Compare mode overlay -->
                     <Border Background="#CC1E1E1E" Visibility="{Binding IsCompareMode, Converter={StaticResource BoolToVisibilityConverter}}"

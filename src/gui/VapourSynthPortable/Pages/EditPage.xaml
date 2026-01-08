@@ -180,6 +180,10 @@
 
                     <!-- Preview area -->
                     <Grid Grid.Row="1">
+                        <!-- Video Player -->
+                        <controls:VideoPlayerControl x:Name="SourcePlayer"
+                                                     Visibility="{Binding SourceMonitorItem, Converter={StaticResource NullToVis}, ConverterParameter=Invert}"/>
+
                         <!-- Placeholder when no source -->
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                                     Visibility="{Binding SourceMonitorItem, Converter={StaticResource NullToVis}}">
@@ -188,20 +192,6 @@
                             <TextBlock Text="Select media from pool" FontSize="11" Foreground="#555"
                                        HorizontalAlignment="Center" Margin="0,10,0,0"/>
                         </StackPanel>
-
-                        <!-- Source info -->
-                        <Border VerticalAlignment="Center" HorizontalAlignment="Center"
-                                Visibility="{Binding SourceMonitorItem, Converter={StaticResource NullToVis}, ConverterParameter=Invert}">
-                            <StackPanel>
-                                <Image Source="{Binding SourceMonitorItem.Thumbnail}"
-                                       MaxWidth="200" MaxHeight="120" Stretch="Uniform"/>
-                                <TextBlock Text="{Binding SourceMonitorItem.Name}" Foreground="#AAA"
-                                           FontSize="11" HorizontalAlignment="Center" Margin="0,8,0,0"
-                                           TextTrimming="CharacterEllipsis" MaxWidth="180"/>
-                                <TextBlock Text="{Binding SourceMonitorItem.Resolution}" Foreground="#666"
-                                           FontSize="10" HorizontalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
                     </Grid>
 
                     <!-- Source transport -->
@@ -266,10 +256,15 @@
 
                     <!-- Preview area -->
                     <Grid Grid.Row="1">
-                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <!-- Video Player for timeline playback -->
+                        <controls:VideoPlayerControl x:Name="ProgramPlayer"/>
+
+                        <!-- Placeholder when empty timeline -->
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Visibility="{Binding Timeline.HasClips, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                             <TextBlock Text="&#xE8B8;" FontFamily="Segoe MDL2 Assets" FontSize="36"
                                        Foreground="#333" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Timeline output" FontSize="11" Foreground="#555"
+                            <TextBlock Text="Add clips to timeline" FontSize="11" Foreground="#555"
                                        HorizontalAlignment="Center" Margin="0,10,0,0"/>
                             <TextBlock Text="{Binding Timeline.DurationFormatted, StringFormat='Duration: {0}'}"
                                        FontSize="10" Foreground="#444"

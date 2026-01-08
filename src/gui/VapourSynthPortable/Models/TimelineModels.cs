@@ -240,6 +240,8 @@ public partial class Timeline : ObservableObject
 
     public double DurationSeconds => DurationFrames / FrameRate;
 
+    public bool HasClips => Tracks.Any(t => t.Clips.Count > 0);
+
     public string DurationFormatted
     {
         get
