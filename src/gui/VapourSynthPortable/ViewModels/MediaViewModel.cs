@@ -90,6 +90,9 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     private ViewMode _currentViewMode = ViewMode.Grid;
 
     [ObservableProperty]
+    private bool _isPreviewPanelExpanded = true;
+
+    [ObservableProperty]
     private string _sortColumn = "Name";
 
     [ObservableProperty]
@@ -195,11 +198,15 @@ public partial class MediaViewModel : ObservableObject, IDisposable
             items = SelectedBin.Items;
         }
 
-        // Filter by search
+        // Filter by search (searches name, resolution, codec, and duration)
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
             var search = SearchText.ToLowerInvariant();
-            items = items.Where(i => i.Name.ToLowerInvariant().Contains(search));
+            items = items.Where(i =>
+                i.Name.ToLowerInvariant().Contains(search) ||
+                (i.Resolution?.ToLowerInvariant().Contains(search) ?? false) ||
+                (i.Codec?.ToLowerInvariant().Contains(search) ?? false) ||
+                (i.DurationFormatted?.ToLowerInvariant().Contains(search) ?? false));
         }
 
         // Apply sorting

@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:VapourSynthPortable.ViewModels"
              xmlns:controls="clr-namespace:VapourSynthPortable.Controls"
+             xmlns:local="clr-namespace:VapourSynthPortable.Pages"
              d:DataContext="{d:DesignInstance Type=vm:MediaViewModel}"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -12,6 +13,9 @@
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- String to bool converter for clear button visibility -->
+        <local:StringToBoolConverter x:Key="StringToBoolConverter"/>
 
         <!-- Media Item Grid Template -->
         <DataTemplate x:Key="GridItemTemplate">
@@ -300,12 +304,34 @@
                 </StackPanel>
 
                 <!-- Search Box -->
-                <Border Grid.Column="1" Background="#1E1E1E" CornerRadius="4" Margin="20,0" MaxWidth="300">
+                <Border x:Name="SearchBorder" Grid.Column="1" Background="#1E1E1E" CornerRadius="4" Margin="20,0" MaxWidth="300"
+                        BorderThickness="1" BorderBrush="Transparent">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=SearchBox}" Value="True">
+                                    <Setter Property="BorderBrush" Value="#0078D4"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
                     <Grid>
-                        <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Search icon -->
+                        <TextBlock Grid.Column="0" Text="&#xE721;" FontFamily="Segoe MDL2 Assets"
+                                   Foreground="#666" FontSize="14" VerticalAlignment="Center" Margin="10,0,0,0"/>
+
+                        <TextBox x:Name="SearchBox" Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                  Background="Transparent" BorderThickness="0"
-                                 Foreground="#CCC" Padding="10,8" VerticalAlignment="Center"/>
-                        <TextBlock Text="Search media..." Foreground="#555" Margin="12,0"
+                                 Foreground="#CCC" Padding="8,8" VerticalAlignment="Center"/>
+
+                        <!-- Placeholder text -->
+                        <TextBlock Grid.Column="1" Text="Search name, codec, resolution..." Foreground="#555" Margin="8,0"
                                    VerticalAlignment="Center" IsHitTestVisible="False">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
@@ -318,6 +344,23 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
+
+                        <!-- Clear button -->
+                        <Button Grid.Column="2" x:Name="ClearSearchButton" Click="ClearSearchButton_Click"
+                                Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                Padding="8,4" VerticalAlignment="Center" ToolTip="Clear search (Esc)">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SearchText, Converter={StaticResource StringToBoolConverter}}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" Foreground="#888" FontSize="10"/>
+                        </Button>
                     </Grid>
                 </Border>
 
@@ -338,7 +381,18 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="280"/>
+                <ColumnDefinition x:Name="PreviewColumn">
+                    <ColumnDefinition.Style>
+                        <Style TargetType="ColumnDefinition">
+                            <Setter Property="Width" Value="280"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPreviewPanelExpanded}" Value="False">
+                                    <Setter Property="Width" Value="Auto"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ColumnDefinition.Style>
+                </ColumnDefinition>
             </Grid.ColumnDefinitions>
 
             <!-- Bins Panel -->
@@ -502,7 +556,7 @@
                         </Grid.RowDefinitions>
 
                         <!-- Column Headers -->
-                        <Border Grid.Row="0" Background="#1E1E1E" Padding="8,6">
+                        <Border Grid.Row="0" Background="#2D2D2D" Padding="8,6" CornerRadius="4,4,0,0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="80"/>
@@ -601,13 +655,76 @@
             <!-- Preview & Properties Panel -->
             <Grid Grid.Column="2" Margin="10,0,0,0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*" MinHeight="200"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="200"/>
+                    <RowDefinition>
+                        <RowDefinition.Style>
+                            <Style TargetType="RowDefinition">
+                                <Setter Property="Height" Value="*"/>
+                                <Setter Property="MinHeight" Value="200"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPreviewPanelExpanded}" Value="False">
+                                        <Setter Property="Height" Value="0"/>
+                                        <Setter Property="MinHeight" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </RowDefinition.Style>
+                    </RowDefinition>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition>
+                        <RowDefinition.Style>
+                            <Style TargetType="RowDefinition">
+                                <Setter Property="Height" Value="200"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPreviewPanelExpanded}" Value="False">
+                                        <Setter Property="Height" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </RowDefinition.Style>
+                    </RowDefinition>
                 </Grid.RowDefinitions>
 
+                <!-- Collapse Toggle Header -->
+                <Grid Grid.Row="0" Margin="0,0,0,8">
+                    <ToggleButton x:Name="PreviewToggle"
+                                  IsChecked="{Binding IsPreviewPanelExpanded}"
+                                  Background="Transparent" BorderThickness="0"
+                                  HorizontalAlignment="Stretch" Cursor="Hand"
+                                  ToolTip="Toggle preview panel (P)">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <Border Background="#252526" CornerRadius="4" Padding="8,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Preview" FontSize="12" FontWeight="SemiBold"
+                                                   Foreground="#F1F1F1" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" FontFamily="Segoe MDL2 Assets" FontSize="10"
+                                                   Foreground="#888" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="&#xE76C;"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType=ToggleButton}}" Value="False">
+                                                            <Setter Property="Text" Value="&#xE76B;"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+                                </Border>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+                </Grid>
+
                 <!-- Video Player Preview -->
-                <Border Grid.Row="0" Background="#1A1A1A" CornerRadius="8">
+                <Border Grid.Row="1" Background="#1A1A1A" CornerRadius="8"
+                        Visibility="{Binding IsPreviewPanelExpanded, Converter={StaticResource BoolToVis}}">
                     <Grid>
                         <!-- Video Player Control -->
                         <controls:VideoPlayerControl x:Name="VideoPlayer"/>
@@ -626,7 +743,8 @@
                 </Border>
 
                 <!-- Play Selected Button -->
-                <Border Grid.Row="1" Padding="0,8">
+                <Border Grid.Row="2" Padding="0,8"
+                        Visibility="{Binding IsPreviewPanelExpanded, Converter={StaticResource BoolToVis}}">
                     <Button x:Name="PlaySelectedButton" Content="Play Selected"
                             Style="{StaticResource PrimaryButton}"
                             HorizontalAlignment="Stretch"
@@ -635,7 +753,8 @@
                 </Border>
 
                 <!-- Properties Panel -->
-                <Border Grid.Row="2" Background="#252526" CornerRadius="8">
+                <Border Grid.Row="3" Background="#252526" CornerRadius="8"
+                        Visibility="{Binding IsPreviewPanelExpanded, Converter={StaticResource BoolToVis}}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="15,10">
                         <StackPanel DataContext="{Binding SelectedItem}">
                             <!-- File name -->
@@ -693,10 +812,16 @@
 
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="#AAA"/>
 
-                <!-- Selection count -->
-                <TextBlock Grid.Column="1" Text="{Binding SelectionStatusText}" Foreground="#0078D4"
-                           FontWeight="SemiBold" Margin="0,0,20,0"
-                           Visibility="{Binding SelectionStatusText, Converter={StaticResource StringToVis}}"/>
+                <!-- Selection count badge -->
+                <Border Grid.Column="1" Background="#0078D4" CornerRadius="3" Padding="8,3" Margin="0,0,20,0"
+                        Visibility="{Binding SelectionStatusText, Converter={StaticResource StringToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE762;" FontFamily="Segoe MDL2 Assets" FontSize="11"
+                                   Foreground="White" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="{Binding SelectionStatusText}" Foreground="White"
+                                   FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <TextBlock Foreground="#888" Margin="0,0,15,0">

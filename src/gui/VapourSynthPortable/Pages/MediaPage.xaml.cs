@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -7,6 +9,22 @@ using VapourSynthPortable.Models;
 using VapourSynthPortable.ViewModels;
 
 namespace VapourSynthPortable.Pages;
+
+/// <summary>
+/// Converts a string to a boolean (true if not empty/null)
+/// </summary>
+public class StringToBoolConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return !string.IsNullOrEmpty(value as string);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
 
 public partial class MediaPage : UserControl
 {
@@ -120,6 +138,16 @@ public partial class MediaPage : UserControl
         }
     }
 
+    // Clear search button click
+    private void ClearSearchButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.SearchText = string.Empty;
+        }
+        SearchBox?.Focus();
+    }
+
     // Handle double-click on media items to play them
     private void MediaListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
@@ -189,6 +217,20 @@ public partial class MediaPage : UserControl
     // Handle keyboard shortcuts for the media page
     private void MediaPage_KeyDown(object sender, KeyEventArgs e)
     {
+        // Escape: Clear search if in search box, otherwise deselect
+        if (e.Key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            if (e.OriginalSource is TextBox textBox && textBox == SearchBox)
+            {
+                if (!string.IsNullOrEmpty(ViewModel?.SearchText))
+                {
+                    ViewModel.SearchText = string.Empty;
+                    e.Handled = true;
+                    return;
+                }
+            }
+        }
+
         // Ctrl+A: Select all
         if (e.Key == Key.A && Keyboard.Modifiers == ModifierKeys.Control)
         {
@@ -228,6 +270,17 @@ public partial class MediaPage : UserControl
             if (e.OriginalSource is not TextBox)
             {
                 PlaySelectedItem();
+                e.Handled = true;
+            }
+            return;
+        }
+
+        // P: Toggle preview panel
+        if (e.Key == Key.P && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            if (e.OriginalSource is not TextBox && ViewModel != null)
+            {
+                ViewModel.IsPreviewPanelExpanded = !ViewModel.IsPreviewPanelExpanded;
                 e.Handled = true;
             }
             return;
