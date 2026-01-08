@@ -23,6 +23,9 @@ public partial class MediaBin : ObservableObject
     [ObservableProperty]
     private bool _isEditing;
 
+    // Store original name when editing starts (for cancel support)
+    public string? EditingOriginalName { get; set; }
+
     [ObservableProperty]
     private MediaBin? _parent;
 

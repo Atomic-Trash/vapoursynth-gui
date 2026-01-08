@@ -6,16 +6,64 @@
              d:DataContext="{d:DesignInstance Type=vm:MediaViewModel}"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d">
+             mc:Ignorable="d"
+             KeyDown="MediaPage_KeyDown"
+             Focusable="True">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
         <!-- Media Item Grid Template -->
         <DataTemplate x:Key="GridItemTemplate">
-            <Border Background="#2D2D2D" CornerRadius="4" Margin="4" Width="160" Cursor="Hand"
+            <Border x:Name="GridItemBorder" CornerRadius="4" Margin="4" Width="160" Cursor="Hand"
                     BorderBrush="{Binding IsSelected, Converter={StaticResource BoolToBorderBrush}}"
                     BorderThickness="2">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="#2D2D2D"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#383838"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Add to Bin" ItemsSource="{Binding DataContext.CustomBins, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                            <MenuItem.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </MenuItem.ItemTemplate>
+                            <MenuItem.ItemContainerStyle>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="Command" Value="{Binding DataContext.AddItemToBinCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <Setter Property="CommandParameter" Value="{Binding}"/>
+                                </Style>
+                            </MenuItem.ItemContainerStyle>
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Reveal in Explorer"
+                                  Command="{Binding DataContext.RevealInExplorerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding}">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE8DA;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Remove from Pool"
+                                  Command="{Binding DataContext.RemoveFromPoolCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding}">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#C75050"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="90"/>
@@ -98,7 +146,53 @@
 
         <!-- Media Item List Template -->
         <DataTemplate x:Key="ListItemTemplate">
-            <Border Background="#2D2D2D" CornerRadius="4" Margin="2" Padding="8">
+            <Border CornerRadius="4" Margin="2" Padding="8">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="#2D2D2D"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#383838"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Add to Bin" ItemsSource="{Binding DataContext.CustomBins, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                            <MenuItem.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </MenuItem.ItemTemplate>
+                            <MenuItem.ItemContainerStyle>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="Command" Value="{Binding DataContext.AddItemToBinCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <Setter Property="CommandParameter" Value="{Binding}"/>
+                                </Style>
+                            </MenuItem.ItemContainerStyle>
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Reveal in Explorer"
+                                  Command="{Binding DataContext.RevealInExplorerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding}">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE8DA;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Remove from Pool"
+                                  Command="{Binding DataContext.RemoveFromPoolCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding}">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#C75050"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="80"/>
@@ -208,7 +302,7 @@
                 <!-- Search Box -->
                 <Border Grid.Column="1" Background="#1E1E1E" CornerRadius="4" Margin="20,0" MaxWidth="300">
                     <Grid>
-                        <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                        <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                  Background="Transparent" BorderThickness="0"
                                  Foreground="#CCC" Padding="10,8" VerticalAlignment="Center"/>
                         <TextBlock Text="Search media..." Foreground="#555" Margin="12,0"
@@ -263,7 +357,8 @@
                              Background="Transparent" BorderThickness="0">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="5,4">
+                                <Grid Margin="5,4" AllowDrop="True"
+                                      DragOver="BinItem_DragOver" Drop="BinItem_Drop">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
@@ -335,27 +430,48 @@
                     <!-- Empty state -->
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                                 Visibility="{Binding DisplayedItems.Count, Converter={StaticResource CountToVis}}">
-                        <TextBlock Text="No media imported" FontSize="18" Foreground="#555"
-                                   HorizontalAlignment="Center"/>
-                        <TextBlock Text="Click 'Import Media' or drag files here" FontSize="12"
-                                   Foreground="#444" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        <!-- Icon -->
+                        <Border Width="64" Height="64" CornerRadius="32" Background="#2D2D2D" Margin="0,0,0,16">
+                            <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="28"
+                                       Foreground="#555" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="{Binding EmptyStateTitle}" FontSize="16" Foreground="#888"
+                                   HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding EmptyStateSubtitle}" FontSize="12"
+                                   Foreground="#555" HorizontalAlignment="Center" Margin="0,8,0,16"
+                                   TextWrapping="Wrap" MaxWidth="300" TextAlignment="Center"/>
+                        <!-- Import button in empty state (only when no media) -->
+                        <Button Content="Import Media" Style="{StaticResource PrimaryButton}"
+                                Command="{Binding ImportMediaCommand}"
+                                Visibility="{Binding HasNoMedia, Converter={StaticResource BoolToVis}}"
+                                Padding="16,8"/>
                     </StackPanel>
 
-                    <!-- Loading indicator -->
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                                Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="Importing media..." FontSize="14" Foreground="#888"/>
-                    </StackPanel>
+                    <!-- Loading indicator with progress -->
+                    <Border VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Background="#2D2D2D" CornerRadius="8" Padding="24,16"
+                            Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Width="200">
+                            <TextBlock Text="{Binding ImportProgressText}" FontSize="13" Foreground="#CCC"
+                                       HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                            <ProgressBar Value="{Binding ImportProgress}" Minimum="0" Maximum="100"
+                                         Height="6" Background="#1A1A1A" Foreground="#0078D4"/>
+                        </StackPanel>
+                    </Border>
 
                     <!-- Grid View -->
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10"
                                   Visibility="{Binding CurrentViewMode, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Grid}">
                         <ListBox x:Name="MediaListBox" ItemsSource="{Binding DisplayedItems}"
                                  SelectedItem="{Binding SelectedItem}"
+                                 SelectionMode="Extended"
                                  ItemTemplate="{StaticResource GridItemTemplate}"
                                  Background="Transparent" BorderThickness="0"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                 MouseDoubleClick="MediaListBox_MouseDoubleClick">
+                                 MouseDoubleClick="MediaListBox_MouseDoubleClick"
+                                 SelectionChanged="MediaListBox_SelectionChanged"
+                                 PreviewMouseLeftButtonDown="MediaListBox_PreviewMouseLeftButtonDown"
+                                 PreviewMouseMove="MediaListBox_PreviewMouseMove">
                             <ListBox.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel/>
@@ -444,9 +560,13 @@
                         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                             <ListBox x:Name="MediaListView" ItemsSource="{Binding DisplayedItems}"
                                      SelectedItem="{Binding SelectedItem}"
+                                     SelectionMode="Extended"
                                      ItemTemplate="{StaticResource ListItemTemplate}"
                                      Background="Transparent" BorderThickness="0"
-                                     MouseDoubleClick="MediaListBox_MouseDoubleClick">
+                                     MouseDoubleClick="MediaListBox_MouseDoubleClick"
+                                     SelectionChanged="MediaListBox_SelectionChanged"
+                                     PreviewMouseLeftButtonDown="MediaListBox_PreviewMouseLeftButtonDown"
+                                     PreviewMouseMove="MediaListBox_PreviewMouseMove">
                                 <ListBox.ItemContainerStyle>
                                     <Style TargetType="ListBoxItem">
                                         <Setter Property="Background" Value="Transparent"/>
@@ -568,11 +688,17 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="#888"/>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <!-- Selection count -->
+                <TextBlock Grid.Column="1" Text="{Binding SelectionStatusText}" Foreground="#0078D4"
+                           FontWeight="SemiBold" Margin="0,0,20,0"
+                           Visibility="{Binding SelectionStatusText, Converter={StaticResource StringToVis}}"/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <TextBlock Foreground="#666" Margin="0,0,15,0">
                         <Run Text="{Binding VideoCount, Mode=OneWay}"/> <Run Text="videos"/>
                     </TextBlock>

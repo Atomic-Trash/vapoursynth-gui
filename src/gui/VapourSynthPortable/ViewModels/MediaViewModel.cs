@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -34,11 +35,53 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private MediaItem? _selectedItem;
 
+    // Multi-selection support
+    private ObservableCollection<MediaItem> _selectedItems = [];
+    public ObservableCollection<MediaItem> SelectedItems
+    {
+        get => _selectedItems;
+        set
+        {
+            if (SetProperty(ref _selectedItems, value))
+            {
+                OnPropertyChanged(nameof(SelectionStatusText));
+            }
+        }
+    }
+
+    public string SelectionStatusText => SelectedItems.Count switch
+    {
+        0 => "",
+        1 => "1 item selected",
+        _ => $"{SelectedItems.Count} items selected"
+    };
+
+    /// <summary>
+    /// Notifies that the selection has changed (called from code-behind)
+    /// </summary>
+    public void NotifySelectionChanged()
+    {
+        OnPropertyChanged(nameof(SelectionStatusText));
+    }
+
     [ObservableProperty]
     private string _statusText = "Ready";
 
     [ObservableProperty]
     private bool _isLoading;
+
+    [ObservableProperty]
+    private int _importProgress;
+
+    [ObservableProperty]
+    private int _totalImportCount;
+
+    [ObservableProperty]
+    private int _completedImportCount;
+
+    public string ImportProgressText => TotalImportCount > 0
+        ? $"Importing {CompletedImportCount} of {TotalImportCount}..."
+        : "Importing...";
 
     [ObservableProperty]
     private string _searchText = "";
@@ -195,6 +238,12 @@ public partial class MediaViewModel : ObservableObject, IDisposable
         StatusText = count == total
             ? $"{count} items"
             : $"{count} of {total} items";
+
+        // Notify empty state properties
+        OnPropertyChanged(nameof(HasNoMedia));
+        OnPropertyChanged(nameof(HasNoResults));
+        OnPropertyChanged(nameof(EmptyStateTitle));
+        OnPropertyChanged(nameof(EmptyStateSubtitle));
     }
 
     [RelayCommand]
@@ -314,6 +363,7 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     private void StartEditBin(MediaBin? bin)
     {
         if (bin?.IsCustomBin != true) return;
+        bin.EditingOriginalName = bin.Name;
         bin.IsEditing = true;
     }
 
@@ -322,8 +372,23 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     {
         if (bin == null) return;
         bin.IsEditing = false;
+        bin.EditingOriginalName = null;
         SaveCustomBinsToSettings();
         _logger.LogInformation("Renamed bin to: {Name}", bin.Name);
+    }
+
+    [RelayCommand]
+    private void CancelEditBin(MediaBin? bin)
+    {
+        if (bin == null) return;
+        // Restore original name if we have one
+        if (bin.EditingOriginalName != null)
+        {
+            bin.Name = bin.EditingOriginalName;
+            bin.EditingOriginalName = null;
+        }
+        bin.IsEditing = false;
+        _logger.LogDebug("Cancelled bin rename, restored to: {Name}", bin.Name);
     }
 
     [RelayCommand]
@@ -444,6 +509,61 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void RevealInExplorer(MediaItem? item)
+    {
+        item ??= SelectedItem;
+        if (item == null || !File.Exists(item.FilePath)) return;
+
+        try
+        {
+            // Select the file in Explorer
+            Process.Start("explorer.exe", $"/select,\"{item.FilePath}\"");
+            _logger.LogDebug("Revealed in Explorer: {Path}", item.FilePath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to reveal in Explorer: {Path}", item.FilePath);
+        }
+    }
+
+    [RelayCommand]
+    private void RemoveFromPool(MediaItem? item)
+    {
+        item ??= SelectedItem;
+        if (item == null) return;
+
+        _mediaPool.RemoveMedia(item);
+        DisplayedItems.Remove(item);
+
+        if (SelectedItem == item)
+            SelectedItem = null;
+
+        OnPropertyChanged(nameof(VideoCount));
+        OnPropertyChanged(nameof(AudioCount));
+        OnPropertyChanged(nameof(ImageCount));
+
+        UpdateStatus();
+        _logger.LogInformation("Removed from pool: {Name}", item.Name);
+    }
+
+    [RelayCommand]
+    private void AddItemToBin(object? parameter)
+    {
+        // Parameter is a tuple of (MediaItem, MediaBin) or just MediaBin if using SelectedItem
+        if (parameter is MediaBin targetBin)
+        {
+            if (SelectedItem == null || targetBin.IsCustomBin != true) return;
+            if (!targetBin.Items.Contains(SelectedItem))
+            {
+                targetBin.Items.Add(SelectedItem);
+                SaveCustomBinsToSettings();
+                ToastService.Instance.ShowSuccess($"Added to {targetBin.Name}");
+                _logger.LogInformation("Added {Item} to bin {Bin}", SelectedItem.Name, targetBin.Name);
+            }
+        }
+    }
+
+    [RelayCommand]
     private void ClearAll()
     {
         _mediaPool.ClearPool();
@@ -471,6 +591,19 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     public int VideoCount => _mediaPool.MediaPool.Count(i => i.MediaType == MediaType.Video);
     public int AudioCount => _mediaPool.MediaPool.Count(i => i.MediaType == MediaType.Audio);
     public int ImageCount => _mediaPool.MediaPool.Count(i => i.MediaType == MediaType.Image);
+
+    // Empty state helpers
+    public bool HasNoMedia => _mediaPool.MediaPool.Count == 0;
+    public bool HasNoResults => !HasNoMedia && DisplayedItems.Count == 0;
+    public bool IsSearching => !string.IsNullOrWhiteSpace(SearchText);
+
+    public string EmptyStateTitle => HasNoMedia
+        ? "No media imported"
+        : (IsSearching ? "No results found" : "No items in this bin");
+
+    public string EmptyStateSubtitle => HasNoMedia
+        ? "Click 'Import Media' or drag files here to get started"
+        : (IsSearching ? $"No items match \"{SearchText}\"" : "Add items to this bin from the media pool");
 
     public void Dispose()
     {
