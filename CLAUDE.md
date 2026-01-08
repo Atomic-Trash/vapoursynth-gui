@@ -93,6 +93,27 @@ clip.set_output()
 2. Use bundled Python, not system Python
 3. Check `python*._pth` file has correct paths
 
+## Claude Code Commands
+
+This project includes custom slash commands for common workflows:
+
+### Build & Test
+- `/build` - Build the application (--debug, --clean flags)
+- `/test` - Run unit tests (--filter flag)
+- `/run` - Build and launch the app
+- `/build-portable` - Build VapourSynth distribution (minimal|standard|full)
+
+### Git Workflow
+- `/commit` - Create conventional commit (feat, fix, docs, etc.)
+- `/pr` - Create pull request with structured template
+- `/release` - Prepare a release (major|minor|patch, --dry-run)
+
+### Documentation
+- `/docs architecture` - Generate architecture documentation
+- `/docs readme` - Update README with current features
+- `/docs changelog` - Generate changelog from commits
+- `/check-updates` - Check for NuGet and plugin updates
+
 ## Resources
 
 - [VapourSynth Docs](http://www.vapoursynth.com/doc/)

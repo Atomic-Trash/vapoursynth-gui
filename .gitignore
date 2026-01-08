@@ -3,25 +3,99 @@ bin/
 obj/
 dist/
 build/
+out/
+publish/
 
 # IDE
 .vs/
 .vscode/
 *.user
 *.suo
+*.sln.docstates
+.idea/
+*.swp
+*~
 
 # OS files
 nul
 Thumbs.db
 .DS_Store
+Desktop.ini
+$RECYCLE.BIN/
 
-# Claude temp files
-.claude/
+# Claude Code - local settings (private)
+.claude/settings.local.json
+.claude/plans/
+
+# Keep Claude commands and shared config (tracked)
+!.claude/commands/
+!.claude/settings.json
+!.claude/hooks.json
 
 # Logs
 *.log
+logs/
 
-# Utility scripts
+# Utility scripts (local dev only)
 take-screenshot.ps1
 capture-all-screenshots.ps1
 list-windows.ps1
+
+# Secrets and environment
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+secrets.json
+appsettings.*.json
+!appsettings.json
+
+# Package downloads and archives
+*.7z
+*.zip
+*.tar.gz
+*.rar
+
+# NuGet packages
+packages/
+*.nupkg
+.nuget/
+
+# Test results
+TestResults/
+*.trx
+coverage/
+*.coverage
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# Rider
+.idea/
+
+# JetBrains Rider
+*.DotSettings.user
+
+# NCrunch
+*.ncrunch*
+_NCrunch_*
+
+# Chutzpah Test files
+_Chutzpah*
+
+# Backup files
+*_backup*
+*.orig
+
+# Python (if using embedded)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/

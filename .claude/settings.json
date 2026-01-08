@@ -1,0 +1,12 @@
+{
+  "project": {
+    "name": "VapourSynth Portable GUI",
+    "solution": "src/gui/VapourSynthPortable.sln",
+    "mainProject": "src/gui/VapourSynthPortable/VapourSynthPortable.csproj",
+    "testProject": "src/gui/VapourSynthPortable.Tests/VapourSynthPortable.Tests.csproj"
+  },
+  "conventions": {
+    "commitFormat": "conventional",
+    "branchNaming": "feature|fix|docs|refactor/<description>"
+  }
+}

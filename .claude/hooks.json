@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit:*)",
+        "command": "dotnet build src/gui/VapourSynthPortable.sln --no-restore -v q",
+        "description": "Verify build passes before commit"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash(git push:*)",
+        "command": "echo Consider creating a PR with /pr if on a feature branch",
+        "description": "Remind about PR creation after push"
+      }
+    ]
+  }
+}
