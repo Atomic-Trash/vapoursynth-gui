@@ -57,7 +57,7 @@
                 <TextBlock x:Name="MessageText" Text="Operation completed"
                            Foreground="#EEEEEE" FontSize="13" TextWrapping="Wrap"
                            FontFamily="{StaticResource InterMedium}"/>
-                <TextBlock x:Name="DetailText" Foreground="#888888" FontSize="11"
+                <TextBlock x:Name="DetailText" Foreground="#AAAAAA" FontSize="11"
                            TextWrapping="Wrap" Margin="0,2,0,0" Visibility="Collapsed"/>
             </StackPanel>
         </Grid>

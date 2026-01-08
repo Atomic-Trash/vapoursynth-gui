@@ -56,7 +56,7 @@ public partial class ToastNotification : UserControl
             case ToastType.Success:
                 IconBorder.Background = new SolidColorBrush(Color.FromRgb(0x2D, 0x5A, 0x2D));
                 IconText.Text = "\uE73E"; // Checkmark
-                IconText.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
+                IconText.Foreground = new SolidColorBrush(Color.FromRgb(0x5C, 0xB8, 0x5C));
                 break;
 
             case ToastType.Warning:
@@ -68,14 +68,14 @@ public partial class ToastNotification : UserControl
             case ToastType.Error:
                 IconBorder.Background = new SolidColorBrush(Color.FromRgb(0x5A, 0x2D, 0x2D));
                 IconText.Text = "\uE711"; // Error X
-                IconText.Foreground = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44));
+                IconText.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x66, 0x66));
                 break;
 
             case ToastType.Info:
             default:
                 IconBorder.Background = new SolidColorBrush(Color.FromRgb(0x2D, 0x3A, 0x5A));
                 IconText.Text = "\uE946"; // Info
-                IconText.Foreground = new SolidColorBrush(Color.FromRgb(0x63, 0x66, 0xF1));
+                IconText.Foreground = new SolidColorBrush(Color.FromRgb(0x7C, 0x7F, 0xFF));
                 break;
         }
 
