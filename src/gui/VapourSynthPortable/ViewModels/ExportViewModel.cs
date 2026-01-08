@@ -336,6 +336,23 @@ public partial class ExportViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // Check if output file exists and warn user
+        if (File.Exists(OutputPath))
+        {
+            var result = System.Windows.MessageBox.Show(
+                $"The file '{Path.GetFileName(OutputPath)}' already exists.\n\nDo you want to replace it?",
+                "Confirm Overwrite",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+            {
+                StatusText = "Export cancelled";
+                AppendLog("Export cancelled: output file already exists");
+                return;
+            }
+        }
+
         var settings = CreateExportSettings();
         var job = new ExportJob
         {

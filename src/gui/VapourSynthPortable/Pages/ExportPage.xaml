@@ -21,7 +21,7 @@
                                Foreground="#F1F1F1" Margin="0,0,0,20"/>
 
                     <!-- Input File -->
-                    <TextBlock Text="INPUT FILE" Foreground="#AAA" FontSize="11" Margin="0,0,0,8"/>
+                    <TextBlock Text="INPUT FILE" Foreground="#F1F1F1" FontSize="11" Margin="0,0,0,8"/>
                     <Grid Margin="0,0,0,15">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -30,70 +30,74 @@
                         <TextBox Grid.Column="0" Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"
                                  Padding="10,8" Margin="0,0,5,0"/>
                         <Button Grid.Column="1" Content="..." Width="35"
+                                ToolTip="Browse for input file"
                                 Style="{StaticResource SecondaryButton}"
                                 Command="{Binding BrowseInputCommand}"/>
                     </Grid>
 
                     <!-- Input Info -->
-                    <TextBlock Text="{Binding InputInfo}" Foreground="#888" FontSize="10" Margin="0,0,0,15"
+                    <TextBlock Text="{Binding InputInfo}" Foreground="#AAA" FontSize="10" Margin="0,0,0,15"
                                Visibility="{Binding InputInfo, Converter={StaticResource StringToVis}}"/>
 
                     <!-- Preset Selection -->
-                    <TextBlock Text="PRESET" Foreground="#AAA" FontSize="11" Margin="0,0,0,8"/>
+                    <TextBlock Text="PRESET" Foreground="#F1F1F1" FontSize="11" Margin="0,0,0,8"/>
                     <ComboBox ItemsSource="{Binding Presets}"
                               SelectedItem="{Binding SelectedPreset}"
                               DisplayMemberPath="Name"
                               Margin="0,0,0,5"/>
-                    <TextBlock Text="{Binding SelectedPreset.Description}" Foreground="#888" FontSize="10"
+                    <TextBlock Text="{Binding SelectedPreset.Description}" Foreground="#AAA" FontSize="10"
                                Margin="0,0,0,15" TextWrapping="Wrap"/>
 
                     <!-- Format -->
-                    <TextBlock Text="FORMAT" Foreground="#AAA" FontSize="11" Margin="0,0,0,8"/>
+                    <TextBlock Text="FORMAT" Foreground="#F1F1F1" FontSize="11" Margin="0,0,0,8"/>
                     <ComboBox ItemsSource="{Binding Formats}"
                               SelectedItem="{Binding SelectedFormat}"
                               Margin="0,0,0,20"/>
 
                     <!-- Video Settings -->
-                    <Border BorderBrush="#444" BorderThickness="0,1,0,0" Padding="0,15,0,0" Margin="0,0,0,15">
+                    <Border BorderBrush="#4A4A4A" BorderThickness="0,2,0,0" Padding="0,15,0,0" Margin="0,0,0,15">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets"
+                                           Foreground="#6366F1" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <CheckBox IsChecked="{Binding VideoEnabled}" Margin="0,0,10,0"/>
-                                <TextBlock Text="VIDEO" Foreground="#AAA" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock Text="VIDEO" Foreground="#F1F1F1" FontSize="12" FontWeight="SemiBold"/>
                             </StackPanel>
 
                             <StackPanel IsEnabled="{Binding VideoEnabled}">
-                                <TextBlock Text="Codec" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Codec" Foreground="#CCC" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding VideoCodecs}"
                                           SelectedItem="{Binding SelectedVideoCodec}"
                                           Margin="0,0,0,10"/>
 
-                                <TextBlock Text="Quality (CRF)" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Quality (CRF)" Foreground="#CCC" FontSize="10" Margin="0,0,0,5"/>
                                 <Grid Margin="0,0,0,10">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="50"/>
                                     </Grid.ColumnDefinitions>
                                     <Slider Grid.Column="0" Minimum="0" Maximum="51"
-                                            Value="{Binding Quality}" VerticalAlignment="Center"/>
+                                            Value="{Binding Quality}" VerticalAlignment="Center"
+                                            ToolTip="CRF value: lower = better quality but larger files"/>
                                     <TextBlock Grid.Column="1" Text="{Binding Quality}"
                                                Foreground="#CCC" HorizontalAlignment="Right"
                                                VerticalAlignment="Center"/>
                                 </Grid>
-                                <TextBlock Foreground="#555" FontSize="9" Margin="0,0,0,10">
-                                    <Run Text="Lower = better quality, larger file (18-28 recommended)"/>
+                                <TextBlock Foreground="#AAA" FontSize="9" Margin="0,0,0,10">
+                                    <Run Text="Lower = better quality (0-18 lossless, 18-28 high quality, 28+ medium)"/>
                                 </TextBlock>
 
-                                <TextBlock Text="Preset (Speed)" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Preset (Speed)" Foreground="#CCC" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding PresetSpeeds}"
                                           SelectedItem="{Binding SelectedPresetSpeed}"
                                           Margin="0,0,0,10"/>
 
-                                <TextBlock Text="Resolution" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Resolution" Foreground="#CCC" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding Resolutions}"
                                           SelectedItem="{Binding SelectedResolution}"
                                           Margin="0,0,0,10"/>
 
-                                <TextBlock Text="Frame Rate" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Frame Rate" Foreground="#CCC" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding FrameRates}"
                                           SelectedItem="{Binding SelectedFrameRate}"
                                           Margin="0,0,0,10"/>
@@ -102,20 +106,22 @@
                     </Border>
 
                     <!-- Audio Settings -->
-                    <Border BorderBrush="#444" BorderThickness="0,1,0,0" Padding="0,15,0,0" Margin="0,0,0,15">
+                    <Border BorderBrush="#4A4A4A" BorderThickness="0,2,0,0" Padding="0,15,0,0" Margin="0,0,0,15">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets"
+                                           Foreground="#6366F1" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <CheckBox IsChecked="{Binding AudioEnabled}" Margin="0,0,10,0"/>
-                                <TextBlock Text="AUDIO" Foreground="#AAA" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock Text="AUDIO" Foreground="#F1F1F1" FontSize="12" FontWeight="SemiBold"/>
                             </StackPanel>
 
                             <StackPanel IsEnabled="{Binding AudioEnabled}">
-                                <TextBlock Text="Codec" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Codec" Foreground="#CCC" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding AudioCodecs}"
                                           SelectedItem="{Binding SelectedAudioCodec}"
                                           Margin="0,0,0,10"/>
 
-                                <TextBlock Text="Bitrate (kbps)" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Bitrate (kbps)" Foreground="#CCC" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding AudioBitrates}"
                                           SelectedItem="{Binding SelectedAudioBitrate}"
                                           Margin="0,0,0,10"/>
@@ -124,7 +130,7 @@
                     </Border>
 
                     <!-- Output File -->
-                    <TextBlock Text="OUTPUT" Foreground="#AAA" FontSize="11" Margin="0,0,0,8"/>
+                    <TextBlock Text="OUTPUT" Foreground="#F1F1F1" FontSize="11" Margin="0,0,0,8"/>
                     <Grid Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -133,11 +139,12 @@
                         <TextBox Grid.Column="0" Text="{Binding OutputFileName, UpdateSourceTrigger=PropertyChanged}"
                                  Padding="10,8" Margin="0,0,5,0"/>
                         <Button Grid.Column="1" Content="..." Width="35"
+                                ToolTip="Browse for output location"
                                 Style="{StaticResource SecondaryButton}"
                                 Command="{Binding BrowseOutputCommand}"/>
                     </Grid>
 
-                    <TextBlock Text="{Binding OutputPath}" Foreground="#555" FontSize="9"
+                    <TextBlock Text="{Binding OutputPath}" Foreground="#888" FontSize="9"
                                TextTrimming="CharacterEllipsis" Margin="0,0,0,15"
                                ToolTip="{Binding OutputPath}"/>
 
@@ -217,27 +224,27 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="FPS" Foreground="#888" FontSize="10"/>
+                            <TextBlock Text="FPS" Foreground="#AAA" FontSize="10"/>
                             <TextBlock Text="{Binding CurrentJob.Fps, StringFormat={}{0:F1}}"
                                        Foreground="#CCC" FontSize="14"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1">
-                            <TextBlock Text="Speed" Foreground="#888" FontSize="10"/>
+                            <TextBlock Text="Speed" Foreground="#AAA" FontSize="10"/>
                             <TextBlock Foreground="#CCC" FontSize="14">
                                 <Run Text="{Binding CurrentJob.Speed, StringFormat={}{0:F2}, Mode=OneWay}"/><Run Text="x"/>
                             </TextBlock>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="Bitrate" Foreground="#888" FontSize="10"/>
+                            <TextBlock Text="Bitrate" Foreground="#AAA" FontSize="10"/>
                             <TextBlock Foreground="#CCC" FontSize="14">
                                 <Run Text="{Binding CurrentJob.Bitrate, StringFormat={}{0:F0}, Mode=OneWay}"/><Run Text=" kb/s"/>
                             </TextBlock>
                         </StackPanel>
 
                         <StackPanel Grid.Column="3">
-                            <TextBlock Text="ETA" Foreground="#888" FontSize="10"/>
+                            <TextBlock Text="ETA" Foreground="#AAA" FontSize="10"/>
                             <TextBlock Text="{Binding CurrentJob.TimeRemaining}"
                                        Foreground="#CCC" FontSize="14"/>
                         </StackPanel>
@@ -333,8 +340,8 @@
                                             <Setter.Value>
                                                 <ControlTemplate>
                                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                        <TextBlock Text="No exports in queue" Foreground="#555" FontSize="12"/>
-                                                        <TextBlock Text="Add files to start batch export" Foreground="#444" FontSize="10" Margin="0,5,0,0"/>
+                                                        <TextBlock Text="No exports in queue" Foreground="#888" FontSize="12"/>
+                                                        <TextBlock Text="Add files to start batch export" Foreground="#666" FontSize="10" Margin="0,5,0,0"/>
                                                     </StackPanel>
                                                 </ControlTemplate>
                                             </Setter.Value>
@@ -357,7 +364,7 @@
 
                     <Border Grid.Row="0" Background="#252526" Padding="12,8" CornerRadius="8,8,0,0">
                         <Grid>
-                            <TextBlock Text="Log" Foreground="#AAA" FontWeight="SemiBold"/>
+                            <TextBlock Text="Log" Foreground="#F1F1F1" FontWeight="SemiBold"/>
                             <Button Content="Clear" Style="{StaticResource SecondaryButton}"
                                     Command="{Binding ClearLogCommand}"
                                     HorizontalAlignment="Right" Padding="8,3" FontSize="10"/>
