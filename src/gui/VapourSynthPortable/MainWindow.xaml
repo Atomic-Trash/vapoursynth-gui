@@ -12,7 +12,7 @@
     <Window.Resources>
         <!-- Page Navigation Button Style -->
         <Style x:Key="NavButton" TargetType="RadioButton">
-            <Setter Property="Foreground" Value="#888"/>
+            <Setter Property="Foreground" Value="#A0A0A0"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="20,12"/>
@@ -94,20 +94,26 @@
                 <!-- Page Navigation -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
                     <RadioButton x:Name="NavMedia" Content="Media" Style="{StaticResource NavButton}"
-                                 GroupName="PageNav" Checked="NavButton_Checked"/>
+                                 GroupName="PageNav" Checked="NavButton_Checked"
+                                 ToolTip="Import and manage media files"/>
                     <RadioButton x:Name="NavEdit" Content="Edit" Style="{StaticResource NavButton}"
-                                 GroupName="PageNav" Checked="NavButton_Checked"/>
+                                 GroupName="PageNav" Checked="NavButton_Checked"
+                                 ToolTip="Timeline editing and clip arrangement"/>
                     <RadioButton x:Name="NavRestore" Content="Restore" Style="{StaticResource NavButton}"
-                                 GroupName="PageNav" IsChecked="True" Checked="NavButton_Checked"/>
+                                 GroupName="PageNav" IsChecked="True" Checked="NavButton_Checked"
+                                 ToolTip="AI-powered video restoration and enhancement"/>
                     <RadioButton x:Name="NavColor" Content="Color" Style="{StaticResource NavButton}"
-                                 GroupName="PageNav" Checked="NavButton_Checked"/>
+                                 GroupName="PageNav" Checked="NavButton_Checked"
+                                 ToolTip="Color grading and correction tools"/>
                     <RadioButton x:Name="NavExport" Content="Export" Style="{StaticResource NavButton}"
-                                 GroupName="PageNav" Checked="NavButton_Checked"/>
+                                 GroupName="PageNav" Checked="NavButton_Checked"
+                                 ToolTip="Render and export final video"/>
                 </StackPanel>
 
                 <!-- Right Side Controls -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="15,8">
-                    <Button Content="Settings" Style="{StaticResource SecondaryButton}" Padding="12,6"/>
+                    <Button Content="Settings" Style="{StaticResource SecondaryButton}" Padding="12,6"
+                            ToolTip="Application settings and preferences"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -147,13 +153,14 @@
                     <ToggleButton x:Name="LogPanelToggle" Content="Output"
                                   IsChecked="True" Click="LogPanelToggle_Click"
                                   Padding="8,2" Margin="0,0,15,0"
-                                  Background="#3C3C3C" Foreground="#AAA" BorderBrush="#3C3C3C"/>
-                    <TextBlock Text="VapourSynth R68" Foreground="#888" Margin="0,0,15,0"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Text="Python 3.12" Foreground="#888" Margin="0,0,15,0"
-                               VerticalAlignment="Center"/>
+                                  Background="#3C3C3C" Foreground="#AAA" BorderBrush="#3C3C3C"
+                                  ToolTip="Toggle output log panel visibility"/>
+                    <TextBlock Text="VapourSynth R68" Foreground="#AAA" Margin="0,0,15,0"
+                               VerticalAlignment="Center" ToolTip="VapourSynth video processing framework version"/>
+                    <TextBlock Text="Python 3.12" Foreground="#AAA" Margin="0,0,15,0"
+                               VerticalAlignment="Center" ToolTip="Embedded Python interpreter version"/>
                     <TextBlock Text="FFmpeg Ready" Foreground="#4EC9B0"
-                               VerticalAlignment="Center"/>
+                               VerticalAlignment="Center" ToolTip="FFmpeg video encoding backend status"/>
                 </StackPanel>
             </Grid>
         </Border>
