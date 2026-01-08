@@ -18,15 +18,15 @@
 
             <!-- Placeholder when no video -->
             <StackPanel x:Name="PlaceholderPanel" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <TextBlock Text="No video loaded" FontSize="16" Foreground="#555"
+                <TextBlock Text="No video loaded" FontSize="16" Foreground="#BBBBBB"
                            HorizontalAlignment="Center"/>
-                <TextBlock x:Name="MpvStatusText" Text="" FontSize="11" Foreground="#444"
+                <TextBlock x:Name="MpvStatusText" Text="" FontSize="11" Foreground="#DDDDDD"
                            HorizontalAlignment="Center" Margin="0,8,0,0"/>
             </StackPanel>
 
             <!-- Loading overlay -->
-            <Border x:Name="LoadingOverlay" Background="#80000000" Visibility="Collapsed">
-                <TextBlock Text="Loading..." FontSize="14" Foreground="#AAA"
+            <Border x:Name="LoadingOverlay" Background="#C0000000" Visibility="Collapsed">
+                <TextBlock Text="Loading..." FontSize="14" Foreground="#FFFFFF"
                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
         </Grid>
@@ -56,7 +56,8 @@
                             VerticalAlignment="Center"
                             PreviewMouseDown="TimelineSlider_PreviewMouseDown"
                             PreviewMouseUp="TimelineSlider_PreviewMouseUp"
-                            ValueChanged="TimelineSlider_ValueChanged"/>
+                            ValueChanged="TimelineSlider_ValueChanged"
+                            ToolTip="Seek timeline (drag to position)"/>
 
                     <TextBlock x:Name="DurationText" Grid.Column="2" Text="00:00:00"
                                Foreground="#AAA" FontSize="11" VerticalAlignment="Center"
@@ -89,9 +90,10 @@
 
                     <!-- Center - Speed Control -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                        <TextBlock Text="Speed:" Foreground="#888" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Text="Speed:" Foreground="#BBBBBB" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <ComboBox x:Name="SpeedCombo" Width="70" SelectedIndex="3"
-                                  SelectionChanged="SpeedCombo_SelectionChanged">
+                                  SelectionChanged="SpeedCombo_SelectionChanged"
+                                  ToolTip="Playback speed (0.25x - 2x)">
                             <ComboBoxItem Content="0.25x"/>
                             <ComboBoxItem Content="0.5x"/>
                             <ComboBoxItem Content="0.75x"/>
@@ -109,8 +111,9 @@
                                 Click="MuteButton_Click" ToolTip="Mute (M)"/>
                         <Slider x:Name="VolumeSlider" Width="80" Minimum="0" Maximum="100" Value="100"
                                 VerticalAlignment="Center" Margin="8,0,0,0"
-                                ValueChanged="VolumeSlider_ValueChanged"/>
-                        <TextBlock x:Name="VolumeText" Text="100%" Foreground="#888" FontSize="11"
+                                ValueChanged="VolumeSlider_ValueChanged"
+                                ToolTip="Volume control (0-100%)"/>
+                        <TextBlock x:Name="VolumeText" Text="100%" Foreground="#BBBBBB" FontSize="11"
                                    VerticalAlignment="Center" Width="35" Margin="5,0,0,0"/>
                     </StackPanel>
                 </Grid>
