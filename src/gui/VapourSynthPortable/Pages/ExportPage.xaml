@@ -21,7 +21,7 @@
                                Foreground="#F1F1F1" Margin="0,0,0,20"/>
 
                     <!-- Input File -->
-                    <TextBlock Text="INPUT FILE" Foreground="#888" FontSize="11" Margin="0,0,0,8"/>
+                    <TextBlock Text="INPUT FILE" Foreground="#AAA" FontSize="11" Margin="0,0,0,8"/>
                     <Grid Margin="0,0,0,15">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -35,20 +35,20 @@
                     </Grid>
 
                     <!-- Input Info -->
-                    <TextBlock Text="{Binding InputInfo}" Foreground="#666" FontSize="10" Margin="0,0,0,15"
+                    <TextBlock Text="{Binding InputInfo}" Foreground="#888" FontSize="10" Margin="0,0,0,15"
                                Visibility="{Binding InputInfo, Converter={StaticResource StringToVis}}"/>
 
                     <!-- Preset Selection -->
-                    <TextBlock Text="PRESET" Foreground="#888" FontSize="11" Margin="0,0,0,8"/>
+                    <TextBlock Text="PRESET" Foreground="#AAA" FontSize="11" Margin="0,0,0,8"/>
                     <ComboBox ItemsSource="{Binding Presets}"
                               SelectedItem="{Binding SelectedPreset}"
                               DisplayMemberPath="Name"
                               Margin="0,0,0,5"/>
-                    <TextBlock Text="{Binding SelectedPreset.Description}" Foreground="#666" FontSize="10"
+                    <TextBlock Text="{Binding SelectedPreset.Description}" Foreground="#888" FontSize="10"
                                Margin="0,0,0,15" TextWrapping="Wrap"/>
 
                     <!-- Format -->
-                    <TextBlock Text="FORMAT" Foreground="#888" FontSize="11" Margin="0,0,0,8"/>
+                    <TextBlock Text="FORMAT" Foreground="#AAA" FontSize="11" Margin="0,0,0,8"/>
                     <ComboBox ItemsSource="{Binding Formats}"
                               SelectedItem="{Binding SelectedFormat}"
                               Margin="0,0,0,20"/>
@@ -62,12 +62,12 @@
                             </StackPanel>
 
                             <StackPanel IsEnabled="{Binding VideoEnabled}">
-                                <TextBlock Text="Codec" Foreground="#888" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Codec" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding VideoCodecs}"
                                           SelectedItem="{Binding SelectedVideoCodec}"
                                           Margin="0,0,0,10"/>
 
-                                <TextBlock Text="Quality (CRF)" Foreground="#888" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Quality (CRF)" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
                                 <Grid Margin="0,0,0,10">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -83,17 +83,17 @@
                                     <Run Text="Lower = better quality, larger file (18-28 recommended)"/>
                                 </TextBlock>
 
-                                <TextBlock Text="Preset (Speed)" Foreground="#888" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Preset (Speed)" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding PresetSpeeds}"
                                           SelectedItem="{Binding SelectedPresetSpeed}"
                                           Margin="0,0,0,10"/>
 
-                                <TextBlock Text="Resolution" Foreground="#888" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Resolution" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding Resolutions}"
                                           SelectedItem="{Binding SelectedResolution}"
                                           Margin="0,0,0,10"/>
 
-                                <TextBlock Text="Frame Rate" Foreground="#888" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Frame Rate" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding FrameRates}"
                                           SelectedItem="{Binding SelectedFrameRate}"
                                           Margin="0,0,0,10"/>
@@ -110,12 +110,12 @@
                             </StackPanel>
 
                             <StackPanel IsEnabled="{Binding AudioEnabled}">
-                                <TextBlock Text="Codec" Foreground="#888" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Codec" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding AudioCodecs}"
                                           SelectedItem="{Binding SelectedAudioCodec}"
                                           Margin="0,0,0,10"/>
 
-                                <TextBlock Text="Bitrate (kbps)" Foreground="#888" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBlock Text="Bitrate (kbps)" Foreground="#AAA" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding AudioBitrates}"
                                           SelectedItem="{Binding SelectedAudioBitrate}"
                                           Margin="0,0,0,10"/>
@@ -124,7 +124,7 @@
                     </Border>
 
                     <!-- Output File -->
-                    <TextBlock Text="OUTPUT" Foreground="#888" FontSize="11" Margin="0,0,0,8"/>
+                    <TextBlock Text="OUTPUT" Foreground="#AAA" FontSize="11" Margin="0,0,0,8"/>
                     <Grid Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -145,7 +145,7 @@
                     <Border Background="#1E1E1E" CornerRadius="4" Padding="12,10" Margin="0,0,0,20"
                             Visibility="{Binding EstimatedSize, Converter={StaticResource StringToVis}}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Estimated Size:" Foreground="#888"/>
+                            <TextBlock Text="Estimated Size:" Foreground="#AAA"/>
                             <TextBlock Text="{Binding EstimatedSize}" Foreground="#CCC" FontWeight="SemiBold" Margin="8,0,0,0"/>
                         </StackPanel>
                     </Border>
@@ -200,7 +200,7 @@
 
                         <TextBlock Grid.Column="0" Text="{Binding CurrentJob.Name, FallbackValue='No export in progress'}"
                                    Foreground="#CCC" FontSize="12"/>
-                        <TextBlock Grid.Column="1" Text="{Binding StatusText}" Foreground="#888"/>
+                        <TextBlock Grid.Column="1" Text="{Binding StatusText}" Foreground="#AAA"/>
                     </Grid>
 
                     <!-- Progress Bar -->
@@ -217,27 +217,27 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="FPS" Foreground="#666" FontSize="10"/>
+                            <TextBlock Text="FPS" Foreground="#888" FontSize="10"/>
                             <TextBlock Text="{Binding CurrentJob.Fps, StringFormat={}{0:F1}}"
                                        Foreground="#CCC" FontSize="14"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1">
-                            <TextBlock Text="Speed" Foreground="#666" FontSize="10"/>
+                            <TextBlock Text="Speed" Foreground="#888" FontSize="10"/>
                             <TextBlock Foreground="#CCC" FontSize="14">
                                 <Run Text="{Binding CurrentJob.Speed, StringFormat={}{0:F2}, Mode=OneWay}"/><Run Text="x"/>
                             </TextBlock>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="Bitrate" Foreground="#666" FontSize="10"/>
+                            <TextBlock Text="Bitrate" Foreground="#888" FontSize="10"/>
                             <TextBlock Foreground="#CCC" FontSize="14">
                                 <Run Text="{Binding CurrentJob.Bitrate, StringFormat={}{0:F0}, Mode=OneWay}"/><Run Text=" kb/s"/>
                             </TextBlock>
                         </StackPanel>
 
                         <StackPanel Grid.Column="3">
-                            <TextBlock Text="ETA" Foreground="#666" FontSize="10"/>
+                            <TextBlock Text="ETA" Foreground="#888" FontSize="10"/>
                             <TextBlock Text="{Binding CurrentJob.TimeRemaining}"
                                        Foreground="#CCC" FontSize="14"/>
                         </StackPanel>
@@ -263,7 +263,7 @@
 
                             <StackPanel Grid.Column="0" Orientation="Horizontal">
                                 <TextBlock Text="Export Queue" FontWeight="SemiBold" Foreground="#F1F1F1"/>
-                                <TextBlock Foreground="#666" Margin="10,0,0,0">
+                                <TextBlock Foreground="#888" Margin="10,0,0,0">
                                     <Run Text="("/>
                                     <Run Text="{Binding ExportQueue.Count, Mode=OneWay}"/>
                                     <Run Text=" items)"/>
@@ -304,7 +304,7 @@
                                         <!-- Job Info -->
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" Foreground="#CCC"/>
-                                            <TextBlock Text="{Binding StatusText}" Foreground="#666" FontSize="10"/>
+                                            <TextBlock Text="{Binding StatusText}" Foreground="#888" FontSize="10"/>
                                         </StackPanel>
 
                                         <!-- Progress -->
@@ -368,7 +368,7 @@
                         <TextBox Text="{Binding LogOutput, Mode=OneWay}"
                                  IsReadOnly="True"
                                  Background="Transparent"
-                                 Foreground="#888"
+                                 Foreground="#AAA"
                                  FontFamily="Consolas"
                                  FontSize="11"
                                  BorderThickness="0"

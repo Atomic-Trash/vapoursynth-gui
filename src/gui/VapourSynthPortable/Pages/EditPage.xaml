@@ -115,7 +115,7 @@
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Media Pool" Foreground="#F1F1F1" FontWeight="SemiBold" FontSize="12"/>
                             <TextBlock Text="{Binding MediaPool.Count, StringFormat=' ({0})'}"
-                                       Foreground="#666" FontSize="11"/>
+                                       Foreground="#888" FontSize="11"/>
                         </StackPanel>
                     </Border>
 
@@ -144,7 +144,7 @@
                                             <TextBlock Text="{Binding Name}" Foreground="#DDD" FontSize="10"
                                                        TextTrimming="CharacterEllipsis"
                                                        ToolTip="{Binding Name}"/>
-                                            <TextBlock Text="{Binding DurationFormatted}" Foreground="#666" FontSize="9"/>
+                                            <TextBlock Text="{Binding DurationFormatted}" Foreground="#888" FontSize="9"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -320,7 +320,7 @@
         <Border Grid.Row="3" VerticalAlignment="Bottom"
                 Background="#2D2D30" Height="22" Margin="10,0,10,10">
             <Grid Margin="10,0">
-                <TextBlock Text="{Binding StatusText}" Foreground="#888" FontSize="10"
+                <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="10"
                            VerticalAlignment="Center"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <TextBlock Text="Playhead: " Foreground="#555" FontSize="10"/>

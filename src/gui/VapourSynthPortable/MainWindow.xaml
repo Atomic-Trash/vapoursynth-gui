@@ -141,16 +141,16 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Text="Ready" Foreground="#888" VerticalAlignment="Center"/>
+                <TextBlock Text="Ready" Foreground="#AAA" VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <ToggleButton x:Name="LogPanelToggle" Content="Output"
                                   IsChecked="True" Click="LogPanelToggle_Click"
                                   Padding="8,2" Margin="0,0,15,0"
                                   Background="#3C3C3C" Foreground="#AAA" BorderBrush="#3C3C3C"/>
-                    <TextBlock Text="VapourSynth R68" Foreground="#666" Margin="0,0,15,0"
+                    <TextBlock Text="VapourSynth R68" Foreground="#888" Margin="0,0,15,0"
                                VerticalAlignment="Center"/>
-                    <TextBlock Text="Python 3.12" Foreground="#666" Margin="0,0,15,0"
+                    <TextBlock Text="Python 3.12" Foreground="#888" Margin="0,0,15,0"
                                VerticalAlignment="Center"/>
                     <TextBlock Text="FFmpeg Ready" Foreground="#4EC9B0"
                                VerticalAlignment="Center"/>

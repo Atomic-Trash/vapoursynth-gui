@@ -65,7 +65,7 @@
                     VerticalAlignment="Center"
                     ValueChanged="MasterSlider_ValueChanged"/>
             <TextBlock x:Name="MasterValueText" Grid.Column="1"
-                       Text="0.00" Foreground="#888" FontSize="9"
+                       Text="0.00" Foreground="#AAA" FontSize="9"
                        HorizontalAlignment="Right" VerticalAlignment="Center"/>
         </Grid>
     </Grid>

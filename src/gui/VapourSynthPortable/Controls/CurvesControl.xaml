@@ -59,13 +59,13 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                <TextBlock Text="In:" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
+                <TextBlock Text="In:" Foreground="#888" FontSize="10" VerticalAlignment="Center"/>
                 <TextBlock x:Name="InputValueText" Text="--" Foreground="#AAA" FontSize="10"
                            VerticalAlignment="Center" Margin="4,0,0,0"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                <TextBlock Text="Out:" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
+                <TextBlock Text="Out:" Foreground="#888" FontSize="10" VerticalAlignment="Center"/>
                 <TextBlock x:Name="OutputValueText" Text="--" Foreground="#AAA" FontSize="10"
                            VerticalAlignment="Center" Margin="4,0,0,0"/>
             </StackPanel>

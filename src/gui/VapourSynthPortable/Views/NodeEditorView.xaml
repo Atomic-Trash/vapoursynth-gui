@@ -146,7 +146,7 @@
                     <StackPanel Margin="10">
                         <!-- Source Nodes -->
                         <TextBlock Text="SOURCES" FontSize="10" FontWeight="Bold"
-                                   Foreground="#666" Margin="5,0,0,8"/>
+                                   Foreground="#888" Margin="5,0,0,8"/>
                         <Button Content="Video Source"
                                 Command="{Binding AddSourceNodeCommand}"
                                 Style="{StaticResource SecondaryButton}"
@@ -154,7 +154,7 @@
 
                         <!-- Resize Filters -->
                         <TextBlock Text="RESIZE" FontSize="10" FontWeight="Bold"
-                                   Foreground="#666" Margin="5,15,0,8"/>
+                                   Foreground="#888" Margin="5,15,0,8"/>
                         <Button Content="Resize (Lanczos)"
                                 Command="{Binding AddFilterNodeCommand}"
                                 CommandParameter="resize"
@@ -173,7 +173,7 @@
 
                         <!-- Denoise Filters -->
                         <TextBlock Text="DENOISE" FontSize="10" FontWeight="Bold"
-                                   Foreground="#666" Margin="5,15,0,8"/>
+                                   Foreground="#888" Margin="5,15,0,8"/>
                         <Button Content="BM3D"
                                 Command="{Binding AddFilterNodeCommand}"
                                 CommandParameter="bm3d"
@@ -197,7 +197,7 @@
 
                         <!-- Deinterlace Filters -->
                         <TextBlock Text="DEINTERLACE" FontSize="10" FontWeight="Bold"
-                                   Foreground="#666" Margin="5,15,0,8"/>
+                                   Foreground="#888" Margin="5,15,0,8"/>
                         <Button Content="EEDI3"
                                 Command="{Binding AddFilterNodeCommand}"
                                 CommandParameter="eedi3"
@@ -211,7 +211,7 @@
 
                         <!-- Sharpen Filters -->
                         <TextBlock Text="SHARPEN" FontSize="10" FontWeight="Bold"
-                                   Foreground="#666" Margin="5,15,0,8"/>
+                                   Foreground="#888" Margin="5,15,0,8"/>
                         <Button Content="CAS"
                                 Command="{Binding AddFilterNodeCommand}"
                                 CommandParameter="cas"
@@ -225,7 +225,7 @@
 
                         <!-- Utility Filters -->
                         <TextBlock Text="UTILITY" FontSize="10" FontWeight="Bold"
-                                   Foreground="#666" Margin="5,15,0,8"/>
+                                   Foreground="#888" Margin="5,15,0,8"/>
                         <Button Content="Crop"
                                 Command="{Binding AddFilterNodeCommand}"
                                 CommandParameter="crop"
@@ -239,7 +239,7 @@
 
                         <!-- Output Nodes -->
                         <TextBlock Text="OUTPUT" FontSize="10" FontWeight="Bold"
-                                   Foreground="#666" Margin="5,15,0,8"/>
+                                   Foreground="#888" Margin="5,15,0,8"/>
                         <Button Content="Output"
                                 Command="{Binding AddOutputNodeCommand}"
                                 Style="{StaticResource SecondaryButton}"
@@ -247,7 +247,7 @@
 
                         <!-- Graph Actions -->
                         <TextBlock Text="GRAPH" FontSize="10" FontWeight="Bold"
-                                   Foreground="#666" Margin="5,20,0,8"/>
+                                   Foreground="#888" Margin="5,20,0,8"/>
                         <Button Content="Save Graph"
                                 Command="{Binding SaveGraphCommand}"
                                 Style="{StaticResource SecondaryButton}"
@@ -263,7 +263,7 @@
 
                         <!-- Script Actions -->
                         <TextBlock Text="SCRIPT" FontSize="10" FontWeight="Bold"
-                                   Foreground="#666" Margin="5,15,0,8"/>
+                                   Foreground="#888" Margin="5,15,0,8"/>
                         <Button Content="Generate Script"
                                 Command="{Binding GenerateScriptCommand}"
                                 Style="{StaticResource PrimaryButton}"
