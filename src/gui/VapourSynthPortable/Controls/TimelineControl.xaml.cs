@@ -450,7 +450,7 @@ public partial class TimelineControl : UserControl
             SourceDurationFrames = durationFrames,
             FrameRate = Timeline.FrameRate,
             Color = track.TrackType == TrackType.Video
-                ? Color.FromRgb(0x4A, 0x9E, 0xCF)  // Blue for video
+                ? Color.FromRgb(0x2A, 0x6A, 0x9F)  // Darker blue for video (better contrast)
                 : Color.FromRgb(0x4A, 0xCF, 0x6A)  // Green for audio
         };
 
@@ -502,6 +502,57 @@ public partial class TimelineControl : UserControl
 
         TimelineModified?.Invoke(this, EventArgs.Empty);
     }
+
+    // Context menu handlers
+
+    private void ContextMenu_Cut(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.DataContext is TimelineClip clip)
+        {
+            SelectClip(clip);
+            ClipCutRequested?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private void ContextMenu_Copy(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.DataContext is TimelineClip clip)
+        {
+            SelectClip(clip);
+            ClipCopyRequested?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private void ContextMenu_Delete(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.DataContext is TimelineClip clip)
+        {
+            SelectClip(clip);
+            DeleteSelectedClip();
+        }
+    }
+
+    private void ContextMenu_Split(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.DataContext is TimelineClip clip)
+        {
+            SelectClip(clip);
+            SplitClipAtPlayhead();
+        }
+    }
+
+    private void ContextMenu_ToggleMute(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.DataContext is TimelineClip clip)
+        {
+            clip.IsMuted = !clip.IsMuted;
+            TimelineModified?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    // Events for parent to handle cut/copy
+    public event EventHandler? ClipCutRequested;
+    public event EventHandler? ClipCopyRequested;
 
     // Text Overlay handlers
 

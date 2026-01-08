@@ -129,7 +129,7 @@ public class ClipData
     public double FrameRate { get; set; } = 24;
     public bool IsMuted { get; set; }
     public bool IsLocked { get; set; }
-    public string ColorHex { get; set; } = "#4A9ECF";
+    public string ColorHex { get; set; } = "#2A6A9F";
     public double Volume { get; set; } = 1.0;
 }
 

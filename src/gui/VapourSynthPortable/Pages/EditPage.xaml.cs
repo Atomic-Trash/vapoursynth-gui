@@ -42,6 +42,10 @@ public partial class EditPage : UserControl
             {
                 ProgramPlayer.Player.PositionChanged += ProgramPlayer_PositionChanged;
             }
+
+            // Wire up timeline context menu events
+            TimelineControl.ClipCutRequested += TimelineControl_ClipCutRequested;
+            TimelineControl.ClipCopyRequested += TimelineControl_ClipCopyRequested;
         }
     }
 
@@ -57,6 +61,10 @@ public partial class EditPage : UserControl
         {
             ProgramPlayer.Player.PositionChanged -= ProgramPlayer_PositionChanged;
         }
+
+        // Unsubscribe from timeline context menu events
+        TimelineControl.ClipCutRequested -= TimelineControl_ClipCutRequested;
+        TimelineControl.ClipCopyRequested -= TimelineControl_ClipCopyRequested;
     }
 
     private void EditPage_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -212,6 +220,22 @@ public partial class EditPage : UserControl
         if (DataContext is EditViewModel viewModel)
         {
             viewModel.Timeline.SelectedClip = clip;
+        }
+    }
+
+    private void TimelineControl_ClipCutRequested(object? sender, EventArgs e)
+    {
+        if (DataContext is EditViewModel viewModel)
+        {
+            viewModel.CutClipCommand.Execute(null);
+        }
+    }
+
+    private void TimelineControl_ClipCopyRequested(object? sender, EventArgs e)
+    {
+        if (DataContext is EditViewModel viewModel)
+        {
+            viewModel.CopyClipCommand.Execute(null);
         }
     }
 }

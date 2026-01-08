@@ -201,7 +201,7 @@ public partial class EditViewModel : ObservableObject, IDisposable
             SourceDurationFrames = (long)(SelectedMediaItem.Duration * Timeline.FrameRate),
             FrameRate = Timeline.FrameRate,
             Color = trackType == TrackType.Video
-                ? System.Windows.Media.Color.FromRgb(0x4A, 0x9E, 0xCF)
+                ? System.Windows.Media.Color.FromRgb(0x2A, 0x6A, 0x9F)
                 : System.Windows.Media.Color.FromRgb(0x4A, 0xCF, 0x6A)
         };
 
@@ -253,7 +253,7 @@ public partial class EditViewModel : ObservableObject, IDisposable
             SourceDurationFrames = durationFrames,
             FrameRate = Timeline.FrameRate,
             Color = trackType == TrackType.Video
-                ? System.Windows.Media.Color.FromRgb(0x4A, 0x9E, 0xCF)
+                ? System.Windows.Media.Color.FromRgb(0x2A, 0x6A, 0x9F)
                 : System.Windows.Media.Color.FromRgb(0x4A, 0xCF, 0x6A)
         };
 

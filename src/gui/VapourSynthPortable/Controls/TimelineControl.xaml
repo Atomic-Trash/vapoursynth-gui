@@ -58,6 +58,41 @@
                     Background="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
                     BorderBrush="#333" BorderThickness="1" CornerRadius="3"
                     Margin="1,2" Cursor="Hand" MinWidth="20">
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Cut" InputGestureText="Ctrl+X"
+                                  Click="ContextMenu_Cut">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE8C6;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="Copy" InputGestureText="Ctrl+C"
+                                  Click="ContextMenu_Copy">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="Delete" InputGestureText="Del"
+                                  Click="ContextMenu_Delete">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#C75050"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Split at Playhead" InputGestureText="S"
+                                  Click="ContextMenu_Split">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE8C4;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Mute/Unmute" Click="ContextMenu_ToggleMute">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE74F;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="6"/>
@@ -105,7 +140,7 @@
                     <!-- Muted overlay -->
                     <Border Grid.ColumnSpan="3" Background="#80000000" CornerRadius="3"
                             Visibility="{Binding IsMuted, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <TextBlock Text="MUTED" Foreground="#AAA" FontSize="9"
+                        <TextBlock Text="MUTED" Foreground="#FFF" FontSize="9" FontWeight="SemiBold"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </Grid>
@@ -165,7 +200,8 @@
 
         <!-- Timeline Ruler -->
         <Border Grid.Row="0" Grid.Column="1" Background="#2A2A2A" BorderBrush="#333" BorderThickness="0,0,0,1">
-            <Canvas x:Name="RulerCanvas" ClipToBounds="True"
+            <Canvas x:Name="RulerCanvas" ClipToBounds="True" Cursor="Hand"
+                    ToolTip="Click to seek, drag to scrub"
                     MouseLeftButtonDown="Ruler_MouseLeftButtonDown"/>
         </Border>
 
