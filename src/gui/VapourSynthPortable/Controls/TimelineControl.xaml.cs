@@ -47,6 +47,8 @@ public partial class TimelineControl : UserControl
     public event EventHandler<TimelineClip?>? ClipSelected;
     public event EventHandler<TimelineTextOverlay?>? TextOverlaySelected;
     public event EventHandler? TimelineModified;
+    public event EventHandler? ScrubStarted;
+    public event EventHandler? ScrubEnded;
 
     public TimelineControl()
     {
@@ -251,6 +253,7 @@ public partial class TimelineControl : UserControl
         }
 
         _isDraggingPlayhead = true;
+        ScrubStarted?.Invoke(this, EventArgs.Empty);
         RulerCanvas.CaptureMouse();
     }
 
@@ -310,6 +313,7 @@ public partial class TimelineControl : UserControl
         {
             _isDraggingPlayhead = false;
             RulerCanvas.ReleaseMouseCapture();
+            ScrubEnded?.Invoke(this, EventArgs.Empty);
         }
 
         if (_isDraggingClip || _isTrimmingLeft || _isTrimmingRight)

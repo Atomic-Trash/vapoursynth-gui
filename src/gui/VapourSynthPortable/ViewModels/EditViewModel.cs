@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
@@ -12,8 +13,10 @@ namespace VapourSynthPortable.ViewModels;
 public partial class EditViewModel : ObservableObject, IDisposable
 {
     private readonly IMediaPoolService _mediaPoolService;
+    private readonly FrameCacheService _frameCache;
     private readonly Stack<TimelineAction> _undoStack = new();
     private readonly Stack<TimelineAction> _redoStack = new();
+    private CancellationTokenSource? _framePrefetchCts;
     private bool _disposed;
 
     [ObservableProperty]
@@ -49,6 +52,12 @@ public partial class EditViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _rippleEdit;
 
+    [ObservableProperty]
+    private BitmapSource? _scrubPreviewFrame;
+
+    [ObservableProperty]
+    private bool _isScrubbing;
+
     public bool CanUndo => _undoStack.Count > 0;
     public bool CanRedo => _redoStack.Count > 0;
 
@@ -64,8 +73,14 @@ public partial class EditViewModel : ObservableObject, IDisposable
         _mediaPoolService.CurrentSourceChanged += OnCurrentSourceChanged;
         _mediaPoolService.MediaPoolChanged += OnMediaPoolChanged;
 
+        // Initialize frame cache for scrubbing
+        _frameCache = new FrameCacheService(maxCacheSize: 150, maxConcurrentExtractions: 4);
+
         InitializeTimeline();
         LoadTransitionPresets();
+
+        // Subscribe to playhead changes for frame preview
+        Timeline.PropertyChanged += OnTimelinePropertyChanged;
     }
 
     // Parameterless constructor for XAML design-time support
@@ -113,6 +128,93 @@ public partial class EditViewModel : ObservableObject, IDisposable
 
         Timeline.FrameRate = 24;
     }
+
+    private void OnTimelinePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Models.Timeline.PlayheadFrame))
+        {
+            // Update frame preview during scrubbing
+            _ = UpdateScrubPreviewAsync();
+        }
+    }
+
+    /// <summary>
+    /// Call when scrubbing starts (mouse down on timeline ruler)
+    /// </summary>
+    public void BeginScrub()
+    {
+        IsScrubbing = true;
+        _framePrefetchCts?.Cancel();
+        _framePrefetchCts = new CancellationTokenSource();
+    }
+
+    /// <summary>
+    /// Call when scrubbing ends (mouse up on timeline ruler)
+    /// </summary>
+    public void EndScrub()
+    {
+        IsScrubbing = false;
+
+        // Prefetch frames around current position
+        var clip = Timeline.GetClipAtFrame(Timeline.PlayheadFrame);
+        if (clip != null)
+        {
+            var frameInClip = Timeline.PlayheadFrame - clip.StartFrame + clip.SourceInFrame;
+            _ = _frameCache.PrefetchFramesAsync(
+                clip.SourcePath,
+                frameInClip,
+                Timeline.FrameRate,
+                radius: 10,
+                ct: _framePrefetchCts?.Token ?? CancellationToken.None);
+        }
+    }
+
+    private async Task UpdateScrubPreviewAsync()
+    {
+        var clip = Timeline.GetClipAtFrame(Timeline.PlayheadFrame);
+        if (clip == null)
+        {
+            ScrubPreviewFrame = null;
+            return;
+        }
+
+        // Calculate frame position within the source clip
+        var frameInClip = Timeline.PlayheadFrame - clip.StartFrame + clip.SourceInFrame;
+
+        try
+        {
+            // Try to get from cache first (synchronous)
+            var cachedFrame = _frameCache.TryGetFrame(clip.SourcePath, frameInClip, 320, 180);
+            if (cachedFrame != null)
+            {
+                ScrubPreviewFrame = cachedFrame;
+                return;
+            }
+
+            // Extract frame asynchronously
+            var frame = await _frameCache.GetFrameAsync(
+                clip.SourcePath,
+                frameInClip,
+                Timeline.FrameRate,
+                width: 320,
+                height: 180,
+                ct: _framePrefetchCts?.Token ?? CancellationToken.None);
+
+            if (frame != null)
+            {
+                ScrubPreviewFrame = frame;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore - new scrub position cancelled this request
+        }
+    }
+
+    /// <summary>
+    /// Get current frame cache statistics
+    /// </summary>
+    public FrameCacheStats GetFrameCacheStats() => _frameCache.GetStats();
 
     [RelayCommand]
     private async Task ImportMedia()
@@ -777,6 +879,11 @@ public partial class EditViewModel : ObservableObject, IDisposable
 
         _mediaPoolService.CurrentSourceChanged -= OnCurrentSourceChanged;
         _mediaPoolService.MediaPoolChanged -= OnMediaPoolChanged;
+        Timeline.PropertyChanged -= OnTimelinePropertyChanged;
+
+        _framePrefetchCts?.Cancel();
+        _framePrefetchCts?.Dispose();
+        _frameCache.Dispose();
     }
 }
 

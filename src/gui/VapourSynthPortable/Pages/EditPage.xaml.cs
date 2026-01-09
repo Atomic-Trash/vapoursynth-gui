@@ -46,6 +46,10 @@ public partial class EditPage : UserControl
             // Wire up timeline context menu events
             TimelineControl.ClipCutRequested += TimelineControl_ClipCutRequested;
             TimelineControl.ClipCopyRequested += TimelineControl_ClipCopyRequested;
+
+            // Wire up scrub events for frame preview
+            TimelineControl.ScrubStarted += TimelineControl_ScrubStarted;
+            TimelineControl.ScrubEnded += TimelineControl_ScrubEnded;
         }
     }
 
@@ -65,6 +69,10 @@ public partial class EditPage : UserControl
         // Unsubscribe from timeline context menu events
         TimelineControl.ClipCutRequested -= TimelineControl_ClipCutRequested;
         TimelineControl.ClipCopyRequested -= TimelineControl_ClipCopyRequested;
+
+        // Unsubscribe from scrub events
+        TimelineControl.ScrubStarted -= TimelineControl_ScrubStarted;
+        TimelineControl.ScrubEnded -= TimelineControl_ScrubEnded;
     }
 
     private void EditPage_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -236,6 +244,22 @@ public partial class EditPage : UserControl
         if (DataContext is EditViewModel viewModel)
         {
             viewModel.CopyClipCommand.Execute(null);
+        }
+    }
+
+    private void TimelineControl_ScrubStarted(object? sender, EventArgs e)
+    {
+        if (DataContext is EditViewModel viewModel)
+        {
+            viewModel.BeginScrub();
+        }
+    }
+
+    private void TimelineControl_ScrubEnded(object? sender, EventArgs e)
+    {
+        if (DataContext is EditViewModel viewModel)
+        {
+            viewModel.EndScrub();
         }
     }
 }

@@ -265,6 +265,23 @@
                         <!-- Video Player for timeline playback -->
                         <controls:VideoPlayerControl x:Name="ProgramPlayer"/>
 
+                        <!-- Scrub preview overlay (shown during scrubbing) -->
+                        <Border Background="#1A1A1A" CornerRadius="4"
+                                Visibility="{Binding IsScrubbing, Converter={StaticResource BoolToVisibilityConverter}}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Padding="8">
+                            <Grid>
+                                <Image Source="{Binding ScrubPreviewFrame}"
+                                       MaxWidth="480" MaxHeight="270"
+                                       Stretch="Uniform"/>
+                                <TextBlock Text="Scrubbing..."
+                                           Foreground="#666" FontSize="10"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Visibility="{Binding ScrubPreviewFrame, Converter={StaticResource NullToVis}}"/>
+                            </Grid>
+                        </Border>
+
                         <!-- Placeholder when empty timeline -->
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                                     Visibility="{Binding Timeline.HasClips, Converter={StaticResource InverseBoolToVisibilityConverter}}">
