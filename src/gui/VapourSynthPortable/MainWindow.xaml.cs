@@ -13,6 +13,42 @@ public partial class MainWindow : Window
     private readonly ProjectService _projectService = new();
     private Project _currentProject;
 
+    /// <summary>
+    /// Gets all ViewModels that implement IProjectPersistable from the pages
+    /// </summary>
+    private IEnumerable<IProjectPersistable> GetPersistableViewModels()
+    {
+        if (PageEdit?.DataContext is IProjectPersistable editVm)
+            yield return editVm;
+        if (PageColor?.DataContext is IProjectPersistable colorVm)
+            yield return colorVm;
+        if (PageRestore?.DataContext is IProjectPersistable restoreVm)
+            yield return restoreVm;
+    }
+
+    /// <summary>
+    /// Exports current state from all pages to the project
+    /// </summary>
+    private void ExportStateToProject()
+    {
+        foreach (var vm in GetPersistableViewModels())
+        {
+            vm.ExportToProject(_currentProject);
+        }
+        _currentProject.MarkDirty();
+    }
+
+    /// <summary>
+    /// Imports state from the project to all pages
+    /// </summary>
+    private void ImportStateFromProject()
+    {
+        foreach (var vm in GetPersistableViewModels())
+        {
+            vm.ImportFromProject(_currentProject);
+        }
+    }
+
     public MainWindow()
     {
         InitializeComponent();
@@ -168,11 +204,10 @@ public partial class MainWindow : Window
                 LoadRecentProjects();
                 UpdateTitle();
 
-                // TODO: Apply loaded project data to pages
-                // This would involve updating EditPage timeline, ColorPage grades, etc.
+                // Apply loaded project data to all pages
+                ImportStateFromProject();
 
-                MessageBox.Show($"Project loaded: {Path.GetFileName(path)}", "Project Loaded",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                ToastService.Instance.ShowSuccess($"Project loaded: {Path.GetFileName(path)}");
             }
             else
             {
@@ -202,12 +237,12 @@ public partial class MainWindow : Window
         {
             try
             {
-                // TODO: Export current state from pages
-                // _currentProject.TimelineData = _projectService.ExportTimeline(PageEdit.Timeline);
-                // etc.
+                // Export current state from all pages
+                ExportStateToProject();
 
                 await _projectService.SaveAsync(_currentProject, _currentProject.FilePath);
                 UpdateTitle();
+                ToastService.Instance.ShowSuccess("Project saved");
             }
             catch (Exception ex)
             {
@@ -238,12 +273,14 @@ public partial class MainWindow : Window
             {
                 _currentProject.Name = Path.GetFileNameWithoutExtension(dialog.FileName);
 
-                // TODO: Export current state from pages
+                // Export current state from all pages
+                ExportStateToProject();
 
                 await _projectService.SaveAsync(_currentProject, dialog.FileName);
                 _projectService.AddToRecentProjects(dialog.FileName);
                 LoadRecentProjects();
                 UpdateTitle();
+                ToastService.Instance.ShowSuccess($"Project saved: {_currentProject.Name}");
             }
             catch (Exception ex)
             {

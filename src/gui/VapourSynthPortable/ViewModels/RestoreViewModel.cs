@@ -11,7 +11,7 @@ using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable.ViewModels;
 
-public partial class RestoreViewModel : ObservableObject, IDisposable
+public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectPersistable
 {
     private readonly IMediaPoolService _mediaPool;
     private readonly VapourSynthService _vapourSynthService;
@@ -717,6 +717,58 @@ video_in = core.lsmas.LWLibavSource(r'{job.SourcePath.Replace("'", "\\'")}')
     {
         IsSimpleMode = !IsSimpleMode;
     }
+
+    #region IProjectPersistable Implementation
+
+    /// <summary>
+    /// Exports the current restore job queue to the project
+    /// </summary>
+    public void ExportToProject(Project project)
+    {
+        project.RestoreJobs.Clear();
+        foreach (var job in JobQueue)
+        {
+            project.RestoreJobs.Add(new RestoreJobData
+            {
+                SourcePath = job.SourcePath,
+                OutputPath = job.OutputPath,
+                PresetName = job.Preset?.Name ?? "",
+                Status = job.Status,
+                Progress = job.Progress
+            });
+        }
+    }
+
+    /// <summary>
+    /// Imports restore job queue from the project
+    /// </summary>
+    public void ImportFromProject(Project project)
+    {
+        JobQueue.Clear();
+
+        foreach (var jobData in project.RestoreJobs)
+        {
+            // Find matching preset by name
+            var preset = Presets.FirstOrDefault(p => p.Name == jobData.PresetName);
+
+            var job = new RestoreJob
+            {
+                SourcePath = jobData.SourcePath,
+                OutputPath = jobData.OutputPath,
+                Preset = preset,
+                Status = jobData.Status,
+                Progress = jobData.Progress
+            };
+
+            JobQueue.Add(job);
+        }
+
+        StatusText = JobQueue.Count > 0
+            ? $"Loaded {JobQueue.Count} restore job(s) from project"
+            : "Ready";
+    }
+
+    #endregion
 
     public void Dispose()
     {

@@ -11,11 +11,12 @@ using System.Collections.Specialized;
 
 namespace VapourSynthPortable.ViewModels;
 
-public partial class EditViewModel : ObservableObject, IDisposable
+public partial class EditViewModel : ObservableObject, IDisposable, IProjectPersistable
 {
     private readonly IMediaPoolService _mediaPoolService;
     private readonly FrameCacheService _frameCache;
     private readonly UndoService _undoService;
+    private readonly ProjectService _projectService = new();
     private CancellationTokenSource? _framePrefetchCts;
     private CancellationTokenSource? _scrubDebounceCts;
     private DateTime _lastScrubUpdate = DateTime.MinValue;
@@ -1079,6 +1080,47 @@ public partial class EditViewModel : ObservableObject, IDisposable
     {
         return EffectService.GenerateTimelineScript(Timeline, "");
     }
+
+    #region IProjectPersistable Implementation
+
+    /// <summary>
+    /// Exports the current timeline state to the project
+    /// </summary>
+    public void ExportToProject(Project project)
+    {
+        project.TimelineData = _projectService.ExportTimeline(Timeline);
+    }
+
+    /// <summary>
+    /// Imports timeline state from the project
+    /// </summary>
+    public void ImportFromProject(Project project)
+    {
+        if (project.TimelineData != null)
+        {
+            var importedTimeline = _projectService.ImportTimeline(project.TimelineData);
+
+            // Copy timeline properties
+            Timeline.FrameRate = importedTimeline.FrameRate;
+            Timeline.PlayheadFrame = importedTimeline.PlayheadFrame;
+            Timeline.InPoint = importedTimeline.InPoint;
+            Timeline.OutPoint = importedTimeline.OutPoint;
+            Timeline.Zoom = importedTimeline.Zoom;
+
+            // Clear and repopulate tracks
+            Timeline.Tracks.Clear();
+            foreach (var track in importedTimeline.Tracks)
+            {
+                Timeline.Tracks.Add(track);
+            }
+
+            // Update UI state
+            UpdateCurrentTimecode();
+            StatusText = "Timeline loaded from project";
+        }
+    }
+
+    #endregion
 
     public void Dispose()
     {

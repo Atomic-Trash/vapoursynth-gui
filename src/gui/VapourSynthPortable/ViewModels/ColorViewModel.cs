@@ -9,7 +9,7 @@ using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable.ViewModels;
 
-public partial class ColorViewModel : ObservableObject, IDisposable
+public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPersistable
 {
     private readonly IMediaPoolService _mediaPool;
     private readonly ColorGradingService _colorGradingService;
@@ -636,6 +636,61 @@ public partial class ColorViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(FilteredLuts));
         StatusText = lut.IsFavorite ? $"Added {lut.Name} to favorites" : $"Removed {lut.Name} from favorites";
     }
+
+    #region IProjectPersistable Implementation
+
+    /// <summary>
+    /// Exports the current color grade state to the project
+    /// </summary>
+    public void ExportToProject(Project project)
+    {
+        project.ColorGradeData = ColorGradeData.FromColorGrade(CurrentGrade);
+    }
+
+    /// <summary>
+    /// Imports color grade state from the project
+    /// </summary>
+    public void ImportFromProject(Project project)
+    {
+        if (project.ColorGradeData != null)
+        {
+            var importedGrade = project.ColorGradeData.ToColorGrade();
+
+            // Copy grade properties to current grade
+            CurrentGrade.LiftX = importedGrade.LiftX;
+            CurrentGrade.LiftY = importedGrade.LiftY;
+            CurrentGrade.LiftMaster = importedGrade.LiftMaster;
+            CurrentGrade.GammaX = importedGrade.GammaX;
+            CurrentGrade.GammaY = importedGrade.GammaY;
+            CurrentGrade.GammaMaster = importedGrade.GammaMaster;
+            CurrentGrade.GainX = importedGrade.GainX;
+            CurrentGrade.GainY = importedGrade.GainY;
+            CurrentGrade.GainMaster = importedGrade.GainMaster;
+            CurrentGrade.Exposure = importedGrade.Exposure;
+            CurrentGrade.Contrast = importedGrade.Contrast;
+            CurrentGrade.Saturation = importedGrade.Saturation;
+            CurrentGrade.Temperature = importedGrade.Temperature;
+            CurrentGrade.Tint = importedGrade.Tint;
+            CurrentGrade.Highlights = importedGrade.Highlights;
+            CurrentGrade.Shadows = importedGrade.Shadows;
+            CurrentGrade.Whites = importedGrade.Whites;
+            CurrentGrade.Blacks = importedGrade.Blacks;
+            CurrentGrade.Vibrance = importedGrade.Vibrance;
+            CurrentGrade.Clarity = importedGrade.Clarity;
+            CurrentGrade.LutPath = importedGrade.LutPath;
+            CurrentGrade.LutIntensity = importedGrade.LutIntensity;
+
+            // Clear undo/redo stacks for fresh start
+            _undoStack.Clear();
+            _redoStack.Clear();
+            OnPropertyChanged(nameof(CanUndo));
+            OnPropertyChanged(nameof(CanRedo));
+
+            StatusText = "Color grade loaded from project";
+        }
+    }
+
+    #endregion
 
     public void Dispose()
     {
