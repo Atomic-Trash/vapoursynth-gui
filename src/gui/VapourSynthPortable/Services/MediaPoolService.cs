@@ -44,10 +44,12 @@ public partial class MediaPoolService : ObservableObject, IMediaPoolService
 {
     private static readonly ILogger<MediaPoolService> _logger = LoggingService.GetLogger<MediaPoolService>();
     private readonly ThumbnailService _thumbnailService;
+    private readonly AudioWaveformService _waveformService;
 
     public MediaPoolService()
     {
         _thumbnailService = new ThumbnailService();
+        _waveformService = new AudioWaveformService();
         MediaPool = [];
         _logger.LogInformation("MediaPoolService initialized");
     }
@@ -236,6 +238,66 @@ public partial class MediaPoolService : ObservableObject, IMediaPoolService
             {
                 item.IsLoadingThumbnail = false;
             }
+        }
+
+        // Generate waveform for video and audio files (non-blocking)
+        if (item.MediaType == MediaType.Video || item.MediaType == MediaType.Audio)
+        {
+            _ = LoadWaveformAsync(item);
+        }
+    }
+
+    private async Task LoadWaveformAsync(MediaItem item)
+    {
+        item.IsLoadingWaveform = true;
+
+        try
+        {
+            // Extract stereo waveform for full channel info
+            var stereoWaveform = await _waveformService.ExtractStereoWaveformAsync(
+                item.FilePath,
+                samplesPerSecond: 100);
+
+            if (stereoWaveform != null)
+            {
+                item.StereoWaveformData = stereoWaveform;
+                item.HasAudioStream = true;
+                item.AudioChannels = stereoWaveform.ChannelCount;
+                item.PeakLevelDb = stereoWaveform.MaxPeakDb;
+                item.HasClipping = stereoWaveform.ClippingCount > 0;
+
+                _logger.LogInformation("Loaded waveform for {Name}: {Channels}ch, peak={Peak:F1}dB, clipping={Clips}",
+                    item.Name, stereoWaveform.ChannelCount, stereoWaveform.MaxPeakDb, item.HasClipping);
+            }
+            else
+            {
+                // Fall back to mono waveform
+                var monoWaveform = await _waveformService.ExtractWaveformAsync(
+                    item.FilePath,
+                    samplesPerSecond: 100);
+
+                if (monoWaveform != null)
+                {
+                    item.WaveformData = monoWaveform;
+                    item.HasAudioStream = true;
+                    item.AudioChannels = 1;
+
+                    var peak = monoWaveform.Samples.Max(s => s.AbsolutePeak);
+                    item.PeakLevelDb = peak > 0 ? 20f * (float)Math.Log10(peak) : -96f;
+                    item.HasClipping = monoWaveform.Samples.Any(s => s.IsClipping);
+
+                    _logger.LogInformation("Loaded mono waveform for {Name}: peak={Peak:F1}dB",
+                        item.Name, item.PeakLevelDb);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load waveform for {FilePath}", item.FilePath);
+        }
+        finally
+        {
+            item.IsLoadingWaveform = false;
         }
     }
 

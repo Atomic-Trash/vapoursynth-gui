@@ -332,6 +332,144 @@ public class AudioWaveformService : IDisposable
     }
 
     /// <summary>
+    /// Extract stereo waveform data from an audio/video file
+    /// </summary>
+    public async Task<StereoWaveformData?> ExtractStereoWaveformAsync(
+        string filePath,
+        int samplesPerSecond = 100,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+            return null;
+
+        var cacheKey = $"{filePath}|stereo|{samplesPerSecond}";
+
+        await _extractionSemaphore.WaitAsync(ct);
+        try
+        {
+            var duration = await GetAudioDurationAsync(filePath, ct);
+            if (duration <= 0)
+            {
+                _logger.LogWarning("Could not determine audio duration for stereo: {File}", filePath);
+                return null;
+            }
+
+            int sampleRate = samplesPerSecond * 10;
+            var tempFileLeft = Path.Combine(Path.GetTempPath(), $"waveform_L_{Guid.NewGuid():N}.raw");
+            var tempFileRight = Path.Combine(Path.GetTempPath(), $"waveform_R_{Guid.NewGuid():N}.raw");
+
+            try
+            {
+                // Extract left channel
+                var argsLeft = $"-i \"{filePath}\" -vn -af \"pan=mono|c0=c0\" -ar {sampleRate} -f s16le -y \"{tempFileLeft}\"";
+                await RunFFmpegAsync(argsLeft, ct);
+
+                // Extract right channel
+                var argsRight = $"-i \"{filePath}\" -vn -af \"pan=mono|c0=c1\" -ar {sampleRate} -f s16le -y \"{tempFileRight}\"";
+                await RunFFmpegAsync(argsRight, ct);
+
+                WaveformSample[] leftSamples = [];
+                WaveformSample[] rightSamples = [];
+                int channelCount = 2;
+
+                if (File.Exists(tempFileLeft) && new FileInfo(tempFileLeft).Length > 0)
+                {
+                    var rawLeft = await File.ReadAllBytesAsync(tempFileLeft, ct);
+                    leftSamples = ProcessRawPcmData(rawLeft, sampleRate, samplesPerSecond);
+                }
+
+                if (File.Exists(tempFileRight) && new FileInfo(tempFileRight).Length > 0)
+                {
+                    var rawRight = await File.ReadAllBytesAsync(tempFileRight, ct);
+                    rightSamples = ProcessRawPcmData(rawRight, sampleRate, samplesPerSecond);
+                }
+                else
+                {
+                    // Mono source - copy left to right
+                    rightSamples = leftSamples;
+                    channelCount = 1;
+                }
+
+                var result = new StereoWaveformData
+                {
+                    FilePath = filePath,
+                    Duration = duration,
+                    SampleRate = samplesPerSecond,
+                    LeftChannel = leftSamples,
+                    RightChannel = rightSamples,
+                    ChannelCount = channelCount
+                };
+
+                _logger.LogInformation("Extracted stereo waveform from {File}: L={Left} R={Right} samples, peak={Peak:F2}dB",
+                    Path.GetFileName(filePath), leftSamples.Length, rightSamples.Length, result.MaxPeakDb);
+
+                return result;
+            }
+            finally
+            {
+                try { if (File.Exists(tempFileLeft)) File.Delete(tempFileLeft); } catch { }
+                try { if (File.Exists(tempFileRight)) File.Delete(tempFileRight); } catch { }
+            }
+        }
+        finally
+        {
+            _extractionSemaphore.Release();
+        }
+    }
+
+    private async Task RunFFmpegAsync(string args, CancellationToken ct)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = _ffmpegPath,
+            Arguments = args,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        using var process = new Process { StartInfo = startInfo };
+        process.Start();
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(TimeSpan.FromSeconds(30));
+
+        try
+        {
+            await process.WaitForExitAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            try { process.Kill(); } catch { }
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Get audio analysis info (peak levels, clipping, etc.)
+    /// </summary>
+    public async Task<AudioAnalysis?> AnalyzeAudioAsync(string filePath, CancellationToken ct = default)
+    {
+        var stereo = await ExtractStereoWaveformAsync(filePath, 100, ct);
+        if (stereo == null)
+            return null;
+
+        return new AudioAnalysis
+        {
+            FilePath = filePath,
+            Duration = stereo.Duration,
+            ChannelCount = stereo.ChannelCount,
+            PeakLevel = stereo.MaxPeak,
+            PeakLevelDb = stereo.MaxPeakDb,
+            ClippingSamples = stereo.ClippingCount,
+            HasClipping = stereo.ClippingCount > 0,
+            LeftPeak = stereo.LeftChannel.Length > 0 ? stereo.LeftChannel.Max(s => s.AbsolutePeak) : 0,
+            RightPeak = stereo.RightChannel.Length > 0 ? stereo.RightChannel.Max(s => s.AbsolutePeak) : 0
+        };
+    }
+
+    /// <summary>
     /// Clear the waveform cache
     /// </summary>
     public void ClearCache()
@@ -362,6 +500,22 @@ public class AudioWaveformService : IDisposable
 }
 
 #region Models
+
+/// <summary>
+/// Display mode for audio waveform visualization
+/// </summary>
+public enum WaveformDisplayMode
+{
+    /// <summary>
+    /// Display as single mono waveform (mixed from stereo if applicable)
+    /// </summary>
+    Mono,
+
+    /// <summary>
+    /// Display as separate left and right channels
+    /// </summary>
+    Stereo
+}
 
 /// <summary>
 /// Represents extracted waveform data for an audio file
@@ -458,6 +612,163 @@ public struct WaveformSample
     /// Absolute peak value
     /// </summary>
     public float AbsolutePeak => Math.Max(Math.Abs(Min), Math.Abs(Max));
+
+    /// <summary>
+    /// Indicates if this sample clips (peak at or above 1.0)
+    /// </summary>
+    public bool IsClipping => AbsolutePeak >= 0.99f;
+
+    /// <summary>
+    /// Peak level in decibels
+    /// </summary>
+    public float PeakDb => AbsolutePeak > 0 ? 20f * (float)Math.Log10(AbsolutePeak) : -96f;
+}
+
+/// <summary>
+/// Stereo waveform data with separate left and right channels
+/// </summary>
+public class StereoWaveformData
+{
+    public required string FilePath { get; init; }
+    public double Duration { get; init; }
+    public int SampleRate { get; init; }
+    public required WaveformSample[] LeftChannel { get; init; }
+    public required WaveformSample[] RightChannel { get; init; }
+    public int ChannelCount { get; init; }
+
+    /// <summary>
+    /// Maximum peak level across both channels
+    /// </summary>
+    public float MaxPeak => Math.Max(
+        LeftChannel.Length > 0 ? LeftChannel.Max(s => s.AbsolutePeak) : 0,
+        RightChannel.Length > 0 ? RightChannel.Max(s => s.AbsolutePeak) : 0);
+
+    /// <summary>
+    /// Maximum peak level in dB
+    /// </summary>
+    public float MaxPeakDb => MaxPeak > 0 ? 20f * (float)Math.Log10(MaxPeak) : -96f;
+
+    /// <summary>
+    /// Count of samples that clip
+    /// </summary>
+    public int ClippingCount =>
+        LeftChannel.Count(s => s.IsClipping) + RightChannel.Count(s => s.IsClipping);
+
+    /// <summary>
+    /// Get mono mix of both channels
+    /// </summary>
+    public WaveformSample[] GetMonoMix()
+    {
+        if (LeftChannel.Length == 0) return RightChannel;
+        if (RightChannel.Length == 0) return LeftChannel;
+
+        var mono = new WaveformSample[LeftChannel.Length];
+        for (int i = 0; i < LeftChannel.Length; i++)
+        {
+            mono[i] = new WaveformSample
+            {
+                Min = (LeftChannel[i].Min + RightChannel[i].Min) / 2f,
+                Max = (LeftChannel[i].Max + RightChannel[i].Max) / 2f,
+                Rms = (float)Math.Sqrt((LeftChannel[i].Rms * LeftChannel[i].Rms +
+                                        RightChannel[i].Rms * RightChannel[i].Rms) / 2f)
+            };
+        }
+        return mono;
+    }
+
+    /// <summary>
+    /// Get resampled stereo waveform for display
+    /// </summary>
+    public (WaveformSample[] left, WaveformSample[] right) GetResampledForWidth(
+        int targetWidth, double startTime = 0, double endTime = -1)
+    {
+        if (endTime < 0) endTime = Duration;
+
+        var left = ResampleChannel(LeftChannel, targetWidth, startTime, endTime);
+        var right = ResampleChannel(RightChannel, targetWidth, startTime, endTime);
+
+        return (left, right);
+    }
+
+    private WaveformSample[] ResampleChannel(WaveformSample[] channel, int targetWidth, double startTime, double endTime)
+    {
+        if (channel.Length == 0 || Duration <= 0)
+            return [];
+
+        int startIdx = Math.Max(0, (int)(startTime / Duration * channel.Length));
+        int endIdx = Math.Min(channel.Length, (int)(endTime / Duration * channel.Length));
+
+        if (endIdx <= startIdx)
+            return [];
+
+        int rangeLength = endIdx - startIdx;
+        if (rangeLength <= targetWidth)
+        {
+            var result = new WaveformSample[rangeLength];
+            Array.Copy(channel, startIdx, result, 0, rangeLength);
+            return result;
+        }
+
+        var resampled = new WaveformSample[targetWidth];
+        double samplesPerPixel = rangeLength / (double)targetWidth;
+
+        for (int i = 0; i < targetWidth; i++)
+        {
+            int bucketStart = startIdx + (int)(i * samplesPerPixel);
+            int bucketEnd = Math.Min(startIdx + rangeLength, startIdx + (int)((i + 1) * samplesPerPixel));
+
+            float min = float.MaxValue;
+            float max = float.MinValue;
+            float rmsSum = 0;
+            int count = 0;
+
+            for (int j = bucketStart; j < bucketEnd; j++)
+            {
+                min = Math.Min(min, channel[j].Min);
+                max = Math.Max(max, channel[j].Max);
+                rmsSum += channel[j].Rms * channel[j].Rms;
+                count++;
+            }
+
+            resampled[i] = new WaveformSample
+            {
+                Min = min == float.MaxValue ? 0 : min,
+                Max = max == float.MinValue ? 0 : max,
+                Rms = count > 0 ? (float)Math.Sqrt(rmsSum / count) : 0
+            };
+        }
+
+        return resampled;
+    }
+}
+
+/// <summary>
+/// Audio analysis results
+/// </summary>
+public class AudioAnalysis
+{
+    public required string FilePath { get; init; }
+    public double Duration { get; init; }
+    public int ChannelCount { get; init; }
+    public float PeakLevel { get; init; }
+    public float PeakLevelDb { get; init; }
+    public int ClippingSamples { get; init; }
+    public bool HasClipping { get; init; }
+    public float LeftPeak { get; init; }
+    public float RightPeak { get; init; }
+
+    public float LeftPeakDb => LeftPeak > 0 ? 20f * (float)Math.Log10(LeftPeak) : -96f;
+    public float RightPeakDb => RightPeak > 0 ? 20f * (float)Math.Log10(RightPeak) : -96f;
+
+    /// <summary>
+    /// Headroom in dB (how much below 0dB the peak is)
+    /// </summary>
+    public float HeadroomDb => -PeakLevelDb;
+
+    /// <summary>
+    /// Suggested gain adjustment to normalize to -1dB
+    /// </summary>
+    public float SuggestedGainDb => -1f - PeakLevelDb;
 }
 
 #endregion
