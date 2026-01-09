@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
@@ -14,6 +15,7 @@ public partial class RestoreViewModel : ObservableObject, IDisposable
 {
     private readonly IMediaPoolService _mediaPool;
     private readonly VapourSynthService _vapourSynthService;
+    private readonly QuickPreviewService _quickPreviewService;
     private bool _disposed;
 
     [ObservableProperty]
@@ -62,6 +64,31 @@ public partial class RestoreViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _gpuName = "";
 
+    // Quick Preview properties
+    [ObservableProperty]
+    private BitmapSource? _originalFrame;
+
+    [ObservableProperty]
+    private BitmapSource? _processedFrame;
+
+    [ObservableProperty]
+    private bool _isGeneratingPreview;
+
+    [ObservableProperty]
+    private long _previewFrame;
+
+    [ObservableProperty]
+    private bool _showComparison;
+
+    [ObservableProperty]
+    private ComparisonMode _comparisonMode = ComparisonMode.SideBySide;
+
+    [ObservableProperty]
+    private double _wipePosition = 0.5; // 0-1 for wipe comparison
+
+    public bool HasPreview => OriginalFrame != null || ProcessedFrame != null;
+    public bool CanGeneratePreview => HasSource && SelectedPreset != null && !IsGeneratingPreview;
+
     // Source media info
     [ObservableProperty]
     private int _sourceWidth;
@@ -94,6 +121,9 @@ public partial class RestoreViewModel : ObservableObject, IDisposable
         _vapourSynthService = new VapourSynthService();
         _vapourSynthService.ProgressChanged += OnVapourSynthProgressChanged;
         _vapourSynthService.LogMessage += OnVapourSynthLogMessage;
+
+        // Initialize quick preview service
+        _quickPreviewService = new QuickPreviewService();
 
         LoadPresets();
         DetectGpu();
@@ -174,6 +204,91 @@ public partial class RestoreViewModel : ObservableObject, IDisposable
     partial void OnSelectedCategoryChanged(string value)
     {
         FilterPresets();
+    }
+
+    [RelayCommand]
+    private void SelectCategory(string category)
+    {
+        SelectedCategory = category;
+    }
+
+    partial void OnSelectedPresetChanged(RestorePreset? value)
+    {
+        OnPropertyChanged(nameof(CanGeneratePreview));
+
+        // Clear processed frame when preset changes
+        ProcessedFrame = null;
+        OnPropertyChanged(nameof(HasPreview));
+    }
+
+    [RelayCommand]
+    private async Task GeneratePreviewAsync()
+    {
+        if (!CanGeneratePreview || SelectedPreset == null) return;
+
+        IsGeneratingPreview = true;
+        StatusText = "Generating preview...";
+
+        try
+        {
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            // Use middle frame if no preview frame set
+            if (PreviewFrame <= 0)
+            {
+                PreviewFrame = SourceFrameCount / 2;
+            }
+
+            // Generate both original and processed previews in parallel
+            var originalTask = _quickPreviewService.GenerateOriginalPreviewAsync(
+                SourcePath, PreviewFrame, _cancellationTokenSource.Token);
+
+            var processedTask = _quickPreviewService.GeneratePreviewAsync(
+                SourcePath, SelectedPreset, PreviewFrame, _cancellationTokenSource.Token);
+
+            await Task.WhenAll(originalTask, processedTask);
+
+            OriginalFrame = await originalTask;
+            ProcessedFrame = await processedTask;
+
+            ShowComparison = OriginalFrame != null && ProcessedFrame != null;
+            OnPropertyChanged(nameof(HasPreview));
+
+            StatusText = ProcessedFrame != null
+                ? "Preview generated"
+                : "Preview generation failed (using original frame)";
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Preview cancelled";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Preview error: {ex.Message}";
+        }
+        finally
+        {
+            IsGeneratingPreview = false;
+            OnPropertyChanged(nameof(CanGeneratePreview));
+        }
+    }
+
+    [RelayCommand]
+    private void CancelPreview()
+    {
+        _cancellationTokenSource?.Cancel();
+    }
+
+    [RelayCommand]
+    private void SetComparisonMode(ComparisonMode mode)
+    {
+        ComparisonMode = mode;
+    }
+
+    [RelayCommand]
+    private void ToggleComparison()
+    {
+        ShowComparison = !ShowComparison;
     }
 
     private void FilterPresets()

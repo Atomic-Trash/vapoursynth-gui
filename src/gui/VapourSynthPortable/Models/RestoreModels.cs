@@ -1,3 +1,5 @@
+using System.IO;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace VapourSynthPortable.Models;
@@ -402,11 +404,15 @@ public partial class RestoreJob : ObservableObject
     [ObservableProperty]
     private string _errorMessage = "";
 
+    [ObservableProperty]
+    private BitmapSource? _thumbnail;
+
     public RestoreJob()
     {
         Id = _nextId++;
     }
 
+    public string SourceFileName => Path.GetFileName(SourcePath);
     public string ProgressText => $"{Progress:F1}% ({CurrentFrame}/{TotalFrames} frames)";
 }
 

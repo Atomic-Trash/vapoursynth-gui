@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using VapourSynthPortable.ViewModels;
 
 namespace VapourSynthPortable.Pages;
@@ -8,6 +9,7 @@ namespace VapourSynthPortable.Pages;
 public partial class RestorePage : UserControl
 {
     private string? _currentSource;
+    private bool _showingOriginal;
 
     public RestorePage()
     {
@@ -77,5 +79,28 @@ public partial class RestorePage : UserControl
 
         _currentSource = path;
         PreviewPlayer.LoadFile(path);
+    }
+
+    private void ComparisonPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is not RestoreViewModel viewModel) return;
+
+        // Toggle between showing original and processed
+        _showingOriginal = !_showingOriginal;
+
+        if (_showingOriginal)
+        {
+            ToggleImage.Source = viewModel.OriginalFrame;
+            ToggleLabel.Text = "ORIGINAL (click to toggle)";
+            ToggleLabel.Foreground = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0x88, 0x88, 0x88));
+        }
+        else
+        {
+            ToggleImage.Source = viewModel.ProcessedFrame;
+            ToggleLabel.Text = "PROCESSED (click to toggle)";
+            ToggleLabel.Foreground = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0x4A, 0xDE, 0x80));
+        }
     }
 }

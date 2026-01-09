@@ -89,7 +89,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Presets Panel -->
-            <Border Grid.Column="0" Background="#252526" Margin="10,10,5,10">
+            <Border Grid.Column="0" Background="#252526" Margin="10,10,5,10" CornerRadius="8">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -97,51 +97,121 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Restoration Presets" FontSize="13" FontWeight="SemiBold"
-                               Foreground="#F1F1F1" Margin="12,12,12,8"/>
+                    <Border Grid.Row="0" Background="#2D2D2D" Padding="12,10" CornerRadius="8,8,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE773;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="#0E639C" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Restoration Presets" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="#F1F1F1" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
 
-                    <!-- Category Filter -->
-                    <ComboBox Grid.Row="1" ItemsSource="{Binding Categories}"
-                              SelectedItem="{Binding SelectedCategory}"
-                              ToolTip="Filter presets by category"
-                              Margin="12,0,12,10"/>
+                    <!-- Category Tabs -->
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Disabled" Margin="8,0,8,8">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Content="All" GroupName="CategoryTabs"
+                                         Style="{StaticResource CategoryPillButton}"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=All}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="All"/>
+                            <RadioButton Content="Denoising" GroupName="CategoryTabs"
+                                         Style="{StaticResource CategoryPillButton}"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Denoising}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Denoising"/>
+                            <RadioButton Content="Upscaling" GroupName="CategoryTabs"
+                                         Style="{StaticResource CategoryPillButton}"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Upscaling}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Upscaling"/>
+                            <RadioButton Content="Deinterlacing" GroupName="CategoryTabs"
+                                         Style="{StaticResource CategoryPillButton}"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Deinterlacing}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Deinterlacing"/>
+                            <RadioButton Content="Restoration" GroupName="CategoryTabs"
+                                         Style="{StaticResource CategoryPillButton}"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Restoration}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Restoration"/>
+                            <RadioButton Content="Enhancement" GroupName="CategoryTabs"
+                                         Style="{StaticResource CategoryPillButton}"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Enhancement}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Enhancement"/>
+                            <RadioButton Content="Film" GroupName="CategoryTabs"
+                                         Style="{StaticResource CategoryPillButton}"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Film}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Film"/>
+                            <RadioButton Content="Utility" GroupName="CategoryTabs"
+                                         Style="{StaticResource CategoryPillButton}"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Utility}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Utility"/>
+                        </StackPanel>
+                    </ScrollViewer>
 
                     <!-- Presets List -->
                     <ListBox Grid.Row="2" ItemsSource="{Binding FilteredPresets}"
                              SelectedItem="{Binding SelectedPreset}"
                              Background="Transparent" BorderThickness="0"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="Bd" Style="{StaticResource PresetCardStyle}">
+                                                <ContentPresenter/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="#0E639C"/>
+                                                    <Setter TargetName="Bd" Property="Background" Value="#1A3A5C"/>
+                                                </Trigger>
+                                                <MultiTrigger>
+                                                    <MultiTrigger.Conditions>
+                                                        <Condition Property="IsSelected" Value="True"/>
+                                                        <Condition Property="IsMouseOver" Value="True"/>
+                                                    </MultiTrigger.Conditions>
+                                                    <Setter TargetName="Bd" Property="Background" Value="#1E4A70"/>
+                                                </MultiTrigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border Padding="10,8" Margin="4,2" CornerRadius="4"
-                                        Background="#2A2A2A" BorderBrush="#3A3A3A" BorderThickness="1"
-                                        Cursor="Hand">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
 
-                                        <TextBlock Grid.Column="0" Text="{Binding Icon}"
-                                                   FontFamily="Segoe MDL2 Assets" FontSize="18"
-                                                   Foreground="#0E639C" VerticalAlignment="Center"
-                                                   Margin="0,0,10,0"/>
+                                    <!-- Icon with glow effect when selected -->
+                                    <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8"
+                                            Background="#252526" Margin="0,0,12,0">
+                                        <TextBlock Text="{Binding Icon}"
+                                                   FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                                   Foreground="#0E639C"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
 
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock Text="{Binding Name}" Foreground="#DDD" FontSize="12"/>
-                                            <TextBlock Text="{Binding Description}" Foreground="#888"
-                                                       FontSize="10" TextWrapping="Wrap"/>
-                                        </StackPanel>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontSize="12"
+                                                   FontWeight="Medium"/>
+                                        <TextBlock Text="{Binding Description}" Foreground="#808080"
+                                                   FontSize="10" TextWrapping="Wrap" MaxWidth="140"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
 
-                                        <Border Grid.Column="2" Background="#333" CornerRadius="2"
-                                                Padding="4,2" VerticalAlignment="Center"
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <!-- GPU Badge -->
+                                        <Border Background="#1A3D2A" CornerRadius="3"
+                                                Padding="5,2" VerticalAlignment="Center"
                                                 ToolTip="This preset requires GPU acceleration"
                                                 Visibility="{Binding RequiresGpu, Converter={StaticResource BoolToVisibilityConverter}}">
-                                            <TextBlock Text="GPU" Foreground="#4ADE80" FontSize="9"/>
+                                            <TextBlock Text="GPU" Foreground="#4ADE80" FontSize="8" FontWeight="Bold"/>
                                         </Border>
-                                    </Grid>
-                                </Border>
+                                    </StackPanel>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -156,7 +226,8 @@
                 </Grid.RowDefinitions>
 
                 <!-- Preview Area -->
-                <Border Grid.Row="0" Background="#1E1E1E" Margin="0,0,0,10">
+                <Border Grid.Row="0" Background="#1E1E1E" Margin="0,0,0,10" CornerRadius="8"
+                        BorderBrush="#2A2A2A" BorderThickness="1">
                     <Grid>
                         <!-- No source placeholder -->
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
@@ -176,15 +247,129 @@
                         <!-- Source loaded -->
                         <Grid Visibility="{Binding HasSource, Converter={StaticResource BoolToVisibilityConverter}}">
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <!-- Video Player -->
-                            <controls:VideoPlayerControl x:Name="PreviewPlayer" Grid.Row="0"/>
+                            <!-- Comparison Mode Toolbar -->
+                            <Border Grid.Row="0" Background="#2A2A2A" Padding="8,4"
+                                    Visibility="{Binding ShowComparison, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="Compare:" Foreground="#888" FontSize="10"
+                                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <RadioButton Content="Side by Side" GroupName="CompareMode"
+                                                 Style="{StaticResource CategoryPillButton}"
+                                                 IsChecked="{Binding ComparisonMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=SideBySide}"
+                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="SideBySide"/>
+                                    <RadioButton Content="Split" GroupName="CompareMode"
+                                                 Style="{StaticResource CategoryPillButton}"
+                                                 IsChecked="{Binding ComparisonMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=Split}"
+                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="Split"/>
+                                    <RadioButton Content="Wipe" GroupName="CompareMode"
+                                                 Style="{StaticResource CategoryPillButton}"
+                                                 IsChecked="{Binding ComparisonMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=Wipe}"
+                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="Wipe"/>
+                                    <RadioButton Content="Toggle" GroupName="CompareMode"
+                                                 Style="{StaticResource CategoryPillButton}"
+                                                 IsChecked="{Binding ComparisonMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=Toggle}"
+                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="Toggle"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Preview Content -->
+                            <Grid Grid.Row="1">
+                                <!-- Video Player (hidden when showing comparison) -->
+                                <controls:VideoPlayerControl x:Name="PreviewPlayer"
+                                    Visibility="{Binding ShowComparison, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+
+                                <!-- A/B Comparison Panel -->
+                                <Grid Visibility="{Binding ShowComparison, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <!-- Side by Side Mode -->
+                                    <Grid Visibility="{Binding ComparisonMode, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=SideBySide}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="2"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid Grid.Column="0">
+                                            <Image Source="{Binding OriginalFrame}" Stretch="Uniform"/>
+                                            <TextBlock Text="ORIGINAL" Foreground="#888" FontSize="9" FontWeight="Bold"
+                                                       HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,8"/>
+                                        </Grid>
+                                        <Border Grid.Column="1" Background="#333"/>
+                                        <Grid Grid.Column="2">
+                                            <Image Source="{Binding ProcessedFrame}" Stretch="Uniform"/>
+                                            <TextBlock Text="PROCESSED" Foreground="#4ADE80" FontSize="9" FontWeight="Bold"
+                                                       HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,8"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <!-- Wipe Mode (simplified - shows processed) -->
+                                    <Grid Visibility="{Binding ComparisonMode, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Wipe}">
+                                        <Image Source="{Binding OriginalFrame}" Stretch="Uniform"/>
+                                        <Image Source="{Binding ProcessedFrame}" Stretch="Uniform"
+                                               Opacity="{Binding WipePosition}"/>
+                                        <Slider Value="{Binding WipePosition}" Minimum="0" Maximum="1"
+                                                VerticalAlignment="Bottom" Margin="20,0,20,20"
+                                                Background="Transparent"/>
+                                    </Grid>
+
+                                    <!-- Toggle Mode -->
+                                    <Grid Visibility="{Binding ComparisonMode, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Toggle}"
+                                          MouseLeftButtonDown="ComparisonPanel_MouseLeftButtonDown">
+                                        <Image x:Name="ToggleImage" Source="{Binding ProcessedFrame}" Stretch="Uniform"/>
+                                        <TextBlock x:Name="ToggleLabel" Text="PROCESSED (click to toggle)" Foreground="#4ADE80" FontSize="9" FontWeight="Bold"
+                                                   HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,8"/>
+                                    </Grid>
+
+                                    <!-- Split Mode -->
+                                    <Grid Visibility="{Binding ComparisonMode, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Split}">
+                                        <Image Source="{Binding OriginalFrame}" Stretch="Uniform"/>
+                                        <Image Source="{Binding ProcessedFrame}" Stretch="Uniform"
+                                               HorizontalAlignment="Right">
+                                            <Image.Clip>
+                                                <RectangleGeometry>
+                                                    <RectangleGeometry.Rect>
+                                                        <Rect X="0" Y="0" Width="1000" Height="2000"/>
+                                                    </RectangleGeometry.Rect>
+                                                </RectangleGeometry>
+                                            </Image.Clip>
+                                        </Image>
+                                        <Border Width="2" Background="#0E639C" HorizontalAlignment="Center"/>
+                                    </Grid>
+                                </Grid>
+
+                                <!-- Preview Loading Overlay -->
+                                <Border Background="#80000000" Visibility="{Binding IsGeneratingPreview, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="32"
+                                                   Foreground="#AAA" HorizontalAlignment="Center">
+                                            <TextBlock.RenderTransform>
+                                                <RotateTransform x:Name="LoadingRotate" CenterX="16" CenterY="16"/>
+                                            </TextBlock.RenderTransform>
+                                            <TextBlock.Triggers>
+                                                <EventTrigger RoutedEvent="Loaded">
+                                                    <BeginStoryboard>
+                                                        <Storyboard RepeatBehavior="Forever">
+                                                            <DoubleAnimation Storyboard.TargetName="LoadingRotate"
+                                                                             Storyboard.TargetProperty="Angle"
+                                                                             From="0" To="360" Duration="0:0:1"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </TextBlock.Triggers>
+                                        </TextBlock>
+                                        <TextBlock Text="Generating preview..." Foreground="#AAA" FontSize="12"
+                                                   HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                                        <Button Content="Cancel" Command="{Binding CancelPreviewCommand}"
+                                                Style="{StaticResource SecondaryButton}" Margin="0,15,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
 
                             <!-- Selected Preset Info -->
-                            <Border Grid.Row="1" Background="#2A2A2A" Padding="15"
+                            <Border Grid.Row="2" Background="#2A2A2A" Padding="15"
                                     Visibility="{Binding SelectedPreset, Converter={StaticResource NullToVis}, ConverterParameter=Invert}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -200,6 +385,10 @@
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <Button Content="Preview" Command="{Binding GeneratePreviewCommand}"
+                                                ToolTip="Generate a quick preview with this preset (2-5 seconds)"
+                                                Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                                                IsEnabled="{Binding CanGeneratePreview}"/>
                                         <Button Content="Process Now" Command="{Binding ProcessNowCommand}"
                                                 ToolTip="Process immediately with selected preset"
                                                 Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"/>
@@ -214,7 +403,7 @@
                 </Border>
 
                 <!-- Output Settings -->
-                <Border Grid.Row="1" Background="#252526" Padding="15">
+                <Border Grid.Row="1" Background="#252526" Padding="15" CornerRadius="8">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -226,7 +415,13 @@
                                    VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <TextBox Grid.Column="1" Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}"
                                  Background="#1E1E1E" Foreground="#CCC" BorderBrush="#3A3A3A"
-                                 Padding="8,6" FontSize="11"/>
+                                 Padding="8,6" FontSize="11">
+                            <TextBox.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
                         <Button Grid.Column="2" Content="Browse..." Command="{Binding SelectOutputCommand}"
                                 ToolTip="Select output file location"
                                 Style="{StaticResource SecondaryButton}" Margin="10,0,0,0"/>
@@ -235,7 +430,7 @@
             </Grid>
 
             <!-- Queue Panel -->
-            <Border Grid.Column="2" Background="#252526" Margin="5,10,10,10">
+            <Border Grid.Column="2" Background="#252526" Margin="5,10,10,10" CornerRadius="8">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -243,44 +438,84 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Background="#2D2D2D" Padding="12,10">
+                    <Border Grid.Row="0" Background="#2D2D2D" Padding="12,10" CornerRadius="8,8,0,0">
                         <Grid>
-                            <TextBlock Text="Processing Queue" FontSize="13" FontWeight="SemiBold"
-                                       Foreground="#F1F1F1"/>
-                            <TextBlock Text="{Binding JobQueue.Count, StringFormat='({0})'}"
-                                       Foreground="#888" FontSize="11" HorizontalAlignment="Right"
-                                       VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                           Foreground="#888" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="Processing Queue" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="#F1F1F1" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Border Background="#333" CornerRadius="10" Padding="6,2"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding JobQueue.Count}"
+                                           Foreground="#AAA" FontSize="10"/>
+                            </Border>
                         </Grid>
                     </Border>
 
                     <!-- Queue List -->
                     <ListBox Grid.Row="1" ItemsSource="{Binding JobQueue}"
-                             Background="Transparent" BorderThickness="0">
+                             Background="Transparent" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border Padding="10,8" Margin="4,2" CornerRadius="4"
-                                        Background="#2A2A2A" BorderBrush="#3A3A3A" BorderThickness="1">
+                                <Border Style="{StaticResource QueueCardStyle}">
                                     <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
 
-                                        <Grid Grid.Row="0">
-                                            <TextBlock Text="{Binding Preset.Name}" Foreground="#DDD" FontSize="11"/>
-                                            <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="10"
-                                                       HorizontalAlignment="Right"/>
-                                        </Grid>
+                                        <!-- Thumbnail -->
+                                        <Border Grid.Column="0" Width="64" Height="36" CornerRadius="3"
+                                                Background="#1E1E1E" Margin="0,0,10,0">
+                                            <Grid>
+                                                <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"
+                                                       Visibility="{Binding Thumbnail, Converter={StaticResource NullToVis}, ConverterParameter=Invert}"/>
+                                                <TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                                           Foreground="#444" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Visibility="{Binding Thumbnail, Converter={StaticResource NullToVis}}"/>
+                                            </Grid>
+                                        </Border>
 
-                                        <ProgressBar Grid.Row="1" Value="{Binding Progress}" Maximum="100"
-                                                     Height="4" Margin="0,6" Background="#333"
-                                                     Foreground="#0E639C"/>
+                                        <!-- Job Info -->
+                                        <Grid Grid.Column="1">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                                        <Grid Grid.Row="2">
-                                            <TextBlock Text="{Binding ProgressText}" Foreground="#888" FontSize="9"/>
-                                            <TextBlock Text="{Binding EstimatedTimeRemaining, StringFormat='ETA: {0:mm\\:ss}'}"
-                                                       Foreground="#888" FontSize="9" HorizontalAlignment="Right"/>
+                                            <!-- File name and status -->
+                                            <Grid Grid.Row="0">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding SourceFileName}" Foreground="#DDD" FontSize="11"
+                                                               MaxWidth="120" TextTrimming="CharacterEllipsis"
+                                                               ToolTip="{Binding SourcePath}"/>
+                                                </StackPanel>
+                                                <Border Background="#333" CornerRadius="2" Padding="4,1"
+                                                        HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="8"/>
+                                                </Border>
+                                            </Grid>
+
+                                            <!-- Preset name -->
+                                            <TextBlock Grid.Row="1" Text="{Binding Preset.Name}" Foreground="#888" FontSize="9"
+                                                       Margin="0,2,0,0"/>
+
+                                            <!-- Progress bar -->
+                                            <Grid Grid.Row="2" Margin="0,4,0,0">
+                                                <ProgressBar Value="{Binding Progress}" Maximum="100"
+                                                             Height="3" Background="#333" Foreground="#0E639C"/>
+                                                <Grid Margin="0,4,0,0">
+                                                    <TextBlock Text="{Binding Progress, StringFormat='{}{0:F0}%'}"
+                                                               Foreground="#888" FontSize="8"/>
+                                                    <TextBlock Text="{Binding EstimatedTimeRemaining, StringFormat='ETA: {0:mm\\:ss}'}"
+                                                               Foreground="#888" FontSize="8" HorizontalAlignment="Right"
+                                                               Visibility="{Binding Status, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Processing}"/>
+                                                </Grid>
+                                            </Grid>
                                         </Grid>
                                     </Grid>
                                 </Border>
@@ -298,19 +533,22 @@
                     </StackPanel>
 
                     <!-- Queue Controls -->
-                    <Border Grid.Row="2" Background="#2D2D2D" Padding="10">
+                    <Border Grid.Row="2" Background="#2D2D2D" Padding="10" CornerRadius="0,0,8,8">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button Content="Process All" Command="{Binding ProcessQueueCommand}"
+                            <Button Content="&#xE768; Process" Command="{Binding ProcessQueueCommand}"
                                     ToolTip="Start processing all queued jobs"
-                                    Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
-                                    IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"/>
-                            <Button Content="Cancel" Command="{Binding CancelProcessingCommand}"
+                                    Style="{StaticResource PrimaryButton}" Margin="0,0,6,0"
+                                    IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
+                                    FontFamily="Segoe MDL2 Assets, Segoe UI"/>
+                            <Button Content="&#xE711; Cancel" Command="{Binding CancelProcessingCommand}"
                                     ToolTip="Cancel current processing"
-                                    Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
-                                    IsEnabled="{Binding IsProcessing}"/>
-                            <Button Content="Clear" Command="{Binding ClearQueueCommand}"
+                                    Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"
+                                    IsEnabled="{Binding IsProcessing}"
+                                    FontFamily="Segoe MDL2 Assets, Segoe UI"/>
+                            <Button Content="&#xE74D; Clear" Command="{Binding ClearQueueCommand}"
                                     ToolTip="Remove completed jobs from queue"
-                                    Style="{StaticResource SecondaryButton}"/>
+                                    Style="{StaticResource SecondaryButton}"
+                                    FontFamily="Segoe MDL2 Assets, Segoe UI"/>
                         </StackPanel>
                     </Border>
                 </Grid>
