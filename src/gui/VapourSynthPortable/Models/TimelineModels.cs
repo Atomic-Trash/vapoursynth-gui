@@ -70,6 +70,15 @@ public partial class TimelineClip : ObservableObject
     [ObservableProperty]
     private TimelineClip? _linkedClip;
 
+    // Effects applied to this clip
+    [ObservableProperty]
+    private ObservableCollection<TimelineEffect> _effects = [];
+
+    /// <summary>
+    /// Indicates if the clip has any enabled effects
+    /// </summary>
+    public bool HasEffects => Effects.Any(e => e.IsEnabled);
+
     public TimelineClip()
     {
         Id = _nextId++;
@@ -112,7 +121,7 @@ public partial class TimelineClip : ObservableObject
 
     public TimelineClip Clone()
     {
-        return new TimelineClip
+        var clone = new TimelineClip
         {
             Name = Name,
             SourcePath = SourcePath,
@@ -127,6 +136,43 @@ public partial class TimelineClip : ObservableObject
             Volume = Volume,
             IsMuted = IsMuted
         };
+
+        // Clone effects
+        foreach (var effect in Effects)
+        {
+            clone.Effects.Add(effect.Clone());
+        }
+
+        return clone;
+    }
+
+    /// <summary>
+    /// Adds an effect to this clip
+    /// </summary>
+    public void AddEffect(TimelineEffect effect)
+    {
+        Effects.Add(effect);
+        OnPropertyChanged(nameof(HasEffects));
+    }
+
+    /// <summary>
+    /// Removes an effect from this clip
+    /// </summary>
+    public void RemoveEffect(TimelineEffect effect)
+    {
+        Effects.Remove(effect);
+        OnPropertyChanged(nameof(HasEffects));
+    }
+
+    /// <summary>
+    /// Moves an effect to a new position in the stack
+    /// </summary>
+    public void MoveEffect(int oldIndex, int newIndex)
+    {
+        if (oldIndex < 0 || oldIndex >= Effects.Count) return;
+        if (newIndex < 0 || newIndex >= Effects.Count) return;
+
+        Effects.Move(oldIndex, newIndex);
     }
 }
 

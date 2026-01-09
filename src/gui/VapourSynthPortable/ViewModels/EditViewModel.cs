@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using VapourSynthPortable.Models;
 using VapourSynthPortable.Services;
+using System.Collections.Specialized;
 
 namespace VapourSynthPortable.ViewModels;
 
@@ -879,6 +880,180 @@ public partial class EditViewModel : ObservableObject, IDisposable
         SaveUndoState("Resize text overlay");
         overlay.DurationFrames = Math.Max(1, newDuration);
         StatusText = "Resized text overlay";
+    }
+
+    // Effect Management
+
+    /// <summary>
+    /// Gets the effect service instance
+    /// </summary>
+    public EffectService EffectService => EffectService.Instance;
+
+    /// <summary>
+    /// Gets available effect definitions grouped by category
+    /// </summary>
+    public IEnumerable<IGrouping<string, EffectDefinition>> AvailableEffects =>
+        EffectService.EffectsByCategory;
+
+    [ObservableProperty]
+    private TimelineEffect? _selectedEffect;
+
+    [ObservableProperty]
+    private bool _showEffectPanel;
+
+    [RelayCommand]
+    private void AddEffectToClip(EffectDefinition? definition)
+    {
+        if (Timeline.SelectedClip == null || definition == null) return;
+
+        SaveUndoState($"Add {definition.Name} effect");
+
+        var effect = EffectService.CreateEffect(definition);
+        Timeline.SelectedClip.AddEffect(effect);
+        SelectedEffect = effect;
+        ShowEffectPanel = true;
+
+        StatusText = $"Added {definition.Name} to {Timeline.SelectedClip.Name}";
+        ToastService.Instance.ShowSuccess("Effect Added", definition.Name);
+    }
+
+    [RelayCommand]
+    private void RemoveEffectFromClip(TimelineEffect? effect)
+    {
+        if (Timeline.SelectedClip == null || effect == null) return;
+
+        SaveUndoState($"Remove {effect.Name} effect");
+
+        var effectName = effect.Name;
+        Timeline.SelectedClip.RemoveEffect(effect);
+
+        if (SelectedEffect == effect)
+            SelectedEffect = null;
+
+        StatusText = $"Removed {effectName}";
+        ToastService.Instance.ShowInfo("Effect Removed", effectName);
+    }
+
+    [RelayCommand]
+    private void MoveEffectUp(TimelineEffect? effect)
+    {
+        if (Timeline.SelectedClip == null || effect == null) return;
+
+        var index = Timeline.SelectedClip.Effects.IndexOf(effect);
+        if (index > 0)
+        {
+            SaveUndoState("Reorder effects");
+            Timeline.SelectedClip.MoveEffect(index, index - 1);
+            StatusText = "Effect moved up";
+        }
+    }
+
+    [RelayCommand]
+    private void MoveEffectDown(TimelineEffect? effect)
+    {
+        if (Timeline.SelectedClip == null || effect == null) return;
+
+        var index = Timeline.SelectedClip.Effects.IndexOf(effect);
+        if (index >= 0 && index < Timeline.SelectedClip.Effects.Count - 1)
+        {
+            SaveUndoState("Reorder effects");
+            Timeline.SelectedClip.MoveEffect(index, index + 1);
+            StatusText = "Effect moved down";
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleEffectEnabled(TimelineEffect? effect)
+    {
+        if (effect == null) return;
+
+        effect.IsEnabled = !effect.IsEnabled;
+        StatusText = effect.IsEnabled ? $"{effect.Name} enabled" : $"{effect.Name} disabled";
+    }
+
+    [RelayCommand]
+    private void DuplicateEffect(TimelineEffect? effect)
+    {
+        if (Timeline.SelectedClip == null || effect == null) return;
+
+        SaveUndoState($"Duplicate {effect.Name}");
+
+        var clone = effect.Clone();
+        Timeline.SelectedClip.AddEffect(clone);
+        SelectedEffect = clone;
+
+        StatusText = $"Duplicated {effect.Name}";
+    }
+
+    [RelayCommand]
+    private void ResetEffectParameters(TimelineEffect? effect)
+    {
+        if (effect == null) return;
+
+        SaveUndoState($"Reset {effect.Name}");
+
+        foreach (var param in effect.Parameters)
+        {
+            param.Reset();
+        }
+
+        StatusText = $"Reset {effect.Name} to defaults";
+    }
+
+    [RelayCommand]
+    private void CopyEffectsFromClip()
+    {
+        if (Timeline.SelectedClip == null || !Timeline.SelectedClip.HasEffects) return;
+
+        _copiedEffects = Timeline.SelectedClip.Effects.Select(e => e.Clone()).ToList();
+        StatusText = $"Copied {_copiedEffects.Count} effect(s)";
+        ToastService.Instance.ShowInfo("Copied", $"{_copiedEffects.Count} effect(s)");
+    }
+
+    private List<TimelineEffect>? _copiedEffects;
+
+    [RelayCommand]
+    private void PasteEffectsToClip()
+    {
+        if (Timeline.SelectedClip == null || _copiedEffects == null || _copiedEffects.Count == 0) return;
+
+        SaveUndoState("Paste effects");
+
+        foreach (var effect in _copiedEffects)
+        {
+            Timeline.SelectedClip.AddEffect(effect.Clone());
+        }
+
+        StatusText = $"Pasted {_copiedEffects.Count} effect(s)";
+        ToastService.Instance.ShowSuccess("Pasted", $"{_copiedEffects.Count} effect(s)");
+    }
+
+    [RelayCommand]
+    private void ClearAllEffects()
+    {
+        if (Timeline.SelectedClip == null || !Timeline.SelectedClip.HasEffects) return;
+
+        SaveUndoState("Clear all effects");
+
+        var count = Timeline.SelectedClip.Effects.Count;
+        Timeline.SelectedClip.Effects.Clear();
+        SelectedEffect = null;
+
+        StatusText = $"Cleared {count} effect(s)";
+    }
+
+    [RelayCommand]
+    private void ToggleEffectPanel()
+    {
+        ShowEffectPanel = !ShowEffectPanel;
+    }
+
+    /// <summary>
+    /// Generates a VapourSynth script for the current timeline
+    /// </summary>
+    public string GenerateTimelineScript()
+    {
+        return EffectService.GenerateTimelineScript(Timeline, "");
     }
 
     public void Dispose()
