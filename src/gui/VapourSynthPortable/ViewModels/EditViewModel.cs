@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -924,7 +925,18 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
     private TimelineEffect? _selectedEffect;
 
     [ObservableProperty]
+    private EffectParameter? _selectedParameter;
+
+    [ObservableProperty]
     private bool _showEffectPanel;
+
+    [ObservableProperty]
+    private bool _showKeyframePanel;
+
+    /// <summary>
+    /// Width of the keyframe panel (when visible)
+    /// </summary>
+    public GridLength KeyframePanelWidth => ShowKeyframePanel ? new GridLength(280) : new GridLength(0);
 
     [RelayCommand]
     private void AddEffectToClip(EffectDefinition? definition)
@@ -1071,6 +1083,162 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
     private void ToggleEffectPanel()
     {
         ShowEffectPanel = !ShowEffectPanel;
+    }
+
+    partial void OnShowKeyframePanelChanged(bool value)
+    {
+        OnPropertyChanged(nameof(KeyframePanelWidth));
+    }
+
+    // Keyframe Animation Commands
+
+    [RelayCommand]
+    private void AddKeyframe()
+    {
+        if (SelectedEffect == null || SelectedParameter == null)
+        {
+            ToastService.Instance.ShowInfo("Select an effect parameter first");
+            return;
+        }
+
+        SaveUndoState("Add keyframe");
+
+        var keyframe = SelectedEffect.AddKeyframe(
+            SelectedParameter,
+            Timeline.PlayheadFrame,
+            SelectedParameter.Value,
+            KeyframeInterpolation.Linear);
+
+        StatusText = $"Keyframe added at frame {Timeline.PlayheadFrame}";
+        ToastService.Instance.ShowSuccess("Keyframe added", $"Frame {Timeline.PlayheadFrame}");
+    }
+
+    [RelayCommand]
+    private void RemoveKeyframe()
+    {
+        if (SelectedEffect == null || SelectedParameter == null)
+        {
+            ToastService.Instance.ShowInfo("Select an effect parameter first");
+            return;
+        }
+
+        var track = SelectedEffect.GetKeyframeTrack(SelectedParameter.Name);
+        if (track == null || !track.HasKeyframeAt(Timeline.PlayheadFrame))
+        {
+            ToastService.Instance.ShowInfo("No keyframe at current frame");
+            return;
+        }
+
+        SaveUndoState("Remove keyframe");
+        track.RemoveKeyframeAt(Timeline.PlayheadFrame);
+
+        StatusText = $"Keyframe removed at frame {Timeline.PlayheadFrame}";
+        ToastService.Instance.ShowSuccess("Keyframe removed", $"Frame {Timeline.PlayheadFrame}");
+    }
+
+    [RelayCommand]
+    private void PreviousKeyframe()
+    {
+        if (SelectedEffect == null || !SelectedEffect.HasKeyframes)
+        {
+            ToastService.Instance.ShowInfo("No keyframes to navigate");
+            return;
+        }
+
+        // Find the previous keyframe across all tracks
+        long? prevFrame = null;
+
+        foreach (var track in SelectedEffect.KeyframeTracks)
+        {
+            var kf = track.GetKeyframeAtOrBefore(Timeline.PlayheadFrame - 1);
+            if (kf != null && (prevFrame == null || kf.Frame > prevFrame))
+            {
+                prevFrame = kf.Frame;
+            }
+        }
+
+        if (prevFrame.HasValue)
+        {
+            Timeline.PlayheadFrame = prevFrame.Value;
+            StatusText = $"Jumped to keyframe at frame {prevFrame.Value}";
+        }
+        else
+        {
+            ToastService.Instance.ShowInfo("No previous keyframe");
+        }
+    }
+
+    [RelayCommand]
+    private void NextKeyframe()
+    {
+        if (SelectedEffect == null || !SelectedEffect.HasKeyframes)
+        {
+            ToastService.Instance.ShowInfo("No keyframes to navigate");
+            return;
+        }
+
+        // Find the next keyframe across all tracks
+        long? nextFrame = null;
+
+        foreach (var track in SelectedEffect.KeyframeTracks)
+        {
+            var kf = track.GetKeyframeAfter(Timeline.PlayheadFrame);
+            if (kf != null && (nextFrame == null || kf.Frame < nextFrame))
+            {
+                nextFrame = kf.Frame;
+            }
+        }
+
+        if (nextFrame.HasValue)
+        {
+            Timeline.PlayheadFrame = nextFrame.Value;
+            StatusText = $"Jumped to keyframe at frame {nextFrame.Value}";
+        }
+        else
+        {
+            ToastService.Instance.ShowInfo("No next keyframe");
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleKeyframePanel()
+    {
+        ShowKeyframePanel = !ShowKeyframePanel;
+    }
+
+    [RelayCommand]
+    private void ClearEffectKeyframes()
+    {
+        if (SelectedEffect == null || SelectedParameter == null)
+        {
+            ToastService.Instance.ShowInfo("Select an effect parameter first");
+            return;
+        }
+
+        if (!SelectedEffect.HasKeyframes)
+        {
+            ToastService.Instance.ShowInfo("No keyframes to clear");
+            return;
+        }
+
+        SaveUndoState("Clear keyframes");
+        SelectedEffect.ClearKeyframes(SelectedParameter);
+
+        StatusText = $"Cleared keyframes for {SelectedParameter.DisplayName}";
+        ToastService.Instance.ShowSuccess("Keyframes cleared", SelectedParameter.DisplayName);
+    }
+
+    /// <summary>
+    /// Apply keyframed effect values at the current playhead position
+    /// </summary>
+    public void ApplyKeyframedEffectsAtPlayhead()
+    {
+        if (Timeline.SelectedClip == null) return;
+
+        foreach (var effect in Timeline.SelectedClip.Effects.Where(e => e.IsEnabled && e.HasKeyframes))
+        {
+            effect.ApplyKeyframedValues(Timeline.PlayheadFrame);
+        }
     }
 
     /// <summary>

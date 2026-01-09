@@ -32,6 +32,17 @@ public partial class TimelineEffect : ObservableObject
     private ObservableCollection<EffectParameter> _parameters = [];
 
     /// <summary>
+    /// Keyframe tracks for animated parameters
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<KeyframeTrack> _keyframeTracks = [];
+
+    /// <summary>
+    /// Whether any parameters have keyframes
+    /// </summary>
+    public bool HasKeyframes => KeyframeTracks.Any(t => t.HasKeyframes);
+
+    /// <summary>
     /// VapourSynth filter namespace (e.g., "std", "resize", "bm3d")
     /// </summary>
     [ObservableProperty]
@@ -108,6 +119,82 @@ public partial class TimelineEffect : ObservableObject
         return value?.ToString() ?? "[0, 0, 0]";
     }
 
+    /// <summary>
+    /// Get or create a keyframe track for a parameter
+    /// </summary>
+    public KeyframeTrack GetOrCreateKeyframeTrack(EffectParameter parameter)
+    {
+        var track = KeyframeTracks.FirstOrDefault(t => t.ParameterName == parameter.Name);
+        if (track == null)
+        {
+            track = new KeyframeTrack
+            {
+                ParameterName = parameter.Name,
+                DisplayName = parameter.DisplayName,
+                Parameter = parameter,
+                Effect = this
+            };
+            KeyframeTracks.Add(track);
+        }
+        return track;
+    }
+
+    /// <summary>
+    /// Get the keyframe track for a parameter (returns null if doesn't exist)
+    /// </summary>
+    public KeyframeTrack? GetKeyframeTrack(string parameterName)
+    {
+        return KeyframeTracks.FirstOrDefault(t => t.ParameterName == parameterName);
+    }
+
+    /// <summary>
+    /// Add a keyframe to a parameter
+    /// </summary>
+    public Keyframe AddKeyframe(EffectParameter parameter, long frame, object? value, KeyframeInterpolation interpolation = KeyframeInterpolation.Linear)
+    {
+        var track = GetOrCreateKeyframeTrack(parameter);
+        var keyframe = track.AddKeyframe(frame, value, interpolation);
+        OnPropertyChanged(nameof(HasKeyframes));
+        return keyframe;
+    }
+
+    /// <summary>
+    /// Remove all keyframes from a parameter
+    /// </summary>
+    public void ClearKeyframes(EffectParameter parameter)
+    {
+        var track = KeyframeTracks.FirstOrDefault(t => t.ParameterName == parameter.Name);
+        if (track != null)
+        {
+            KeyframeTracks.Remove(track);
+            OnPropertyChanged(nameof(HasKeyframes));
+        }
+    }
+
+    /// <summary>
+    /// Get the interpolated value for a parameter at the specified frame
+    /// </summary>
+    public object? GetParameterValueAtFrame(EffectParameter parameter, long frame)
+    {
+        var track = KeyframeTracks.FirstOrDefault(t => t.ParameterName == parameter.Name);
+        return track?.GetValueAtFrame(frame) ?? parameter.Value;
+    }
+
+    /// <summary>
+    /// Apply keyframed values for a specific frame
+    /// </summary>
+    public void ApplyKeyframedValues(long frame)
+    {
+        foreach (var track in KeyframeTracks.Where(t => t.IsEnabled && t.HasKeyframes))
+        {
+            var param = Parameters.FirstOrDefault(p => p.Name == track.ParameterName);
+            if (param != null)
+            {
+                param.Value = track.GetValueAtFrame(frame);
+            }
+        }
+    }
+
     public TimelineEffect Clone()
     {
         var clone = new TimelineEffect
@@ -123,6 +210,14 @@ public partial class TimelineEffect : ObservableObject
         foreach (var param in Parameters)
         {
             clone.Parameters.Add(param.Clone());
+        }
+
+        foreach (var track in KeyframeTracks)
+        {
+            var clonedTrack = track.Clone();
+            clonedTrack.Effect = clone;
+            clonedTrack.Parameter = clone.Parameters.FirstOrDefault(p => p.Name == track.ParameterName);
+            clone.KeyframeTracks.Add(clonedTrack);
         }
 
         return clone;

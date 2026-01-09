@@ -24,6 +24,10 @@
         <KeyBinding Key="I" Command="{Binding SetInPointCommand}"/>
         <KeyBinding Key="O" Command="{Binding SetOutPointCommand}"/>
         <KeyBinding Key="T" Command="{Binding AddTextOverlayCommand}"/>
+        <KeyBinding Key="K" Command="{Binding AddKeyframeCommand}"/>
+        <KeyBinding Key="K" Modifiers="Shift" Command="{Binding RemoveKeyframeCommand}"/>
+        <KeyBinding Key="OemOpenBrackets" Command="{Binding PreviousKeyframeCommand}"/>
+        <KeyBinding Key="OemCloseBrackets" Command="{Binding NextKeyframeCommand}"/>
     </UserControl.InputBindings>
 
     <Grid>
@@ -113,7 +117,10 @@
                                   Style="{StaticResource ToggleButtonStyle}" Width="50" Margin="0,0,4,0"/>
                     <ToggleButton Content="Ripple" IsChecked="{Binding RippleEdit}"
                                   ToolTip="Ripple edit mode"
-                                  Style="{StaticResource ToggleButtonStyle}" Width="55"/>
+                                  Style="{StaticResource ToggleButtonStyle}" Width="55" Margin="0,0,4,0"/>
+                    <ToggleButton Content="Keys" IsChecked="{Binding ShowKeyframePanel}"
+                                  ToolTip="Show keyframe editor panel"
+                                  Style="{StaticResource ToggleButtonStyle}" Width="50"/>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -381,12 +388,35 @@
         <GridSplitter Grid.Row="2" Height="5" Background="#333"
                       HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
 
-        <!-- Timeline -->
-        <Border Grid.Row="3" Background="#1A1A1A" Margin="10,5,10,10">
-            <controls:TimelineControl x:Name="TimelineControl"
-                                      Timeline="{Binding Timeline}"
-                                      ClipSelected="TimelineControl_ClipSelected"/>
-        </Border>
+        <!-- Timeline and Keyframe Editor -->
+        <Grid Grid.Row="3" Margin="10,5,10,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="{Binding KeyframePanelWidth, FallbackValue=0}"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Timeline -->
+            <Border Grid.Column="0" Background="#1A1A1A">
+                <controls:TimelineControl x:Name="TimelineControl"
+                                          Timeline="{Binding Timeline}"
+                                          ClipSelected="TimelineControl_ClipSelected"/>
+            </Border>
+
+            <!-- Keyframe Panel Splitter -->
+            <GridSplitter Grid.Column="1" Width="4" Background="#333"
+                          VerticalAlignment="Stretch" HorizontalAlignment="Center"
+                          Visibility="{Binding ShowKeyframePanel, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+            <!-- Keyframe Editor Panel -->
+            <Border Grid.Column="2" Background="#252526"
+                    Visibility="{Binding ShowKeyframePanel, Converter={StaticResource BoolToVisibilityConverter}}">
+                <controls:KeyframeEditorControl
+                    SelectedEffect="{Binding SelectedEffect}"
+                    SelectedParameter="{Binding SelectedParameter}"
+                    CurrentFrame="{Binding Timeline.PlayheadFrame}"/>
+            </Border>
+        </Grid>
 
         <!-- Status Bar -->
         <Border Grid.Row="3" VerticalAlignment="Bottom"
