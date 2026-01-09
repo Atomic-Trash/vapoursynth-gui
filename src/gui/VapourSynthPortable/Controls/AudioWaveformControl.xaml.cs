@@ -2,12 +2,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable.Controls;
 
 public partial class AudioWaveformControl : UserControl
 {
-    private float[]? _waveformData;
+    private WaveformData? _waveformData;
+    private readonly AudioWaveformService _waveformService;
+    private CancellationTokenSource? _loadCts;
     private readonly Random _random = new();
 
     public static readonly DependencyProperty WaveformColorProperty =
@@ -53,7 +56,9 @@ public partial class AudioWaveformControl : UserControl
     public AudioWaveformControl()
     {
         InitializeComponent();
+        _waveformService = new AudioWaveformService();
         Loaded += (s, e) => DrawWaveform();
+        Unloaded += (s, e) => _loadCts?.Cancel();
     }
 
     private static void OnSourcePathChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -81,79 +86,64 @@ public partial class AudioWaveformControl : UserControl
     {
         if (string.IsNullOrEmpty(SourcePath))
         {
-            GenerateSampleWaveform();
+            _waveformData = null;
             DrawWaveform();
             return;
         }
 
-        // Try to load waveform from audio file
+        // Cancel any pending load
+        _loadCts?.Cancel();
+        _loadCts = new CancellationTokenSource();
+
         try
         {
-            _waveformData = await ExtractWaveformAsync(SourcePath);
-        }
-        catch
-        {
-            // Fall back to sample data
-            GenerateSampleWaveform();
-        }
+            // Extract real waveform using FFmpeg
+            _waveformData = await _waveformService.ExtractWaveformAsync(
+                SourcePath,
+                samplesPerSecond: 100,
+                ct: _loadCts.Token);
 
+            DrawWaveform();
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore - cancelled due to new source
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AudioWaveform] Failed to load waveform: {ex.Message}");
+            _waveformData = null;
+            DrawWaveform();
+        }
+    }
+
+    public void SetWaveformData(WaveformData? data)
+    {
+        _waveformData = data;
         DrawWaveform();
-    }
-
-    private void GenerateSampleWaveform()
-    {
-        // Generate realistic-looking sample waveform for demonstration
-        const int sampleCount = 1000;
-        _waveformData = new float[sampleCount];
-
-        // Create multiple frequency components for realistic look
-        for (int i = 0; i < sampleCount; i++)
-        {
-            double t = i / (double)sampleCount;
-
-            // Base wave with multiple harmonics
-            double wave = Math.Sin(t * 50 * Math.PI) * 0.3 +
-                         Math.Sin(t * 120 * Math.PI) * 0.2 +
-                         Math.Sin(t * 200 * Math.PI) * 0.1;
-
-            // Add envelope
-            double envelope = Math.Sin(t * 5 * Math.PI) * 0.5 + 0.5;
-            envelope *= Math.Sin(t * 12 * Math.PI) * 0.3 + 0.7;
-
-            // Add some noise
-            double noise = (_random.NextDouble() - 0.5) * 0.15;
-
-            _waveformData[i] = (float)Math.Clamp((wave * envelope + noise), -1, 1);
-        }
-    }
-
-    private static async Task<float[]> ExtractWaveformAsync(string filePath)
-    {
-        // This would use FFmpeg to extract peak data
-        // For now, return simulated data based on file hash
-        await Task.Delay(10);
-
-        var hash = filePath.GetHashCode();
-        var random = new Random(hash);
-        const int sampleCount = 1000;
-        var data = new float[sampleCount];
-
-        for (int i = 0; i < sampleCount; i++)
-        {
-            double t = i / (double)sampleCount;
-            double wave = Math.Sin(t * (40 + hash % 30) * Math.PI) * 0.4 +
-                         Math.Sin(t * (100 + hash % 50) * Math.PI) * 0.3;
-            double envelope = Math.Sin(t * (4 + hash % 5) * Math.PI) * 0.4 + 0.6;
-            double noise = (random.NextDouble() - 0.5) * 0.2;
-            data[i] = (float)Math.Clamp((wave * envelope + noise), -1, 1);
-        }
-
-        return data;
     }
 
     public void SetWaveformData(float[] data)
     {
-        _waveformData = data;
+        // Legacy support - convert float array to WaveformData
+        var samples = new WaveformSample[data.Length];
+        for (int i = 0; i < data.Length; i++)
+        {
+            samples[i] = new WaveformSample
+            {
+                Min = Math.Min(0, data[i]),
+                Max = Math.Max(0, data[i]),
+                Rms = Math.Abs(data[i]) * 0.707f
+            };
+        }
+
+        _waveformData = new WaveformData
+        {
+            FilePath = SourcePath ?? "",
+            Duration = data.Length / 100.0,
+            SampleRate = 100,
+            Samples = samples
+        };
         DrawWaveform();
     }
 
@@ -164,83 +154,67 @@ public partial class AudioWaveformControl : UserControl
         double width = WaveformCanvas.ActualWidth;
         double height = WaveformCanvas.ActualHeight;
 
-        if (width <= 0 || height <= 0 || _waveformData == null || _waveformData.Length == 0)
+        if (width <= 0 || height <= 0 || _waveformData == null || _waveformData.Samples.Length == 0)
         {
             // Draw placeholder
             DrawPlaceholderWaveform(width, height);
             return;
         }
 
-        // Calculate visible range
-        int totalSamples = _waveformData.Length;
-        int startSample = (int)(InPoint * totalSamples);
-        int endSample = (int)(OutPoint * totalSamples);
-        int visibleSamples = endSample - startSample;
-
-        if (visibleSamples <= 0) return;
-
-        // Determine how many samples to show per pixel
-        double samplesPerPixel = visibleSamples / width;
+        // Get resampled waveform for the current view
+        double startTime = InPoint * _waveformData.Duration;
+        double endTime = OutPoint * _waveformData.Duration;
         int numBars = Math.Max(1, (int)width);
+
+        var samples = _waveformData.GetResampledForWidth(numBars, startTime, endTime);
+
+        if (samples.Length == 0)
+        {
+            DrawPlaceholderWaveform(width, height);
+            return;
+        }
 
         var waveformBrush = new SolidColorBrush(WaveformColor);
         var waveformDarkBrush = new SolidColorBrush(Color.FromArgb(100, WaveformColor.R, WaveformColor.G, WaveformColor.B));
 
         double centerY = height / 2;
-        double barWidth = Math.Max(1, width / numBars);
+        double barWidth = Math.Max(1, width / samples.Length);
 
         // Draw waveform bars
-        for (int i = 0; i < numBars; i++)
+        for (int i = 0; i < samples.Length; i++)
         {
-            int sampleStart = startSample + (int)(i * samplesPerPixel);
-            int sampleEnd = Math.Min(totalSamples - 1, startSample + (int)((i + 1) * samplesPerPixel));
-
-            if (sampleStart >= totalSamples) break;
-
-            // Find min and max in this range
-            float min = 0, max = 0;
-            float rms = 0;
-            int count = 0;
-
-            for (int j = sampleStart; j <= sampleEnd && j < totalSamples; j++)
-            {
-                float val = _waveformData[j];
-                min = Math.Min(min, val);
-                max = Math.Max(max, val);
-                rms += val * val;
-                count++;
-            }
-
-            if (count > 0)
-            {
-                rms = (float)Math.Sqrt(rms / count);
-            }
-
+            var sample = samples[i];
             double x = i * barWidth;
 
-            // Draw peak bar (lighter)
-            double peakHeight = (max - min) * centerY;
-            var peakBar = new Rectangle
+            // Draw peak bar (lighter) - shows full peak-to-peak range
+            double peakHeight = sample.PeakToPeak * centerY;
+            if (peakHeight > 0.5)
             {
-                Width = Math.Max(1, barWidth - 0.5),
-                Height = Math.Max(1, peakHeight),
-                Fill = waveformDarkBrush
-            };
-            Canvas.SetLeft(peakBar, x);
-            Canvas.SetTop(peakBar, centerY - peakHeight / 2);
-            WaveformCanvas.Children.Add(peakBar);
+                var peakBar = new Rectangle
+                {
+                    Width = Math.Max(1, barWidth - 0.5),
+                    Height = Math.Max(1, peakHeight),
+                    Fill = waveformDarkBrush
+                };
+                Canvas.SetLeft(peakBar, x);
+                Canvas.SetTop(peakBar, centerY - peakHeight / 2);
+                WaveformCanvas.Children.Add(peakBar);
+            }
 
-            // Draw RMS bar (brighter)
-            double rmsHeight = rms * centerY * 1.5;
-            var rmsBar = new Rectangle
+            // Draw RMS bar (brighter) - shows average level
+            double rmsHeight = sample.Rms * centerY * 2;
+            if (rmsHeight > 0.5)
             {
-                Width = Math.Max(1, barWidth - 0.5),
-                Height = Math.Max(1, rmsHeight),
-                Fill = waveformBrush
-            };
-            Canvas.SetLeft(rmsBar, x);
-            Canvas.SetTop(rmsBar, centerY - rmsHeight / 2);
-            WaveformCanvas.Children.Add(rmsBar);
+                var rmsBar = new Rectangle
+                {
+                    Width = Math.Max(1, barWidth - 0.5),
+                    Height = Math.Max(1, rmsHeight),
+                    Fill = waveformBrush
+                };
+                Canvas.SetLeft(rmsBar, x);
+                Canvas.SetTop(rmsBar, centerY - rmsHeight / 2);
+                WaveformCanvas.Children.Add(rmsBar);
+            }
         }
 
         // Draw center line
