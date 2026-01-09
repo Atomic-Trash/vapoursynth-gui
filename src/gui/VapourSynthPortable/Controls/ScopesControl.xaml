@@ -14,13 +14,16 @@
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="12,12,12,8">
             <RadioButton Content="Waveform" GroupName="ScopeModes" x:Name="WaveformRadio"
                          IsChecked="True" Checked="ScopeMode_Changed"
-                         Foreground="#AAA" Margin="0,0,15,0"/>
+                         Foreground="#AAA" Margin="0,0,15,0"
+                         ToolTip="Luminance waveform display"/>
             <RadioButton Content="Parade" GroupName="ScopeModes" x:Name="ParadeRadio"
                          Checked="ScopeMode_Changed"
-                         Foreground="#AAA" Margin="0,0,15,0"/>
+                         Foreground="#AAA" Margin="0,0,15,0"
+                         ToolTip="RGB parade (separate channels)"/>
             <RadioButton Content="Vector" GroupName="ScopeModes" x:Name="VectorRadio"
                          Checked="ScopeMode_Changed"
-                         Foreground="#AAA"/>
+                         Foreground="#AAA"
+                         ToolTip="Vectorscope (color/saturation)"/>
         </StackPanel>
 
         <!-- Main Scope Display -->
@@ -49,10 +52,10 @@
                 <Canvas x:Name="HistogramCanvas" SizeChanged="Canvas_SizeChanged"/>
 
                 <!-- Labels -->
-                <TextBlock Text="0" Foreground="#333" FontSize="9"
+                <TextBlock Text="0" Foreground="#888" FontSize="10"
                            HorizontalAlignment="Left" VerticalAlignment="Bottom"
                            Margin="5,0,0,2"/>
-                <TextBlock Text="255" Foreground="#333" FontSize="9"
+                <TextBlock Text="255" Foreground="#888" FontSize="10"
                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
                            Margin="0,0,5,2"/>
             </Grid>

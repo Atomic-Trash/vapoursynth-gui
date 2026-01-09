@@ -128,7 +128,7 @@ public partial class ScopesControl : UserControl
 
         if (width <= 0 || height <= 0) return;
 
-        var lineBrush = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
+        var lineBrush = new SolidColorBrush(Color.FromArgb(50, 255, 255, 255));
 
         // Draw horizontal lines at 0%, 25%, 50%, 75%, 100%
         double[] levels = [0, 0.25, 0.5, 0.75, 1.0];
@@ -329,7 +329,7 @@ public partial class ScopesControl : UserControl
         DrawColorTargets(centerX, centerY, radius);
 
         // Draw crosshairs
-        var crossBrush = new SolidColorBrush(Color.FromArgb(30, 255, 255, 255));
+        var crossBrush = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
         VectorCanvas.Children.Add(new Line
         {
             X1 = centerX - radius, Y1 = centerY,
