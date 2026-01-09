@@ -179,21 +179,21 @@ public class QuickPreviewService
     {
         var escapedPath = sourcePath.Replace("'", "\\'").Replace("\\", "\\\\");
 
+        // Use the preset's GenerateScript() method which handles parameter substitution
+        var presetScript = preset.GenerateScript();
+
         return $@"
 import vapoursynth as vs
 core = vs.core
 
 # Load source
-clip = core.lsmas.LWLibavSource(r'{escapedPath}')
+video_in = core.lsmas.LWLibavSource(r'{escapedPath}')
 
 # Trim to single frame for fast processing
-clip = clip[{frameNumber}:{frameNumber + 1}]
+video_in = video_in[{frameNumber}:{frameNumber + 1}]
 
 # Apply restoration preset
-{preset.VapourSynthScript}
-
-# Output
-video_out.set_output()
+{presetScript}
 ";
     }
 

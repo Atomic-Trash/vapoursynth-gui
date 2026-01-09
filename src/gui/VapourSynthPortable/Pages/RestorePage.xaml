@@ -368,34 +368,120 @@
                                 </Border>
                             </Grid>
 
-                            <!-- Selected Preset Info -->
+                            <!-- Selected Preset Info & Parameters -->
                             <Border Grid.Row="2" Background="#2A2A2A" Padding="15"
                                     Visibility="{Binding SelectedPreset, Converter={StaticResource NullToVis}, ConverterParameter=Invert}">
                                 <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock Text="{Binding SelectedPreset.Name}" Foreground="#FFF"
-                                                   FontSize="14" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{Binding SelectedPreset.Description}" Foreground="#888"
-                                                   FontSize="11" Margin="0,4,0,0"/>
-                                    </StackPanel>
+                                    <!-- Header Row -->
+                                    <Grid Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
 
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                        <Button Content="Preview" Command="{Binding GeneratePreviewCommand}"
-                                                ToolTip="Generate a quick preview with this preset (2-5 seconds)"
-                                                Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
-                                                IsEnabled="{Binding CanGeneratePreview}"/>
-                                        <Button Content="Process Now" Command="{Binding ProcessNowCommand}"
-                                                ToolTip="Process immediately with selected preset"
-                                                Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"/>
-                                        <Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"
-                                                ToolTip="Add to processing queue for batch processing"
-                                                Style="{StaticResource SecondaryButton}"/>
-                                    </StackPanel>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding SelectedPreset.Name}" Foreground="#FFF"
+                                                       FontSize="14" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding SelectedPreset.Description}" Foreground="#888"
+                                                       FontSize="11" Margin="0,4,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                            <Button Content="Preview" Command="{Binding GeneratePreviewCommand}"
+                                                    ToolTip="Generate a quick preview with this preset (2-5 seconds)"
+                                                    Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                                                    IsEnabled="{Binding CanGeneratePreview}"/>
+                                            <Button Content="Process Now" Command="{Binding ProcessNowCommand}"
+                                                    ToolTip="Process immediately with selected preset"
+                                                    Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"/>
+                                            <Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"
+                                                    ToolTip="Add to processing queue for batch processing"
+                                                    Style="{StaticResource SecondaryButton}"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Parameter Controls -->
+                                    <ItemsControl Grid.Row="1" ItemsSource="{Binding SelectedPreset.Parameters}"
+                                                  Margin="0,12,0,0"
+                                                  Visibility="{Binding SelectedPreset.HasParameters, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#333" CornerRadius="4" Padding="10,8"
+                                                        Margin="0,0,10,8" MinWidth="180">
+                                                    <Grid>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <!-- Parameter Label -->
+                                                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+                                                            <TextBlock Text="{Binding DisplayName}" Foreground="#DDD"
+                                                                       FontSize="11" FontWeight="Medium"/>
+                                                            <TextBlock Text="?" Foreground="#666" FontSize="9"
+                                                                       VerticalAlignment="Top" Margin="3,0,0,0"
+                                                                       ToolTip="{Binding Description}"/>
+                                                        </StackPanel>
+
+                                                        <!-- Float/Int Slider -->
+                                                        <Grid Grid.Row="1" Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Float}">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="50"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <Slider Grid.Column="0" Minimum="{Binding MinValue}" Maximum="{Binding MaxValue}"
+                                                                    Value="{Binding CurrentValue, Mode=TwoWay}"
+                                                                    SmallChange="{Binding Step}" LargeChange="{Binding Step}"
+                                                                    VerticalAlignment="Center"/>
+                                                            <TextBox Grid.Column="1" Text="{Binding CurrentValue, StringFormat='{}{0:F1}'}"
+                                                                     Background="#252526" Foreground="#CCC" BorderBrush="#444"
+                                                                     TextAlignment="Center" Padding="4,2" Margin="8,0,0,0"
+                                                                     FontSize="10"/>
+                                                        </Grid>
+
+                                                        <!-- Int Slider -->
+                                                        <Grid Grid.Row="1" Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Int}">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="50"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <Slider Grid.Column="0" Minimum="{Binding MinValue}" Maximum="{Binding MaxValue}"
+                                                                    Value="{Binding CurrentValue, Mode=TwoWay}"
+                                                                    SmallChange="{Binding Step}" LargeChange="{Binding Step}"
+                                                                    IsSnapToTickEnabled="True" TickFrequency="{Binding Step}"
+                                                                    VerticalAlignment="Center"/>
+                                                            <TextBox Grid.Column="1" Text="{Binding CurrentValue, StringFormat='{}{0:F0}'}"
+                                                                     Background="#252526" Foreground="#CCC" BorderBrush="#444"
+                                                                     TextAlignment="Center" Padding="4,2" Margin="8,0,0,0"
+                                                                     FontSize="10"/>
+                                                        </Grid>
+
+                                                        <!-- Bool Toggle -->
+                                                        <CheckBox Grid.Row="1" IsChecked="{Binding CurrentValue, Mode=TwoWay}"
+                                                                  Content="{Binding DisplayName}" Foreground="#AAA" FontSize="10"
+                                                                  Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Bool}"/>
+
+                                                        <!-- Enum ComboBox -->
+                                                        <ComboBox Grid.Row="1" ItemsSource="{Binding EnumValues}"
+                                                                  SelectedItem="{Binding CurrentValue, Mode=TwoWay}"
+                                                                  Background="#252526" Foreground="#CCC" BorderBrush="#444"
+                                                                  Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Enum}"
+                                                                  FontSize="10"/>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </Grid>
                             </Border>
                         </Grid>

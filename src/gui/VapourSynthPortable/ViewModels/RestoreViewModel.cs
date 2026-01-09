@@ -219,6 +219,18 @@ public partial class RestoreViewModel : ObservableObject, IDisposable
         // Clear processed frame when preset changes
         ProcessedFrame = null;
         OnPropertyChanged(nameof(HasPreview));
+
+        // Initialize CurrentValue for all parameters
+        if (value != null)
+        {
+            foreach (var param in value.Parameters)
+            {
+                if (param.CurrentValue == null)
+                {
+                    param.CurrentValue = param.DefaultValue;
+                }
+            }
+        }
     }
 
     [RelayCommand]
@@ -595,6 +607,9 @@ public partial class RestoreViewModel : ObservableObject, IDisposable
         var preset = job.Preset;
         if (preset == null) return "";
 
+        // Use the preset's GenerateScript() method which handles parameter substitution
+        var presetScript = preset.GenerateScript();
+
         var script = $@"
 import vapoursynth as vs
 core = vs.core
@@ -602,7 +617,7 @@ core = vs.core
 # Load source
 video_in = core.lsmas.LWLibavSource(r'{job.SourcePath.Replace("'", "\\'")}')
 
-{preset.VapourSynthScript}
+{presetScript}
 ";
         return script;
     }

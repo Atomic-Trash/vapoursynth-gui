@@ -25,6 +25,73 @@ public enum ProcessingStatus
     Cancelled
 }
 
+public enum ParameterType
+{
+    Float,
+    Int,
+    Bool,
+    Enum,
+    String
+}
+
+/// <summary>
+/// Represents a configurable parameter for a preset
+/// </summary>
+public partial class PresetParameter : ObservableObject
+{
+    [ObservableProperty]
+    private string _name = "";
+
+    [ObservableProperty]
+    private string _displayName = "";
+
+    [ObservableProperty]
+    private string _description = "";
+
+    [ObservableProperty]
+    private ParameterType _type;
+
+    [ObservableProperty]
+    private object? _defaultValue;
+
+    [ObservableProperty]
+    private object? _minValue;
+
+    [ObservableProperty]
+    private object? _maxValue;
+
+    [ObservableProperty]
+    private object? _currentValue;
+
+    [ObservableProperty]
+    private string[]? _enumValues;
+
+    [ObservableProperty]
+    private double _step = 1;
+
+    public PresetParameter Clone()
+    {
+        return new PresetParameter
+        {
+            Name = Name,
+            DisplayName = DisplayName,
+            Description = Description,
+            Type = Type,
+            DefaultValue = DefaultValue,
+            MinValue = MinValue,
+            MaxValue = MaxValue,
+            CurrentValue = CurrentValue ?? DefaultValue,
+            EnumValues = EnumValues,
+            Step = Step
+        };
+    }
+
+    public void ResetToDefault()
+    {
+        CurrentValue = DefaultValue;
+    }
+}
+
 /// <summary>
 /// Represents a restoration preset/quick action
 /// </summary>
@@ -54,6 +121,47 @@ public partial class RestorePreset : ObservableObject
     [ObservableProperty]
     private string _category = "";
 
+    [ObservableProperty]
+    private List<PresetParameter> _parameters = [];
+
+    public bool HasParameters => Parameters.Count > 0;
+
+    public string GenerateScript()
+    {
+        if (Parameters.Count == 0)
+            return VapourSynthScript;
+
+        var script = VapourSynthScript;
+        foreach (var param in Parameters)
+        {
+            var value = param.CurrentValue ?? param.DefaultValue;
+            var replacement = param.Type switch
+            {
+                ParameterType.Bool => value is true ? "True" : "False",
+                ParameterType.String => $"\"{value}\"",
+                _ => value?.ToString() ?? ""
+            };
+            script = script.Replace($"{{{param.Name}}}", replacement);
+        }
+        return script;
+    }
+
+    public RestorePreset CloneWithParameters()
+    {
+        return new RestorePreset
+        {
+            Name = Name,
+            Description = Description,
+            Icon = Icon,
+            TaskType = TaskType,
+            VapourSynthScript = VapourSynthScript,
+            AiModel = AiModel,
+            RequiresGpu = RequiresGpu,
+            Category = Category,
+            Parameters = Parameters.Select(p => p.Clone()).ToList()
+        };
+    }
+
     public static List<RestorePreset> GetPresets()
     {
         return
@@ -68,12 +176,37 @@ public partial class RestorePreset : ObservableObject
                 AiModel = "realesrgan-x2plus",
                 Category = "Upscale",
                 RequiresGpu = true,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "tile_size",
+                        DisplayName = "Tile Size",
+                        Description = "Processing tile size (larger = faster, more VRAM)",
+                        Type = ParameterType.Int,
+                        DefaultValue = 512,
+                        MinValue = 128,
+                        MaxValue = 1024,
+                        Step = 64
+                    },
+                    new PresetParameter
+                    {
+                        Name = "denoise",
+                        DisplayName = "Denoise Strength",
+                        Description = "Apply denoising during upscale",
+                        Type = ParameterType.Float,
+                        DefaultValue = 0.0,
+                        MinValue = 0.0,
+                        MaxValue = 1.0,
+                        Step = 0.1
+                    }
+                ],
                 VapourSynthScript = @"
 import vapoursynth as vs
 from vsrealesrgan import realesrgan
 core = vs.core
 clip = video_in
-clip = realesrgan(clip, model=2)
+clip = realesrgan(clip, model=2, tile={tile_size}, denoise={denoise})
 clip.set_output()"
             },
             new RestorePreset
@@ -85,12 +218,37 @@ clip.set_output()"
                 AiModel = "realesrgan-x4plus",
                 Category = "Upscale",
                 RequiresGpu = true,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "tile_size",
+                        DisplayName = "Tile Size",
+                        Description = "Processing tile size (larger = faster, more VRAM)",
+                        Type = ParameterType.Int,
+                        DefaultValue = 512,
+                        MinValue = 128,
+                        MaxValue = 1024,
+                        Step = 64
+                    },
+                    new PresetParameter
+                    {
+                        Name = "denoise",
+                        DisplayName = "Denoise Strength",
+                        Description = "Apply denoising during upscale",
+                        Type = ParameterType.Float,
+                        DefaultValue = 0.0,
+                        MinValue = 0.0,
+                        MaxValue = 1.0,
+                        Step = 0.1
+                    }
+                ],
                 VapourSynthScript = @"
 import vapoursynth as vs
 from vsrealesrgan import realesrgan
 core = vs.core
 clip = video_in
-clip = realesrgan(clip, model=0)
+clip = realesrgan(clip, model=0, tile={tile_size}, denoise={denoise})
 clip.set_output()"
             },
             new RestorePreset
@@ -102,16 +260,80 @@ clip.set_output()"
                 AiModel = "realesrgan-x4plus-anime",
                 Category = "Upscale",
                 RequiresGpu = true,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "scale",
+                        DisplayName = "Scale Factor",
+                        Description = "Output scale multiplier",
+                        Type = ParameterType.Int,
+                        DefaultValue = 2,
+                        MinValue = 2,
+                        MaxValue = 4,
+                        Step = 1
+                    },
+                    new PresetParameter
+                    {
+                        Name = "tile_size",
+                        DisplayName = "Tile Size",
+                        Description = "Processing tile size (larger = faster, more VRAM)",
+                        Type = ParameterType.Int,
+                        DefaultValue = 512,
+                        MinValue = 128,
+                        MaxValue = 1024,
+                        Step = 64
+                    }
+                ],
                 VapourSynthScript = @"
 import vapoursynth as vs
 from vsrealesrgan import realesrgan
 core = vs.core
 clip = video_in
-clip = realesrgan(clip, model=1, scale=2)
+clip = realesrgan(clip, model=1, scale={scale}, tile={tile_size})
 clip.set_output()"
             },
 
             // Denoising
+            new RestorePreset
+            {
+                Name = "BM3D Denoise",
+                Description = "High-quality block-matching denoise with adjustable strength",
+                Icon = "\uE9F5",
+                TaskType = RestoreTaskType.Denoise,
+                Category = "Denoise",
+                RequiresGpu = false,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "sigma",
+                        DisplayName = "Denoise Strength",
+                        Description = "Noise reduction strength (higher = more smoothing)",
+                        Type = ParameterType.Float,
+                        DefaultValue = 6.0,
+                        MinValue = 1.0,
+                        MaxValue = 20.0,
+                        Step = 0.5
+                    },
+                    new PresetParameter
+                    {
+                        Name = "two_pass",
+                        DisplayName = "Two-Pass Mode",
+                        Description = "Enable VFinal for higher quality (slower)",
+                        Type = ParameterType.Bool,
+                        DefaultValue = true
+                    }
+                ],
+                VapourSynthScript = @"
+import vapoursynth as vs
+core = vs.core
+clip = video_in
+clip = core.bm3d.VBasic(clip, sigma={sigma})
+if {two_pass}:
+    clip = core.bm3d.VFinal(clip, clip, sigma={sigma})
+clip.set_output()"
+            },
             new RestorePreset
             {
                 Name = "Light Denoise",
@@ -120,11 +342,25 @@ clip.set_output()"
                 TaskType = RestoreTaskType.Denoise,
                 Category = "Denoise",
                 RequiresGpu = false,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "sigma",
+                        DisplayName = "Strength",
+                        Description = "Noise reduction strength",
+                        Type = ParameterType.Float,
+                        DefaultValue = 3.0,
+                        MinValue = 1.0,
+                        MaxValue = 6.0,
+                        Step = 0.5
+                    }
+                ],
                 VapourSynthScript = @"
 import vapoursynth as vs
 core = vs.core
 clip = video_in
-clip = core.bm3d.VBasic(clip, sigma=3)
+clip = core.bm3d.VBasic(clip, sigma={sigma})
 clip.set_output()"
             },
             new RestorePreset
@@ -135,12 +371,26 @@ clip.set_output()"
                 TaskType = RestoreTaskType.Denoise,
                 Category = "Denoise",
                 RequiresGpu = false,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "sigma",
+                        DisplayName = "Strength",
+                        Description = "Noise reduction strength",
+                        Type = ParameterType.Float,
+                        DefaultValue = 6.0,
+                        MinValue = 4.0,
+                        MaxValue = 10.0,
+                        Step = 0.5
+                    }
+                ],
                 VapourSynthScript = @"
 import vapoursynth as vs
 core = vs.core
 clip = video_in
-clip = core.bm3d.VBasic(clip, sigma=6)
-clip = core.bm3d.VFinal(clip, clip, sigma=6)
+clip = core.bm3d.VBasic(clip, sigma={sigma})
+clip = core.bm3d.VFinal(clip, clip, sigma={sigma})
 clip.set_output()"
             },
             new RestorePreset
@@ -151,12 +401,26 @@ clip.set_output()"
                 TaskType = RestoreTaskType.Denoise,
                 Category = "Denoise",
                 RequiresGpu = false,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "sigma",
+                        DisplayName = "Strength",
+                        Description = "Noise reduction strength",
+                        Type = ParameterType.Float,
+                        DefaultValue = 12.0,
+                        MinValue = 8.0,
+                        MaxValue = 25.0,
+                        Step = 1.0
+                    }
+                ],
                 VapourSynthScript = @"
 import vapoursynth as vs
 core = vs.core
 clip = video_in
-clip = core.bm3d.VBasic(clip, sigma=12)
-clip = core.bm3d.VFinal(clip, clip, sigma=12)
+clip = core.bm3d.VBasic(clip, sigma={sigma})
+clip = core.bm3d.VFinal(clip, clip, sigma={sigma})
 clip.set_output()"
             },
             new RestorePreset
@@ -167,11 +431,36 @@ clip.set_output()"
                 TaskType = RestoreTaskType.Denoise,
                 Category = "Denoise",
                 RequiresGpu = false,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "sigma",
+                        DisplayName = "Grain Strength",
+                        Description = "How much grain to remove",
+                        Type = ParameterType.Float,
+                        DefaultValue = 8.0,
+                        MinValue = 4.0,
+                        MaxValue = 16.0,
+                        Step = 1.0
+                    },
+                    new PresetParameter
+                    {
+                        Name = "tbsize",
+                        DisplayName = "Temporal Block Size",
+                        Description = "Temporal analysis window (higher = more temporal smoothing)",
+                        Type = ParameterType.Int,
+                        DefaultValue = 3,
+                        MinValue = 1,
+                        MaxValue = 5,
+                        Step = 2
+                    }
+                ],
                 VapourSynthScript = @"
 import vapoursynth as vs
 core = vs.core
 clip = video_in
-clip = core.dfttest.DFTTest(clip, sigma=8, tbsize=3)
+clip = core.dfttest.DFTTest(clip, sigma={sigma}, tbsize={tbsize})
 clip.set_output()"
             },
 
@@ -226,19 +515,75 @@ clip.set_output()"
             // Frame Interpolation
             new RestorePreset
             {
-                Name = "Interpolate to 60fps",
+                Name = "RIFE Interpolation",
                 Description = "AI frame interpolation using RIFE",
                 Icon = "\uE916",
                 TaskType = RestoreTaskType.Interpolate,
                 AiModel = "rife",
                 Category = "Interpolate",
                 RequiresGpu = true,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "multi",
+                        DisplayName = "Frame Multiplier",
+                        Description = "How many times to multiply frame rate",
+                        Type = ParameterType.Int,
+                        DefaultValue = 2,
+                        MinValue = 2,
+                        MaxValue = 8,
+                        Step = 1
+                    },
+                    new PresetParameter
+                    {
+                        Name = "scene_detect",
+                        DisplayName = "Scene Detection",
+                        Description = "Threshold for scene change detection (0 = disabled)",
+                        Type = ParameterType.Float,
+                        DefaultValue = 0.15,
+                        MinValue = 0.0,
+                        MaxValue = 1.0,
+                        Step = 0.05
+                    }
+                ],
                 VapourSynthScript = @"
 import vapoursynth as vs
 from vsrife import rife
 core = vs.core
 clip = video_in
-clip = rife(clip, multi=2)
+clip = rife(clip, multi={multi}, sc_threshold={scene_detect})
+clip.set_output()"
+            },
+            new RestorePreset
+            {
+                Name = "Interpolate to 60fps",
+                Description = "AI frame interpolation to 60fps",
+                Icon = "\uE916",
+                TaskType = RestoreTaskType.Interpolate,
+                AiModel = "rife",
+                Category = "Interpolate",
+                RequiresGpu = true,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "scene_detect",
+                        DisplayName = "Scene Detection",
+                        Description = "Threshold for scene change detection",
+                        Type = ParameterType.Float,
+                        DefaultValue = 0.15,
+                        MinValue = 0.0,
+                        MaxValue = 1.0,
+                        Step = 0.05
+                    }
+                ],
+                VapourSynthScript = @"
+import vapoursynth as vs
+from vsrife import rife
+core = vs.core
+clip = video_in
+clip = rife(clip, multi=2, sc_threshold={scene_detect})
 clip.set_output()"
             },
             new RestorePreset
@@ -250,12 +595,26 @@ clip.set_output()"
                 AiModel = "rife",
                 Category = "Interpolate",
                 RequiresGpu = true,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "scene_detect",
+                        DisplayName = "Scene Detection",
+                        Description = "Threshold for scene change detection",
+                        Type = ParameterType.Float,
+                        DefaultValue = 0.15,
+                        MinValue = 0.0,
+                        MaxValue = 1.0,
+                        Step = 0.05
+                    }
+                ],
                 VapourSynthScript = @"
 import vapoursynth as vs
 from vsrife import rife
 core = vs.core
 clip = video_in
-clip = rife(clip, multi=4)
+clip = rife(clip, multi=4, sc_threshold={scene_detect})
 clip.set_output()"
             },
             new RestorePreset
@@ -266,14 +625,39 @@ clip.set_output()"
                 TaskType = RestoreTaskType.Interpolate,
                 Category = "Interpolate",
                 RequiresGpu = false,
+                Parameters =
+                [
+                    new PresetParameter
+                    {
+                        Name = "target_fps",
+                        DisplayName = "Target FPS",
+                        Description = "Output frame rate",
+                        Type = ParameterType.Int,
+                        DefaultValue = 60,
+                        MinValue = 24,
+                        MaxValue = 120,
+                        Step = 1
+                    },
+                    new PresetParameter
+                    {
+                        Name = "block_size",
+                        DisplayName = "Block Size",
+                        Description = "Motion analysis block size",
+                        Type = ParameterType.Int,
+                        DefaultValue = 16,
+                        MinValue = 8,
+                        MaxValue = 32,
+                        Step = 8
+                    }
+                ],
                 VapourSynthScript = @"
 import vapoursynth as vs
 core = vs.core
 clip = video_in
 sup = core.mv.Super(clip)
-bv = core.mv.Analyse(sup, isb=True)
-fv = core.mv.Analyse(sup, isb=False)
-clip = core.mv.FlowFPS(clip, sup, bv, fv, num=60, den=1)
+bv = core.mv.Analyse(sup, isb=True, blksize={block_size})
+fv = core.mv.Analyse(sup, isb=False, blksize={block_size})
+clip = core.mv.FlowFPS(clip, sup, bv, fv, num={target_fps}, den=1)
 clip.set_output()"
             },
 
