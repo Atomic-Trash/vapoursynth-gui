@@ -13,6 +13,7 @@ namespace VapourSynthPortable.ViewModels;
 public partial class RestoreViewModel : ObservableObject, IDisposable
 {
     private readonly IMediaPoolService _mediaPool;
+    private readonly VapourSynthService _vapourSynthService;
     private bool _disposed;
 
     [ObservableProperty]
@@ -88,6 +89,11 @@ public partial class RestoreViewModel : ObservableObject, IDisposable
     {
         _mediaPool = mediaPool;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
+
+        // Initialize VapourSynth service
+        _vapourSynthService = new VapourSynthService();
+        _vapourSynthService.ProgressChanged += OnVapourSynthProgressChanged;
+        _vapourSynthService.LogMessage += OnVapourSynthLogMessage;
 
         LoadPresets();
         DetectGpu();
@@ -218,6 +224,23 @@ public partial class RestoreViewModel : ObservableObject, IDisposable
             GpuAvailable = false;
             GpuName = "Unknown";
         }
+    }
+
+    private void OnVapourSynthProgressChanged(object? sender, VapourSynthProgressEventArgs e)
+    {
+        if (CurrentJob == null) return;
+
+        CurrentJob.CurrentFrame = e.CurrentFrame;
+        CurrentJob.Progress = e.Progress;
+        CurrentJob.ElapsedTime = e.ElapsedTime;
+        CurrentJob.EstimatedTimeRemaining = e.EstimatedTimeRemaining;
+        CurrentJob.StatusText = $"Processing frame {e.CurrentFrame}/{e.TotalFrames} ({e.Fps:F1} fps)";
+    }
+
+    private void OnVapourSynthLogMessage(object? sender, string message)
+    {
+        // Could log to a log window or status
+        System.Diagnostics.Debug.WriteLine($"[VapourSynth] {message}");
     }
 
     [RelayCommand]
@@ -471,33 +494,54 @@ video_in = core.lsmas.LWLibavSource(r'{job.SourcePath.Replace("'", "\\'")}')
 
     private async Task RunVapourSynthPipeline(RestoreJob job, string scriptPath, CancellationToken token)
     {
-        var vspipePath = Path.Combine(_vapourSynthPath, "vspipe.exe");
-        var ffmpegPath = FindExecutable("ffmpeg.exe");
-
-        // Use vspipe to output raw video, pipe to FFmpeg
-        var vspipeArgs = $"\"{scriptPath}\" -c y4m -";
-        var ffmpegArgs = $"-i - -c:v libx264 -crf 18 -preset medium -y \"{job.OutputPath}\"";
-
-        // For now, simulate processing with progress updates
-        // In production, this would pipe vspipe output to FFmpeg
-        var totalFrames = job.TotalFrames > 0 ? job.TotalFrames : 1000;
-        var sw = Stopwatch.StartNew();
-
-        for (int frame = 0; frame < totalFrames && !token.IsCancellationRequested; frame += 10)
+        // Check if VapourSynth is available
+        if (!_vapourSynthService.IsAvailable)
         {
-            job.CurrentFrame = frame;
-            job.Progress = (double)frame / totalFrames * 100;
-            job.ElapsedTime = sw.Elapsed;
+            // Fall back to simulated processing if VSPipe is not available
+            var totalFrames = job.TotalFrames > 0 ? job.TotalFrames : 1000;
+            var sw = Stopwatch.StartNew();
 
-            if (frame > 0)
+            for (int frame = 0; frame < totalFrames && !token.IsCancellationRequested; frame += 10)
             {
-                var fps = frame / sw.Elapsed.TotalSeconds;
-                var remaining = (totalFrames - frame) / fps;
-                job.EstimatedTimeRemaining = TimeSpan.FromSeconds(remaining);
+                job.CurrentFrame = frame;
+                job.Progress = (double)frame / totalFrames * 100;
+                job.ElapsedTime = sw.Elapsed;
+
+                if (frame > 0)
+                {
+                    var fps = frame / sw.Elapsed.TotalSeconds;
+                    var remaining = (totalFrames - frame) / fps;
+                    job.EstimatedTimeRemaining = TimeSpan.FromSeconds(remaining);
+                }
+
+                job.StatusText = $"[Simulated] Processing frame {frame}/{totalFrames}";
+                await Task.Delay(10, token);
             }
 
-            job.StatusText = $"Processing frame {frame}/{totalFrames}";
-            await Task.Delay(10, token); // Simulate processing time
+            StatusText = "Note: VSPipe not available, using simulated processing";
+            return;
+        }
+
+        // Use real VapourSynth pipeline
+        var settings = new VapourSynthEncodingSettings
+        {
+            VideoCodec = GpuAvailable && GpuName.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)
+                ? "h264_nvenc"
+                : "libx264",
+            Quality = 18,
+            Preset = "medium",
+            HardwarePreset = "p4"
+        };
+
+        var success = await _vapourSynthService.ProcessScriptAsync(
+            scriptPath,
+            job.OutputPath,
+            settings,
+            token);
+
+        if (!success && !token.IsCancellationRequested)
+        {
+            throw new Exception("VapourSynth processing failed");
         }
     }
 
@@ -505,6 +549,8 @@ video_in = core.lsmas.LWLibavSource(r'{job.SourcePath.Replace("'", "\\'")}')
     private void CancelProcessing()
     {
         _cancellationTokenSource?.Cancel();
+        _vapourSynthService.Cancel();
+
         if (CurrentJob != null)
         {
             CurrentJob.Status = ProcessingStatus.Cancelled;
@@ -548,6 +594,8 @@ video_in = core.lsmas.LWLibavSource(r'{job.SourcePath.Replace("'", "\\'")}')
         _disposed = true;
 
         _mediaPool.CurrentSourceChanged -= OnCurrentSourceChanged;
+        _vapourSynthService.ProgressChanged -= OnVapourSynthProgressChanged;
+        _vapourSynthService.LogMessage -= OnVapourSynthLogMessage;
         _cancellationTokenSource?.Dispose();
     }
 }
