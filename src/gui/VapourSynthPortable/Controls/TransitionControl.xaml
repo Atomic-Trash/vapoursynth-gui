@@ -8,13 +8,13 @@
             ToolTip="{Binding TransitionType}" Cursor="Hand">
         <Grid>
             <!-- Transition icon -->
-            <Path Data="M0,15 L15,0 L30,15 L15,30 Z" Fill="#888"
+            <Path Data="M0,15 L15,0 L30,15 L15,30 Z" Fill="#AAA"
                   HorizontalAlignment="Center" VerticalAlignment="Center"
                   Stretch="Uniform" Width="20" Height="20"/>
 
             <!-- Duration indicator -->
             <TextBlock Text="{Binding DurationFrames, StringFormat='{}{0}f'}"
-                       Foreground="#AAA" FontSize="9"
+                       Foreground="#CCC" FontSize="10"
                        HorizontalAlignment="Center" VerticalAlignment="Bottom"
                        Margin="0,0,0,2"/>
         </Grid>
