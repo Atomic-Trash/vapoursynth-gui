@@ -9,6 +9,7 @@ namespace VapourSynthPortable.ViewModels;
 public partial class SettingsViewModel : ObservableObject
 {
     private readonly SettingsService _settingsService;
+    private readonly VapourSynthService _vsService;
     private readonly Action? _closeAction;
 
     public SettingsViewModel() : this(null)
@@ -18,6 +19,7 @@ public partial class SettingsViewModel : ObservableObject
     public SettingsViewModel(Action? closeAction)
     {
         _settingsService = new SettingsService();
+        _vsService = new VapourSynthService();
         _closeAction = closeAction;
 
         PluginSets = new ObservableCollection<string> { "minimal", "standard", "full" };
@@ -25,9 +27,11 @@ public partial class SettingsViewModel : ObservableObject
         VideoCodecs = new ObservableCollection<string> { "libx264", "libx265", "h264_nvenc", "hevc_nvenc", "prores_ks", "ffv1" };
         AudioCodecs = new ObservableCollection<string> { "aac", "libmp3lame", "pcm_s16le", "flac" };
         GpuPreferences = new ObservableCollection<GpuPreference>(Enum.GetValues<GpuPreference>());
+        InstalledPlugins = [];
 
         LoadSettings();
         UpdateCacheInfo();
+        _ = LoadPluginsAsync();
     }
 
     #region Build Settings
@@ -109,6 +113,21 @@ public partial class SettingsViewModel : ObservableObject
     public ObservableCollection<string> VideoCodecs { get; }
     public ObservableCollection<string> AudioCodecs { get; }
     public ObservableCollection<GpuPreference> GpuPreferences { get; }
+    public ObservableCollection<VapourSynthPlugin> InstalledPlugins { get; }
+    #endregion
+
+    #region Plugin Status
+    [ObservableProperty]
+    private bool _isLoadingPlugins;
+
+    [ObservableProperty]
+    private bool _vapourSynthAvailable;
+
+    [ObservableProperty]
+    private string _pluginLoadStatus = "Loading plugins...";
+
+    [ObservableProperty]
+    private int _pluginCount;
     #endregion
 
     private void LoadSettings()
@@ -233,5 +252,49 @@ public partial class SettingsViewModel : ObservableObject
         ConfirmOnDelete = defaults.ConfirmOnDelete;
 
         ToastService.Instance.ShowInfo("Settings reset to defaults");
+    }
+
+    [RelayCommand]
+    private async Task RefreshPlugins()
+    {
+        await LoadPluginsAsync();
+    }
+
+    private async Task LoadPluginsAsync()
+    {
+        IsLoadingPlugins = true;
+        PluginLoadStatus = "Loading plugins...";
+        InstalledPlugins.Clear();
+
+        try
+        {
+            VapourSynthAvailable = _vsService.IsAvailable;
+
+            if (!VapourSynthAvailable)
+            {
+                PluginLoadStatus = "VapourSynth not available";
+                PluginCount = 0;
+                return;
+            }
+
+            var plugins = await _vsService.GetPluginsAsync();
+
+            foreach (var plugin in plugins.OrderBy(p => p.Namespace))
+            {
+                InstalledPlugins.Add(plugin);
+            }
+
+            PluginCount = plugins.Count;
+            PluginLoadStatus = $"{plugins.Count} plugins loaded";
+        }
+        catch (Exception ex)
+        {
+            PluginLoadStatus = $"Error: {ex.Message}";
+            PluginCount = 0;
+        }
+        finally
+        {
+            IsLoadingPlugins = false;
+        }
     }
 }

@@ -195,21 +195,25 @@ public class WipeClipConverter : IMultiValueConverter
 }
 
 /// <summary>
-/// Converts wipe position to a left margin for the divider line
+/// Converts wipe position and container width to a left margin for the divider line
 /// </summary>
-public class WipeMarginConverter : IValueConverter
+public class WipeMarginConverter : IMultiValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is not double position)
+        if (values.Length < 2 ||
+            values[0] is not double position ||
+            values[1] is not double containerWidth)
+        {
             return new Thickness(0);
+        }
 
-        // This is a simplified approach - in a real implementation,
-        // we'd bind to the actual width of the container
-        return new Thickness(0, 0, 0, 0);
+        // Calculate left margin based on position (0-1) and container width
+        var leftMargin = containerWidth * position;
+        return new Thickness(leftMargin, 0, 0, 0);
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
     }

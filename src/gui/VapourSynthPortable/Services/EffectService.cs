@@ -91,6 +91,116 @@ public class EffectService
     }
 
     /// <summary>
+    /// Generates VapourSynth code for color grading
+    /// </summary>
+    public string GenerateColorGradeCode(ColorGrade grade, string inputVar, string outputVar)
+    {
+        var lines = new List<string>();
+        var currentVar = inputVar;
+        var stepIndex = 0;
+
+        // Apply exposure and contrast using std.Expr
+        if (Math.Abs(grade.Exposure) > 0.001 || Math.Abs(grade.Contrast) > 0.001)
+        {
+            var stepVar = $"{outputVar}_exp";
+            var expMult = Math.Pow(2, grade.Exposure);
+            var contrastFactor = (grade.Contrast + 100) / 100.0;
+
+            // Expression: (x * exposure - 0.5) * contrast + 0.5 (for normalized values)
+            // For 8-bit: (x * exposure - 128) * contrast + 128
+            lines.Add($"{stepVar} = core.std.Expr({currentVar}, ['x {expMult:F4} * 128 - {contrastFactor:F4} * 128 +'])");
+            currentVar = stepVar;
+            stepIndex++;
+        }
+
+        // Apply saturation adjustment
+        if (Math.Abs(grade.Saturation) > 0.001)
+        {
+            var stepVar = $"{outputVar}_sat";
+            var satFactor = (grade.Saturation + 100) / 100.0;
+
+            // Convert to YUV, scale UV, convert back (simplified - actual implementation would use matrix)
+            lines.Add($"# Saturation: {satFactor:F2}x");
+            lines.Add($"{stepVar} = core.std.Expr({currentVar}, ['', 'x 128 - {satFactor:F4} * 128 +', 'x 128 - {satFactor:F4} * 128 +'])");
+            currentVar = stepVar;
+            stepIndex++;
+        }
+
+        // Apply temperature (simple blue/orange shift)
+        if (Math.Abs(grade.Temperature) > 0.001)
+        {
+            var stepVar = $"{outputVar}_temp";
+            var tempShift = grade.Temperature * 0.5; // Scale to reasonable range
+
+            lines.Add($"# Temperature: {grade.Temperature:F1}");
+            // Shift red channel for warmth, blue for coolness
+            if (grade.Temperature > 0)
+            {
+                // Warmer: boost red, reduce blue
+                lines.Add($"{stepVar} = core.std.Expr({currentVar}, ['x {Math.Abs(tempShift):F1} +', '', 'x {Math.Abs(tempShift):F1} -'])");
+            }
+            else
+            {
+                // Cooler: reduce red, boost blue
+                lines.Add($"{stepVar} = core.std.Expr({currentVar}, ['x {Math.Abs(tempShift):F1} -', '', 'x {Math.Abs(tempShift):F1} +'])");
+            }
+            currentVar = stepVar;
+            stepIndex++;
+        }
+
+        // Apply lift/gamma/gain (simplified color wheels)
+        if (HasLiftGammaGain(grade))
+        {
+            var stepVar = $"{outputVar}_lgg";
+            var liftOffset = (grade.LiftMaster + (grade.LiftX + grade.LiftY) / 2) * 10;
+            var gammaVal = 1.0 + grade.GammaMaster * 0.5;
+            var gainMult = 1.0 + grade.GainMaster * 0.5;
+
+            lines.Add($"# Lift/Gamma/Gain");
+            lines.Add($"{stepVar} = core.std.Levels({currentVar}, gamma={gammaVal:F3})");
+            if (Math.Abs(liftOffset) > 0.001 || Math.Abs(gainMult - 1.0) > 0.001)
+            {
+                lines.Add($"{stepVar} = core.std.Expr({stepVar}, ['x {liftOffset:F1} + {gainMult:F3} *'])");
+            }
+            currentVar = stepVar;
+            stepIndex++;
+        }
+
+        // Apply LUT if specified
+        if (!string.IsNullOrEmpty(grade.LutPath) && System.IO.File.Exists(grade.LutPath))
+        {
+            var stepVar = $"{outputVar}_lut";
+            var lutPath = grade.LutPath.Replace("\\", "/");
+
+            lines.Add($"# LUT: {System.IO.Path.GetFileName(grade.LutPath)}");
+            // Note: Requires timecube or similar LUT plugin
+            lines.Add($"# {stepVar} = core.timecube.Cube({currentVar}, cube='{lutPath}')");
+            lines.Add($"# LUT intensity: {grade.LutIntensity:F2}");
+            // For now, just comment out LUT application as it requires specific plugin
+            // currentVar = stepVar;
+        }
+
+        // Final assignment
+        if (currentVar != inputVar)
+        {
+            lines.Add($"{outputVar} = {currentVar}");
+        }
+        else
+        {
+            lines.Add($"{outputVar} = {inputVar}");
+        }
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static bool HasLiftGammaGain(ColorGrade grade)
+    {
+        return Math.Abs(grade.LiftX) > 0.001 || Math.Abs(grade.LiftY) > 0.001 || Math.Abs(grade.LiftMaster) > 0.001 ||
+               Math.Abs(grade.GammaX) > 0.001 || Math.Abs(grade.GammaY) > 0.001 || Math.Abs(grade.GammaMaster) > 0.001 ||
+               Math.Abs(grade.GainX) > 0.001 || Math.Abs(grade.GainY) > 0.001 || Math.Abs(grade.GainMaster) > 0.001;
+    }
+
+    /// <summary>
     /// Generates a complete VapourSynth script for a timeline
     /// </summary>
     public string GenerateTimelineScript(Timeline timeline, string outputPath)
@@ -140,6 +250,20 @@ public class EffectService
                         lines.Add($"# Effects for {clip.Name}");
                         lines.Add(effectCode);
                         trimVar = GetFinalOutputVar(clip, trimVar);
+                    }
+                }
+
+                // Apply color grading
+                if (clip.HasColorGrade && clip.ColorGrade != null)
+                {
+                    var colorVar = $"color_{clipIndex}";
+                    lines.Add("");
+                    lines.Add($"# Color grading for {clip.Name}");
+                    var colorCode = GenerateColorGradeCode(clip.ColorGrade, trimVar, colorVar);
+                    if (!string.IsNullOrEmpty(colorCode))
+                    {
+                        lines.Add(colorCode);
+                        trimVar = colorVar;
                     }
                 }
 

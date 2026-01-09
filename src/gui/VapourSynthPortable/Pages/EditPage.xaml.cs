@@ -2,13 +2,16 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
 using VapourSynthPortable.Models;
+using VapourSynthPortable.Services;
 using VapourSynthPortable.ViewModels;
 
 namespace VapourSynthPortable.Pages;
 
 public partial class EditPage : UserControl
 {
+    private readonly ILogger<EditPage> _logger = LoggingService.GetLogger<EditPage>();
     private bool _syncingFromPlayer;
     private bool _syncingFromTimeline;
     private string? _currentProgramSource;
@@ -55,24 +58,32 @@ public partial class EditPage : UserControl
 
     private void EditPage_Unloaded(object sender, RoutedEventArgs e)
     {
-        if (DataContext is EditViewModel viewModel)
+        try
         {
-            viewModel.PropertyChanged -= ViewModel_PropertyChanged;
-            viewModel.Timeline.PropertyChanged -= Timeline_PropertyChanged;
-        }
+            if (DataContext is EditViewModel viewModel)
+            {
+                viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+                viewModel.Timeline.PropertyChanged -= Timeline_PropertyChanged;
+            }
 
-        if (ProgramPlayer.Player != null)
+            if (ProgramPlayer?.Player != null)
+            {
+                ProgramPlayer.Player.PositionChanged -= ProgramPlayer_PositionChanged;
+            }
+
+            // Unsubscribe from timeline context menu events
+            if (TimelineControl != null)
+            {
+                TimelineControl.ClipCutRequested -= TimelineControl_ClipCutRequested;
+                TimelineControl.ClipCopyRequested -= TimelineControl_ClipCopyRequested;
+                TimelineControl.ScrubStarted -= TimelineControl_ScrubStarted;
+                TimelineControl.ScrubEnded -= TimelineControl_ScrubEnded;
+            }
+        }
+        catch (Exception ex)
         {
-            ProgramPlayer.Player.PositionChanged -= ProgramPlayer_PositionChanged;
+            _logger.LogWarning(ex, "Error during EditPage unload cleanup");
         }
-
-        // Unsubscribe from timeline context menu events
-        TimelineControl.ClipCutRequested -= TimelineControl_ClipCutRequested;
-        TimelineControl.ClipCopyRequested -= TimelineControl_ClipCopyRequested;
-
-        // Unsubscribe from scrub events
-        TimelineControl.ScrubStarted -= TimelineControl_ScrubStarted;
-        TimelineControl.ScrubEnded -= TimelineControl_ScrubEnded;
     }
 
     private void EditPage_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -108,50 +119,73 @@ public partial class EditPage : UserControl
 
     private void LoadSourceMonitorVideo()
     {
-        if (DataContext is EditViewModel viewModel && viewModel.SourceMonitorItem != null)
+        try
         {
-            var filePath = viewModel.SourceMonitorItem.FilePath;
-            if (!string.IsNullOrEmpty(filePath) &&
-                viewModel.SourceMonitorItem.MediaType == MediaType.Video &&
-                _currentSourceMonitor != filePath)
+            if (DataContext is EditViewModel viewModel && viewModel.SourceMonitorItem != null)
             {
-                _currentSourceMonitor = filePath;
-                SourcePlayer.LoadFile(filePath);
+                var filePath = viewModel.SourceMonitorItem.FilePath;
+                if (!string.IsNullOrEmpty(filePath) &&
+                    viewModel.SourceMonitorItem.MediaType == MediaType.Video &&
+                    _currentSourceMonitor != filePath)
+                {
+                    _currentSourceMonitor = filePath;
+                    SourcePlayer.LoadFile(filePath);
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load source monitor video");
+            ToastService.Instance.ShowError("Failed to load source", ex.Message);
         }
     }
 
     private void HandlePlaybackStateChange()
     {
-        if (DataContext is not EditViewModel viewModel) return;
+        try
+        {
+            if (DataContext is not EditViewModel viewModel) return;
 
-        if (viewModel.IsPlaying)
-        {
-            // Load first clip on timeline if not already loaded
-            LoadProgramMonitorVideo();
-            ProgramPlayer.Play();
+            if (viewModel.IsPlaying)
+            {
+                // Load first clip on timeline if not already loaded
+                LoadProgramMonitorVideo();
+                ProgramPlayer.Play();
+            }
+            else
+            {
+                ProgramPlayer.Pause();
+            }
         }
-        else
+        catch (Exception ex)
         {
-            ProgramPlayer.Pause();
+            _logger.LogError(ex, "Failed to change playback state");
         }
     }
 
     private void LoadProgramMonitorVideo()
     {
-        if (DataContext is not EditViewModel viewModel) return;
-
-        // Find the clip at the current playhead position
-        var clip = viewModel.Timeline.GetClipAtFrame(viewModel.Timeline.PlayheadFrame);
-        if (clip != null && clip.SourcePath != _currentProgramSource)
+        try
         {
-            _currentProgramSource = clip.SourcePath;
-            ProgramPlayer.LoadFile(clip.SourcePath);
+            if (DataContext is not EditViewModel viewModel) return;
 
-            // Seek to the correct position within the clip
-            var frameInClip = viewModel.Timeline.PlayheadFrame - clip.StartFrame + clip.SourceInFrame;
-            var seconds = frameInClip / viewModel.Timeline.FrameRate;
-            ProgramPlayer.Seek(seconds);
+            // Find the clip at the current playhead position
+            var clip = viewModel.Timeline.GetClipAtFrame(viewModel.Timeline.PlayheadFrame);
+            if (clip != null && clip.SourcePath != _currentProgramSource)
+            {
+                _currentProgramSource = clip.SourcePath;
+                ProgramPlayer.LoadFile(clip.SourcePath);
+
+                // Seek to the correct position within the clip
+                var frameInClip = viewModel.Timeline.PlayheadFrame - clip.StartFrame + clip.SourceInFrame;
+                var seconds = frameInClip / viewModel.Timeline.FrameRate;
+                ProgramPlayer.Seek(seconds);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load program monitor video");
+            ToastService.Instance.ShowError("Failed to load timeline video", ex.Message);
         }
     }
 
@@ -203,6 +237,10 @@ public partial class EditPage : UserControl
                 var seconds = frameInClip / viewModel.Timeline.FrameRate;
                 ProgramPlayer.Seek(seconds);
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to sync player to timeline position");
         }
         finally
         {

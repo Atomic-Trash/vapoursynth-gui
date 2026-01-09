@@ -144,7 +144,7 @@
                                 Command="{Binding BrowseOutputCommand}"/>
                     </Grid>
 
-                    <TextBlock Text="{Binding OutputPath}" Foreground="#888" FontSize="9"
+                    <TextBlock Text="{Binding OutputPath}" Foreground="#9E9E9E" FontSize="9"
                                TextTrimming="CharacterEllipsis" Margin="0,0,0,15"
                                ToolTip="{Binding OutputPath}"/>
 
@@ -270,7 +270,7 @@
 
                             <StackPanel Grid.Column="0" Orientation="Horizontal">
                                 <TextBlock Text="Export Queue" FontWeight="SemiBold" Foreground="#F1F1F1"/>
-                                <TextBlock Foreground="#888" Margin="10,0,0,0">
+                                <TextBlock Foreground="#9E9E9E" Margin="10,0,0,0">
                                     <Run Text="("/>
                                     <Run Text="{Binding ExportQueue.Count, Mode=OneWay}"/>
                                     <Run Text=" items)"/>
@@ -311,7 +311,7 @@
                                         <!-- Job Info -->
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" Foreground="#CCC"/>
-                                            <TextBlock Text="{Binding StatusText}" Foreground="#888" FontSize="10"/>
+                                            <TextBlock Text="{Binding StatusText}" Foreground="#9E9E9E" FontSize="10"/>
                                         </StackPanel>
 
                                         <!-- Progress -->
@@ -340,8 +340,8 @@
                                             <Setter.Value>
                                                 <ControlTemplate>
                                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                        <TextBlock Text="No exports in queue" Foreground="#888" FontSize="12"/>
-                                                        <TextBlock Text="Add files to start batch export" Foreground="#666" FontSize="10" Margin="0,5,0,0"/>
+                                                        <TextBlock Text="No exports in queue" Foreground="#9E9E9E" FontSize="12"/>
+                                                        <TextBlock Text="Add files to start batch export" Foreground="#9E9E9E" FontSize="10" Margin="0,5,0,0"/>
                                                     </StackPanel>
                                                 </ControlTemplate>
                                             </Setter.Value>

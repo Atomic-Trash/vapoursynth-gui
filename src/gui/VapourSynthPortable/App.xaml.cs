@@ -100,6 +100,7 @@ public partial class App : Application
         services.AddSingleton<ThumbnailService>();
         services.AddSingleton<SettingsService>();
         services.AddSingleton<ProjectService>();
+        services.AddSingleton<UndoService>();
 
         // ViewModels - transient (new instance per request)
         services.AddTransient<MediaViewModel>();

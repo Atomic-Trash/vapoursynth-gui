@@ -1,12 +1,15 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Extensions.Logging;
+using VapourSynthPortable.Services;
 using VapourSynthPortable.ViewModels;
 
 namespace VapourSynthPortable.Pages;
 
 public partial class ColorPage : UserControl
 {
+    private readonly ILogger<ColorPage> _logger = LoggingService.GetLogger<ColorPage>();
     private string? _currentSource;
 
     public ColorPage()
@@ -75,7 +78,15 @@ public partial class ColorPage : UserControl
     {
         if (string.IsNullOrEmpty(path) || path == _currentSource) return;
 
-        _currentSource = path;
-        PreviewPlayer.LoadFile(path);
+        try
+        {
+            _currentSource = path;
+            PreviewPlayer.LoadFile(path);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load video for color grading: {Path}", path);
+            ToastService.Instance.ShowError("Failed to load video", ex.Message);
+        }
     }
 }

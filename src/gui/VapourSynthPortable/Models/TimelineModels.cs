@@ -74,10 +74,38 @@ public partial class TimelineClip : ObservableObject
     [ObservableProperty]
     private ObservableCollection<TimelineEffect> _effects = [];
 
+    // Color grade applied to this clip
+    [ObservableProperty]
+    private ColorGrade? _colorGrade;
+
     /// <summary>
     /// Indicates if the clip has any enabled effects
     /// </summary>
     public bool HasEffects => Effects.Any(e => e.IsEnabled);
+
+    /// <summary>
+    /// Indicates if the clip has a color grade applied
+    /// </summary>
+    public bool HasColorGrade => ColorGrade != null && !IsColorGradeDefault(ColorGrade);
+
+    private static bool IsColorGradeDefault(ColorGrade grade)
+    {
+        return Math.Abs(grade.Exposure) < 0.001 &&
+               Math.Abs(grade.Contrast) < 0.001 &&
+               Math.Abs(grade.Saturation) < 0.001 &&
+               Math.Abs(grade.Temperature) < 0.001 &&
+               Math.Abs(grade.Tint) < 0.001 &&
+               Math.Abs(grade.LiftX) < 0.001 &&
+               Math.Abs(grade.LiftY) < 0.001 &&
+               Math.Abs(grade.LiftMaster) < 0.001 &&
+               Math.Abs(grade.GammaX) < 0.001 &&
+               Math.Abs(grade.GammaY) < 0.001 &&
+               Math.Abs(grade.GammaMaster) < 0.001 &&
+               Math.Abs(grade.GainX) < 0.001 &&
+               Math.Abs(grade.GainY) < 0.001 &&
+               Math.Abs(grade.GainMaster) < 0.001 &&
+               string.IsNullOrEmpty(grade.LutPath);
+    }
 
     public TimelineClip()
     {
@@ -144,7 +172,8 @@ public partial class TimelineClip : ObservableObject
             FrameRate = FrameRate,
             Color = Color,
             Volume = Volume,
-            IsMuted = IsMuted
+            IsMuted = IsMuted,
+            ColorGrade = ColorGrade?.Clone()
         };
 
         // Clone effects

@@ -81,7 +81,7 @@
                             <ToolTip>
                                 <StackPanel>
                                     <TextBlock Text="Undo (Ctrl+Z)" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding UndoDescription}" Foreground="#888"
+                                    <TextBlock Text="{Binding UndoDescription}" Foreground="#9E9E9E"
                                                Visibility="{Binding CanUndo, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                 </StackPanel>
                             </ToolTip>
@@ -94,7 +94,7 @@
                             <ToolTip>
                                 <StackPanel>
                                     <TextBlock Text="Redo (Ctrl+Y)" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding RedoDescription}" Foreground="#888"
+                                    <TextBlock Text="{Binding RedoDescription}" Foreground="#9E9E9E"
                                                Visibility="{Binding CanRedo, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                 </StackPanel>
                             </ToolTip>
@@ -194,7 +194,7 @@
                                                     <TextBlock Text="{Binding Name}" Foreground="#DDD" FontSize="10"
                                                                TextTrimming="CharacterEllipsis"
                                                                ToolTip="{Binding Name}"/>
-                                                    <TextBlock Text="{Binding DurationFormatted}" Foreground="#888" FontSize="9"/>
+                                                    <TextBlock Text="{Binding DurationFormatted}" Foreground="#9E9E9E" FontSize="9"/>
                                                 </StackPanel>
                                             </Grid>
                                         </Border>
@@ -207,7 +207,7 @@
                                         Visibility="{Binding MediaPool.Count, Converter={StaticResource CountToVis}}">
                                 <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="24"
                                            Foreground="#444" HorizontalAlignment="Center"/>
-                                <TextBlock Text="No media" Foreground="#555" FontSize="11"
+                                <TextBlock Text="No media" Foreground="#9E9E9E" FontSize="11"
                                            HorizontalAlignment="Center" Margin="0,8,0,0"/>
                                 <Button Content="Import" Command="{Binding ImportMediaCommand}"
                                         Style="{StaticResource SecondaryButton}" Margin="0,10,0,0"/>
@@ -251,7 +251,7 @@
                                     Visibility="{Binding SourceMonitorItem, Converter={StaticResource NullToVis}}">
                             <TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets" FontSize="36"
                                        Foreground="#333" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Select media from pool" FontSize="11" Foreground="#555"
+                            <TextBlock Text="Select media from pool" FontSize="11" Foreground="#9E9E9E"
                                        HorizontalAlignment="Center" Margin="0,10,0,0"/>
                         </StackPanel>
                     </Grid>
@@ -331,7 +331,7 @@
                                        MaxWidth="480" MaxHeight="270"
                                        Stretch="Uniform"/>
                                 <TextBlock Text="Scrubbing..."
-                                           Foreground="#666" FontSize="10"
+                                           Foreground="#9E9E9E" FontSize="10"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            Visibility="{Binding ScrubPreviewFrame, Converter={StaticResource NullToVis}}"/>
@@ -343,7 +343,7 @@
                                     Visibility="{Binding Timeline.HasClips, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                             <TextBlock Text="&#xE8B8;" FontFamily="Segoe MDL2 Assets" FontSize="36"
                                        Foreground="#333" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Add clips to timeline" FontSize="11" Foreground="#555"
+                            <TextBlock Text="Add clips to timeline" FontSize="11" Foreground="#9E9E9E"
                                        HorizontalAlignment="Center" Margin="0,10,0,0"/>
                             <TextBlock Text="{Binding Timeline.DurationFormatted, StringFormat='Duration: {0}'}"
                                        FontSize="10" Foreground="#444"
@@ -425,7 +425,7 @@
                 <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="10"
                            VerticalAlignment="Center"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <TextBlock Text="Playhead: " Foreground="#555" FontSize="10"/>
+                    <TextBlock Text="Playhead: " Foreground="#9E9E9E" FontSize="10"/>
                     <TextBlock Text="{Binding Timeline.PlayheadTimecode}" Foreground="#AAA"
                                FontSize="10" FontFamily="Consolas"/>
                 </StackPanel>

@@ -234,12 +234,12 @@
                                     Visibility="{Binding HasSource, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                             <TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets" FontSize="48"
                                        Foreground="#333" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Load a video to restore" FontSize="14" Foreground="#888"
+                            <TextBlock Text="Load a video to restore" FontSize="14" Foreground="#9E9E9E"
                                        HorizontalAlignment="Center" Margin="0,15,0,5"/>
                             <TextBlock Text="AI-powered restoration for upscaling, denoising," FontSize="11"
-                                       Foreground="#666" HorizontalAlignment="Center"/>
+                                       Foreground="#9E9E9E" HorizontalAlignment="Center"/>
                             <TextBlock Text="deinterlacing, and frame interpolation" FontSize="11"
-                                       Foreground="#666" HorizontalAlignment="Center"/>
+                                       Foreground="#9E9E9E" HorizontalAlignment="Center"/>
                             <Button Content="Load Source Video" Command="{Binding LoadSourceAsyncCommand}"
                                     Style="{StaticResource PrimaryButton}" Margin="0,20,0,0"/>
                         </StackPanel>
@@ -256,7 +256,7 @@
                             <Border Grid.Row="0" Background="#2A2A2A" Padding="8,4"
                                     Visibility="{Binding ShowComparison, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock Text="Compare:" Foreground="#888" FontSize="10"
+                                    <TextBlock Text="Compare:" Foreground="#9E9E9E" FontSize="10"
                                                VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <RadioButton Content="Side by Side" GroupName="CompareMode"
                                                  Style="{StaticResource CategoryPillButton}"
@@ -290,7 +290,7 @@
                                         </Grid.ColumnDefinitions>
                                         <Grid Grid.Column="0">
                                             <Image Source="{Binding OriginalFrame}" Stretch="Uniform"/>
-                                            <TextBlock Text="ORIGINAL" Foreground="#888" FontSize="9" FontWeight="Bold"
+                                            <TextBlock Text="ORIGINAL" Foreground="#9E9E9E" FontSize="9" FontWeight="Bold"
                                                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,8"/>
                                         </Grid>
                                         <Border Grid.Column="1" Background="#333"/>
@@ -367,7 +367,7 @@
                                         <StackPanel Grid.Column="0">
                                             <TextBlock Text="{Binding SelectedPreset.Name}" Foreground="#FFF"
                                                        FontSize="14" FontWeight="SemiBold"/>
-                                            <TextBlock Text="{Binding SelectedPreset.Description}" Foreground="#888"
+                                            <TextBlock Text="{Binding SelectedPreset.Description}" Foreground="#9E9E9E"
                                                        FontSize="11" Margin="0,4,0,0"/>
                                         </StackPanel>
 
@@ -408,7 +408,7 @@
                                                         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
                                                             <TextBlock Text="{Binding DisplayName}" Foreground="#DDD"
                                                                        FontSize="11" FontWeight="Medium"/>
-                                                            <TextBlock Text="?" Foreground="#666" FontSize="9"
+                                                            <TextBlock Text="?" Foreground="#9E9E9E" FontSize="9"
                                                                        VerticalAlignment="Top" Margin="3,0,0,0"
                                                                        ToolTip="{Binding Description}"/>
                                                         </StackPanel>
@@ -515,7 +515,7 @@
                         <Grid>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                           Foreground="#888" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                           Foreground="#9E9E9E" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <TextBlock Text="Processing Queue" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#F1F1F1" VerticalAlignment="Center"/>
                             </StackPanel>
@@ -574,7 +574,7 @@
                                             </Grid>
 
                                             <!-- Preset name -->
-                                            <TextBlock Grid.Row="1" Text="{Binding Preset.Name}" Foreground="#888" FontSize="9"
+                                            <TextBlock Grid.Row="1" Text="{Binding Preset.Name}" Foreground="#9E9E9E" FontSize="9"
                                                        Margin="0,2,0,0"/>
 
                                             <!-- Progress bar -->
@@ -583,9 +583,9 @@
                                                              Height="3" Background="#333" Foreground="#0E639C"/>
                                                 <Grid Margin="0,4,0,0">
                                                     <TextBlock Text="{Binding Progress, StringFormat='{}{0:F0}%'}"
-                                                               Foreground="#888" FontSize="8"/>
+                                                               Foreground="#9E9E9E" FontSize="8"/>
                                                     <TextBlock Text="{Binding EstimatedTimeRemaining, StringFormat='ETA: {0:mm\\:ss}'}"
-                                                               Foreground="#888" FontSize="8" HorizontalAlignment="Right"
+                                                               Foreground="#9E9E9E" FontSize="8" HorizontalAlignment="Right"
                                                                Visibility="{Binding Status, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Processing}"/>
                                                 </Grid>
                                             </Grid>
@@ -600,8 +600,8 @@
                     <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
                                 Visibility="{Binding JobQueue.Count, Converter={StaticResource CountToVis}}">
                         <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="24"
-                                   Foreground="#555" HorizontalAlignment="Center"/>
-                        <TextBlock Text="No jobs in queue" Foreground="#888" FontSize="11"
+                                   Foreground="#9E9E9E" HorizontalAlignment="Center"/>
+                        <TextBlock Text="No jobs in queue" Foreground="#9E9E9E" FontSize="11"
                                    HorizontalAlignment="Center" Margin="0,8,0,0"/>
                     </StackPanel>
 
@@ -640,7 +640,7 @@
                            VerticalAlignment="Center"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
                             Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <TextBlock Text="Processing: " Foreground="#888" FontSize="10"/>
+                    <TextBlock Text="Processing: " Foreground="#9E9E9E" FontSize="10"/>
                     <TextBlock Text="{Binding CurrentJob.ProgressText}" Foreground="#0E639C" FontSize="10"/>
                 </StackPanel>
             </Grid>

@@ -131,6 +131,73 @@ public class ClipData
     public bool IsLocked { get; set; }
     public string ColorHex { get; set; } = "#2A6A9F";
     public double Volume { get; set; } = 1.0;
+
+    // Per-clip effects
+    public List<EffectData> Effects { get; set; } = [];
+
+    // Per-clip color grade
+    public ColorGradeData? ColorGrade { get; set; }
+}
+
+/// <summary>
+/// Serializable effect data
+/// </summary>
+public class EffectData
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string Category { get; set; } = "";
+    public EffectType EffectType { get; set; }
+    public bool IsEnabled { get; set; } = true;
+    public bool IsExpanded { get; set; } = true;
+    public string VsNamespace { get; set; } = "";
+    public string VsFunction { get; set; } = "";
+    public List<EffectParameterData> Parameters { get; set; } = [];
+    public List<KeyframeTrackData> KeyframeTracks { get; set; } = [];
+}
+
+/// <summary>
+/// Serializable effect parameter data
+/// </summary>
+public class EffectParameterData
+{
+    public string Name { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string Description { get; set; } = "";
+    public EffectParameterType ParameterType { get; set; }
+    public string? ValueJson { get; set; }
+    public string? DefaultValueJson { get; set; }
+    public double? MinValue { get; set; }
+    public double? MaxValue { get; set; }
+    public List<string> Options { get; set; } = [];
+}
+
+/// <summary>
+/// Serializable keyframe track data
+/// </summary>
+public class KeyframeTrackData
+{
+    public int Id { get; set; }
+    public string ParameterName { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public bool IsExpanded { get; set; } = true;
+    public bool IsEnabled { get; set; } = true;
+    public List<KeyframeData> Keyframes { get; set; } = [];
+}
+
+/// <summary>
+/// Serializable keyframe data
+/// </summary>
+public class KeyframeData
+{
+    public int Id { get; set; }
+    public long Frame { get; set; }
+    public string? ValueJson { get; set; }
+    public KeyframeInterpolation Interpolation { get; set; } = KeyframeInterpolation.Linear;
+    public double EaseInX { get; set; } = 0.25;
+    public double EaseInY { get; set; } = 0.25;
+    public double EaseOutX { get; set; } = 0.75;
+    public double EaseOutY { get; set; } = 0.75;
 }
 
 /// <summary>

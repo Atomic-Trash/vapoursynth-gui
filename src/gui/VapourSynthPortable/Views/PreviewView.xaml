@@ -300,8 +300,14 @@
                         </Image>
 
                         <!-- Wipe divider line -->
-                        <Rectangle Width="2" Fill="#007ACC" HorizontalAlignment="Left"
-                                   Margin="{Binding WipePosition, Converter={StaticResource WipeMarginConverter}}"/>
+                        <Rectangle Width="2" Fill="#007ACC" HorizontalAlignment="Left">
+                            <Rectangle.Margin>
+                                <MultiBinding Converter="{StaticResource WipeMarginConverter}">
+                                    <Binding Path="WipePosition"/>
+                                    <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Grid}"/>
+                                </MultiBinding>
+                            </Rectangle.Margin>
+                        </Rectangle>
 
                         <!-- Wipe slider (invisible, for interaction) -->
                         <Slider Minimum="0" Maximum="1" Value="{Binding WipePosition, Mode=TwoWay}"

@@ -17,6 +17,7 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     private static readonly ILogger<MediaViewModel> _logger = LoggingService.GetLogger<MediaViewModel>();
     private readonly IMediaPoolService _mediaPool;
     private readonly SettingsService _settingsService;
+    private readonly UndoService _undoService;
     private bool _disposed;
 
     private static readonly string[] VideoExtensions = [".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".mpg", ".mpeg", ".ts", ".m2ts"];
@@ -107,10 +108,11 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     // Media pool is now shared across all pages via IMediaPoolService
     private IEnumerable<MediaItem> AllItems => _mediaPool.MediaPool;
 
-    public MediaViewModel(IMediaPoolService mediaPool, SettingsService? settingsService = null)
+    public MediaViewModel(IMediaPoolService mediaPool, SettingsService? settingsService = null, UndoService? undoService = null)
     {
         _mediaPool = mediaPool;
         _settingsService = settingsService ?? new SettingsService();
+        _undoService = undoService ?? new UndoService();
         _mediaPool.MediaPoolChanged += OnMediaPoolChanged;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
 
@@ -120,8 +122,42 @@ public partial class MediaViewModel : ObservableObject, IDisposable
 
     // Parameterless constructor for XAML design-time support
     public MediaViewModel() : this(App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService
-        ?? new MediaPoolService(), new SettingsService())
+        ?? new MediaPoolService(), new SettingsService(), App.Services?.GetService(typeof(UndoService)) as UndoService)
     {
+    }
+
+    /// <summary>
+    /// Gets whether undo is available
+    /// </summary>
+    public bool CanUndo => _undoService.CanUndo;
+
+    /// <summary>
+    /// Gets whether redo is available
+    /// </summary>
+    public bool CanRedo => _undoService.CanRedo;
+
+    /// <summary>
+    /// Undo the last media pool operation
+    /// </summary>
+    [RelayCommand]
+    private void Undo()
+    {
+        _undoService.Undo();
+        RefreshDisplayedItems();
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+    }
+
+    /// <summary>
+    /// Redo the last undone operation
+    /// </summary>
+    [RelayCommand]
+    private void Redo()
+    {
+        _undoService.Redo();
+        RefreshDisplayedItems();
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
     }
 
     private void OnMediaPoolChanged(object? sender, EventArgs e)
@@ -504,15 +540,35 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     {
         if (SelectedItem == null) return;
 
-        _mediaPool.RemoveMedia(SelectedItem);
-        DisplayedItems.Remove(SelectedItem);
+        var item = SelectedItem;
+        var index = _mediaPool.MediaPool.IndexOf(item);
+
+        // Record undo action before removing
+        _undoService.RecordAction(
+            $"Remove {item.Name}",
+            undoAction: () =>
+            {
+                _mediaPool.AddMedia(item);
+                RefreshDisplayedItems();
+            },
+            redoAction: () =>
+            {
+                _mediaPool.RemoveMedia(item);
+                RefreshDisplayedItems();
+            });
+
+        _mediaPool.RemoveMedia(item);
+        DisplayedItems.Remove(item);
         SelectedItem = null;
 
         OnPropertyChanged(nameof(VideoCount));
         OnPropertyChanged(nameof(AudioCount));
         OnPropertyChanged(nameof(ImageCount));
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
 
         UpdateStatus();
+        ToastService.Instance.ShowInfo("Removed", $"{item.Name} removed (Ctrl+Z to undo)");
     }
 
     [RelayCommand]
@@ -539,18 +595,37 @@ public partial class MediaViewModel : ObservableObject, IDisposable
         item ??= SelectedItem;
         if (item == null) return;
 
-        _mediaPool.RemoveMedia(item);
-        DisplayedItems.Remove(item);
+        var removedItem = item;
 
-        if (SelectedItem == item)
+        // Record undo action before removing
+        _undoService.RecordAction(
+            $"Remove {removedItem.Name}",
+            undoAction: () =>
+            {
+                _mediaPool.AddMedia(removedItem);
+                RefreshDisplayedItems();
+            },
+            redoAction: () =>
+            {
+                _mediaPool.RemoveMedia(removedItem);
+                RefreshDisplayedItems();
+            });
+
+        _mediaPool.RemoveMedia(removedItem);
+        DisplayedItems.Remove(removedItem);
+
+        if (SelectedItem == removedItem)
             SelectedItem = null;
 
         OnPropertyChanged(nameof(VideoCount));
         OnPropertyChanged(nameof(AudioCount));
         OnPropertyChanged(nameof(ImageCount));
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
 
         UpdateStatus();
-        _logger.LogInformation("Removed from pool: {Name}", item.Name);
+        ToastService.Instance.ShowInfo("Removed", $"{removedItem.Name} removed (Ctrl+Z to undo)");
+        _logger.LogInformation("Removed from pool: {Name}", removedItem.Name);
     }
 
     [RelayCommand]
@@ -573,6 +648,28 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ClearAll()
     {
+        if (_mediaPool.MediaPool.Count == 0) return;
+
+        // Capture all items for undo
+        var allItems = _mediaPool.MediaPool.ToList();
+
+        // Record undo action before clearing
+        _undoService.RecordAction(
+            $"Clear all ({allItems.Count} items)",
+            undoAction: () =>
+            {
+                foreach (var item in allItems)
+                {
+                    _mediaPool.AddMedia(item);
+                }
+                RefreshDisplayedItems();
+            },
+            redoAction: () =>
+            {
+                _mediaPool.ClearPool();
+                RefreshDisplayedItems();
+            });
+
         _mediaPool.ClearPool();
         DisplayedItems.Clear();
         SelectedItem = null;
@@ -580,8 +677,11 @@ public partial class MediaViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(VideoCount));
         OnPropertyChanged(nameof(AudioCount));
         OnPropertyChanged(nameof(ImageCount));
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
 
         UpdateStatus();
+        ToastService.Instance.ShowInfo("Cleared", $"Removed {allItems.Count} items (Ctrl+Z to undo)");
     }
 
     [RelayCommand]

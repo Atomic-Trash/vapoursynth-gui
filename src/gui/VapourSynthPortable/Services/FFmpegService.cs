@@ -458,7 +458,7 @@ public class FFmpegService
     }
 
     /// <summary>
-    /// Detect available hardware encoders
+    /// Detect available hardware encoders and decoders
     /// </summary>
     public async Task<HardwareAcceleration> DetectHardwareAccelerationAsync()
     {
@@ -466,20 +466,30 @@ public class FFmpegService
 
         try
         {
-            // Check for NVIDIA NVENC
+            // Check for NVIDIA NVENC encoding
             result.NvencAvailable = await CheckEncoderAvailableAsync("h264_nvenc");
             result.NvencHevcAvailable = await CheckEncoderAvailableAsync("hevc_nvenc");
 
-            // Check for Intel QSV
+            // Check for Intel QSV encoding
             result.QsvAvailable = await CheckEncoderAvailableAsync("h264_qsv");
             result.QsvHevcAvailable = await CheckEncoderAvailableAsync("hevc_qsv");
 
-            // Check for AMD AMF
+            // Check for AMD AMF encoding
             result.AmfAvailable = await CheckEncoderAvailableAsync("h264_amf");
             result.AmfHevcAvailable = await CheckEncoderAvailableAsync("hevc_amf");
 
-            _logger.LogInformation("Hardware acceleration detected: NVENC={Nvenc}, QSV={Qsv}, AMF={Amf}",
-                result.NvencAvailable, result.QsvAvailable, result.AmfAvailable);
+            // Check for hardware decoding (hwaccels)
+            var hwaccels = await GetAvailableHwAccelsAsync();
+            result.CudaAvailable = hwaccels.Contains("cuda");
+            result.CuvidAvailable = hwaccels.Contains("cuvid");
+            result.QsvDecodeAvailable = hwaccels.Contains("qsv");
+            result.D3d11vaAvailable = hwaccels.Contains("d3d11va");
+            result.Dxva2Available = hwaccels.Contains("dxva2");
+            result.VulkanAvailable = hwaccels.Contains("vulkan");
+
+            _logger.LogInformation("Hardware acceleration detected - Encoding: NVENC={Nvenc}, QSV={Qsv}, AMF={Amf}; Decoding: CUDA={Cuda}, QSV={QsvDec}, D3D11VA={D3d11}",
+                result.NvencAvailable, result.QsvAvailable, result.AmfAvailable,
+                result.CudaAvailable, result.QsvDecodeAvailable, result.D3d11vaAvailable);
         }
         catch (Exception ex)
         {
@@ -487,6 +497,54 @@ public class FFmpegService
         }
 
         return result;
+    }
+
+    private async Task<HashSet<string>> GetAvailableHwAccelsAsync()
+    {
+        var hwaccels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            var ffmpegPath = Path.Combine(GlobalFFOptions.Current.BinaryFolder, "ffmpeg.exe");
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = ffmpegPath,
+                    Arguments = "-hide_banner -hwaccels",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            // Parse output - each line after "Hardware acceleration methods:" is a hwaccel name
+            var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            var parsing = false;
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+                if (trimmed.Contains("Hardware acceleration methods"))
+                {
+                    parsing = true;
+                    continue;
+                }
+                if (parsing && !string.IsNullOrEmpty(trimmed))
+                {
+                    hwaccels.Add(trimmed);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get available hwaccels");
+        }
+
+        return hwaccels;
     }
 
     private async Task<bool> CheckEncoderAvailableAsync(string encoderName)
@@ -727,6 +785,7 @@ public class AudioStreamInfo
 /// </summary>
 public class HardwareAcceleration
 {
+    // Encoding capabilities
     public bool NvencAvailable { get; set; }
     public bool NvencHevcAvailable { get; set; }
     public bool QsvAvailable { get; set; }
@@ -734,8 +793,22 @@ public class HardwareAcceleration
     public bool AmfAvailable { get; set; }
     public bool AmfHevcAvailable { get; set; }
 
-    public bool AnyAvailable =>
+    // Decoding capabilities
+    public bool CudaAvailable { get; set; }
+    public bool CuvidAvailable { get; set; }
+    public bool QsvDecodeAvailable { get; set; }
+    public bool D3d11vaAvailable { get; set; }
+    public bool Dxva2Available { get; set; }
+    public bool VulkanAvailable { get; set; }
+
+    public bool AnyEncodingAvailable =>
         NvencAvailable || QsvAvailable || AmfAvailable;
+
+    public bool AnyDecodingAvailable =>
+        CudaAvailable || CuvidAvailable || QsvDecodeAvailable || D3d11vaAvailable || Dxva2Available || VulkanAvailable;
+
+    public bool AnyAvailable =>
+        AnyEncodingAvailable || AnyDecodingAvailable;
 
     public string GetBestH264Encoder()
     {
@@ -751,6 +824,67 @@ public class HardwareAcceleration
         if (QsvHevcAvailable) return "hevc_qsv";
         if (AmfHevcAvailable) return "hevc_amf";
         return "libx265";
+    }
+
+    /// <summary>
+    /// Gets the best available hardware acceleration method for decoding
+    /// </summary>
+    public string? GetBestHwAccel()
+    {
+        if (CudaAvailable) return "cuda";
+        if (CuvidAvailable) return "cuvid";
+        if (QsvDecodeAvailable) return "qsv";
+        if (D3d11vaAvailable) return "d3d11va";
+        if (Dxva2Available) return "dxva2";
+        if (VulkanAvailable) return "vulkan";
+        return null;
+    }
+
+    /// <summary>
+    /// Gets FFmpeg hwaccel arguments for decoding
+    /// </summary>
+    public string GetHwAccelArgs()
+    {
+        var hwaccel = GetBestHwAccel();
+        if (hwaccel == null) return "";
+
+        return hwaccel switch
+        {
+            "cuda" => "-hwaccel cuda -hwaccel_output_format cuda",
+            "cuvid" => "-hwaccel cuvid",
+            "qsv" => "-hwaccel qsv -hwaccel_output_format qsv",
+            "d3d11va" => "-hwaccel d3d11va",
+            "dxva2" => "-hwaccel dxva2",
+            "vulkan" => "-hwaccel vulkan",
+            _ => ""
+        };
+    }
+
+    public override string ToString()
+    {
+        var parts = new List<string>();
+
+        // Encoding
+        if (NvencAvailable || NvencHevcAvailable)
+            parts.Add($"NVENC (H.264={NvencAvailable}, HEVC={NvencHevcAvailable})");
+        if (QsvAvailable || QsvHevcAvailable)
+            parts.Add($"QSV (H.264={QsvAvailable}, HEVC={QsvHevcAvailable})");
+        if (AmfAvailable || AmfHevcAvailable)
+            parts.Add($"AMF (H.264={AmfAvailable}, HEVC={AmfHevcAvailable})");
+
+        // Decoding
+        var decoders = new List<string>();
+        if (CudaAvailable) decoders.Add("CUDA");
+        if (CuvidAvailable) decoders.Add("CUVID");
+        if (QsvDecodeAvailable) decoders.Add("QSV");
+        if (D3d11vaAvailable) decoders.Add("D3D11VA");
+        if (Dxva2Available) decoders.Add("DXVA2");
+        if (VulkanAvailable) decoders.Add("Vulkan");
+
+        if (decoders.Count > 0)
+            parts.Add($"Decode: {string.Join(", ", decoders)}");
+
+        return parts.Count > 0 ? string.Join("; ", parts) : "No hardware acceleration available";
     }
 }
 

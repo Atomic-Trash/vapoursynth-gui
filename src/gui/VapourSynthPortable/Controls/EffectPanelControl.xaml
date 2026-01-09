@@ -2,7 +2,10 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:VapourSynthPortable.Controls"
-             xmlns:models="clr-namespace:VapourSynthPortable.Models">
+             xmlns:models="clr-namespace:VapourSynthPortable.Models"
+             Focusable="True"
+             KeyboardNavigation.TabNavigation="Local"
+             FocusVisualStyle="{x:Null}">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -74,7 +77,9 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="&#xE710;" Style="{StaticResource IconButton}"
-                            ToolTip="Add Effect" Click="AddEffect_Click"/>
+                            ToolTip="Add Effect" Click="AddEffect_Click"
+                            AutomationProperties.Name="Add Effect"
+                            AutomationProperties.HelpText="Open the effect selection menu"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -93,7 +98,9 @@
                          Background="#333" Foreground="#CCC" BorderThickness="0"
                          Padding="8,6" Margin="0,0,0,8"
                          Text="{Binding EffectSearchText, UpdateSourceTrigger=PropertyChanged}"
-                         Tag="Search effects..."/>
+                         Tag="Search effects..."
+                         AutomationProperties.Name="Search Effects"
+                         AutomationProperties.HelpText="Type to filter available effects"/>
 
                 <ListBox Grid.Row="1" x:Name="EffectList"
                          Background="Transparent" BorderThickness="0"
@@ -175,13 +182,19 @@
                                         <StackPanel Grid.Column="2" Orientation="Horizontal">
                                             <Button Content="&#xE74A;" Style="{StaticResource IconButton}"
                                                     ToolTip="Move Up" Tag="{Binding}"
-                                                    Click="MoveEffectUp_Click"/>
+                                                    Click="MoveEffectUp_Click"
+                                                    AutomationProperties.Name="Move Effect Up"
+                                                    AutomationProperties.HelpText="Move this effect earlier in the effect stack"/>
                                             <Button Content="&#xE74B;" Style="{StaticResource IconButton}"
                                                     ToolTip="Move Down" Tag="{Binding}"
-                                                    Click="MoveEffectDown_Click"/>
+                                                    Click="MoveEffectDown_Click"
+                                                    AutomationProperties.Name="Move Effect Down"
+                                                    AutomationProperties.HelpText="Move this effect later in the effect stack"/>
                                             <Button Content="&#xE74D;" Style="{StaticResource IconButton}"
                                                     ToolTip="Delete" Tag="{Binding}"
-                                                    Click="DeleteEffect_Click"/>
+                                                    Click="DeleteEffect_Click"
+                                                    AutomationProperties.Name="Delete Effect"
+                                                    AutomationProperties.HelpText="Remove this effect from the clip"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -330,13 +343,19 @@
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="Copy" Style="{StaticResource EffectButton}"
                         Command="{Binding CopyEffectsFromClipCommand}"
-                        ToolTip="Copy all effects"/>
+                        ToolTip="Copy all effects"
+                        AutomationProperties.Name="Copy Effects"
+                        AutomationProperties.HelpText="Copy all effects from the selected clip"/>
                 <Button Content="Paste" Style="{StaticResource EffectButton}"
                         Command="{Binding PasteEffectsToClipCommand}"
-                        ToolTip="Paste effects"/>
+                        ToolTip="Paste effects"
+                        AutomationProperties.Name="Paste Effects"
+                        AutomationProperties.HelpText="Paste copied effects to the selected clip"/>
                 <Button Content="Clear" Style="{StaticResource EffectButton}"
                         Command="{Binding ClearAllEffectsCommand}"
-                        ToolTip="Remove all effects"/>
+                        ToolTip="Remove all effects"
+                        AutomationProperties.Name="Clear Effects"
+                        AutomationProperties.HelpText="Remove all effects from the selected clip"/>
             </StackPanel>
         </Border>
     </Grid>

@@ -147,7 +147,7 @@
                                 <DataTemplate>
                                     <StackPanel>
                                         <TextBlock Text="{Binding Name}" Foreground="#DDD" FontSize="11"/>
-                                        <TextBlock Text="{Binding Category}" Foreground="#888" FontSize="9"/>
+                                        <TextBlock Text="{Binding Category}" Foreground="#9E9E9E" FontSize="9"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -177,7 +177,7 @@
                                 <TextBlock Text="LUTs" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#F1F1F1" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding Luts.Count, StringFormat=' ({0})'}"
-                                           Foreground="#888" FontSize="11" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="11" VerticalAlignment="Center"/>
                             </StackPanel>
                             <ToggleButton Grid.Column="1" Content="★" IsChecked="{Binding ShowFavoritesOnly}"
                                           ToolTip="Show favorites only"
@@ -284,10 +284,10 @@
                                 Visibility="{Binding HasSource, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                         <TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets" FontSize="48"
                                    Foreground="#444" HorizontalAlignment="Center"/>
-                        <TextBlock Text="No clip loaded" FontSize="14" Foreground="#888"
+                        <TextBlock Text="No clip loaded" FontSize="14" Foreground="#9E9E9E"
                                    HorizontalAlignment="Center" Margin="0,12,0,4"/>
                         <TextBlock Text="Load a source video to begin color grading" FontSize="11"
-                                   Foreground="#555" HorizontalAlignment="Center"/>
+                                   Foreground="#9E9E9E" HorizontalAlignment="Center"/>
                         <Button Content="Load Source Video" Command="{Binding LoadSourceCommand}"
                                 Style="{StaticResource SecondaryButton}" Margin="0,20,0,0"/>
                     </StackPanel>
@@ -415,7 +415,7 @@
                                 <Slider Grid.Column="1" Minimum="-3" Maximum="3" Value="{Binding CurrentGrade.Exposure}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Exposure, StringFormat='{}{0:F2}'}"
-                                           Foreground="#888" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Contrast -->
@@ -429,7 +429,7 @@
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Contrast}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Contrast, StringFormat='{}{0:F0}'}"
-                                           Foreground="#888" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Saturation -->
@@ -443,7 +443,7 @@
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Saturation}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Saturation, StringFormat='{}{0:F0}'}"
-                                           Foreground="#888" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Vibrance -->
@@ -457,7 +457,7 @@
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Vibrance}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Vibrance, StringFormat='{}{0:F0}'}"
-                                           Foreground="#888" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
 
                             <TextBlock Text="White Balance" Foreground="#AAA" FontWeight="SemiBold"
@@ -474,7 +474,7 @@
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Temperature}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Temperature, StringFormat='{}{0:F0}'}"
-                                           Foreground="#888" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Tint -->
@@ -488,7 +488,7 @@
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Tint}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Tint, StringFormat='{}{0:F0}'}"
-                                           Foreground="#888" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
                         </StackPanel>
 
@@ -508,7 +508,7 @@
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Highlights}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Highlights, StringFormat='{}{0:F0}'}"
-                                           Foreground="#888" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Shadows -->
@@ -522,7 +522,7 @@
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Shadows}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Shadows, StringFormat='{}{0:F0}'}"
-                                           Foreground="#888" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Whites -->
@@ -536,7 +536,7 @@
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Whites}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Whites, StringFormat='{}{0:F0}'}"
-                                           Foreground="#888" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Blacks -->
@@ -550,7 +550,7 @@
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Blacks}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Blacks, StringFormat='{}{0:F0}'}"
-                                           Foreground="#888" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
 
                             <TextBlock Text="Detail" Foreground="#AAA" FontWeight="SemiBold"
@@ -567,7 +567,7 @@
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Clarity}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Clarity, StringFormat='{}{0:F0}'}"
-                                           Foreground="#888" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                           Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
                         </StackPanel>
                     </Grid>

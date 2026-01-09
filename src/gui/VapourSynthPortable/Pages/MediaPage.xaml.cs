@@ -5,7 +5,9 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Microsoft.Extensions.Logging;
 using VapourSynthPortable.Models;
+using VapourSynthPortable.Services;
 using VapourSynthPortable.ViewModels;
 
 namespace VapourSynthPortable.Pages;
@@ -28,6 +30,7 @@ public class StringToBoolConverter : IValueConverter
 
 public partial class MediaPage : UserControl
 {
+    private readonly ILogger<MediaPage> _logger = LoggingService.GetLogger<MediaPage>();
     private MediaViewModel ViewModel => (MediaViewModel)DataContext;
     private DispatcherTimer? _autoLoadTimer;
     private MediaItem? _pendingLoadItem;
@@ -83,12 +86,23 @@ public partial class MediaPage : UserControl
     {
         _autoLoadTimer?.Stop();
 
-        // Load the pending item if it's still selected
-        if (_pendingLoadItem != null && ViewModel?.SelectedItem == _pendingLoadItem)
+        try
         {
-            VideoPlayer.LoadFile(_pendingLoadItem.FilePath);
+            // Load the pending item if it's still selected
+            if (_pendingLoadItem != null && ViewModel?.SelectedItem == _pendingLoadItem)
+            {
+                VideoPlayer.LoadFile(_pendingLoadItem.FilePath);
+            }
         }
-        _pendingLoadItem = null;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to auto-load media file: {FilePath}", _pendingLoadItem?.FilePath);
+            ToastService.Instance.ShowError("Failed to load media", ex.Message);
+        }
+        finally
+        {
+            _pendingLoadItem = null;
+        }
     }
 
     private void MediaPage_DragOver(object sender, DragEventArgs e)
@@ -106,13 +120,21 @@ public partial class MediaPage : UserControl
 
     private async void MediaPage_Drop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        try
         {
-            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            if (files != null && files.Length > 0)
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
-                await ViewModel.ImportFilesFromDropAsync(files);
+                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files != null && files.Length > 0)
+                {
+                    await ViewModel.ImportFilesFromDropAsync(files);
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to import dropped files");
+            ToastService.Instance.ShowError("Import failed", ex.Message);
         }
     }
 
@@ -123,18 +145,26 @@ public partial class MediaPage : UserControl
 
     private void PlaySelectedItem()
     {
-        var selectedItem = ViewModel?.SelectedItem;
-        if (selectedItem == null) return;
+        try
+        {
+            var selectedItem = ViewModel?.SelectedItem;
+            if (selectedItem == null) return;
 
-        // Only play video and audio files
-        if (selectedItem.MediaType == MediaType.Video || selectedItem.MediaType == MediaType.Audio)
-        {
-            VideoPlayer.LoadFile(selectedItem.FilePath);
+            // Only play video and audio files
+            if (selectedItem.MediaType == MediaType.Video || selectedItem.MediaType == MediaType.Audio)
+            {
+                VideoPlayer.LoadFile(selectedItem.FilePath);
+            }
+            else if (selectedItem.MediaType == MediaType.Image)
+            {
+                // For images, just show the thumbnail preview
+                ThumbnailPreview.Visibility = Visibility.Visible;
+            }
         }
-        else if (selectedItem.MediaType == MediaType.Image)
+        catch (Exception ex)
         {
-            // For images, just show the thumbnail preview
-            ThumbnailPreview.Visibility = Visibility.Visible;
+            _logger.LogError(ex, "Failed to play selected media item");
+            ToastService.Instance.ShowError("Playback failed", ex.Message);
         }
     }
 
@@ -151,13 +181,21 @@ public partial class MediaPage : UserControl
     // Handle double-click on media items to play them
     private void MediaListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        var selectedItem = ViewModel?.SelectedItem;
-        if (selectedItem != null)
+        try
         {
-            if (selectedItem.MediaType == MediaType.Video || selectedItem.MediaType == MediaType.Audio)
+            var selectedItem = ViewModel?.SelectedItem;
+            if (selectedItem != null)
             {
-                VideoPlayer.LoadFile(selectedItem.FilePath);
+                if (selectedItem.MediaType == MediaType.Video || selectedItem.MediaType == MediaType.Audio)
+                {
+                    VideoPlayer.LoadFile(selectedItem.FilePath);
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to play media on double-click");
+            ToastService.Instance.ShowError("Playback failed", ex.Message);
         }
     }
 

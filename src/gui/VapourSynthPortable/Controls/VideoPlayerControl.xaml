@@ -3,7 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="#000000"
              Loaded="UserControl_Loaded"
-             Unloaded="UserControl_Unloaded">
+             Unloaded="UserControl_Unloaded"
+             Focusable="True"
+             KeyboardNavigation.TabNavigation="Once"
+             FocusVisualStyle="{x:Null}">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -57,7 +60,9 @@
                             PreviewMouseDown="TimelineSlider_PreviewMouseDown"
                             PreviewMouseUp="TimelineSlider_PreviewMouseUp"
                             ValueChanged="TimelineSlider_ValueChanged"
-                            ToolTip="Seek timeline (drag to position)"/>
+                            ToolTip="Seek timeline (drag to position)"
+                            AutomationProperties.Name="Timeline"
+                            AutomationProperties.HelpText="Seek to a position in the video"/>
 
                     <TextBlock x:Name="DurationText" Grid.Column="2" Text="00:00:00"
                                Foreground="#AAA" FontSize="11" VerticalAlignment="Center"
@@ -76,16 +81,24 @@
                     <StackPanel Grid.Column="0" Orientation="Horizontal">
                         <Button x:Name="StepBackButton" Content="&#xE76B;" FontFamily="Segoe MDL2 Assets"
                                 Style="{StaticResource SecondaryButton}" Padding="8,6" Margin="0,0,4,0"
-                                Click="StepBackButton_Click" ToolTip="Step Backward (,)"/>
+                                Click="StepBackButton_Click" ToolTip="Step Backward (,)"
+                                AutomationProperties.Name="Step Backward"
+                                AutomationProperties.HelpText="Move one frame backward"/>
                         <Button x:Name="PlayPauseButton" Content="&#xE768;" FontFamily="Segoe MDL2 Assets"
                                 Style="{StaticResource PrimaryButton}" Padding="12,8" Margin="0,0,4,0"
-                                Click="PlayPauseButton_Click" ToolTip="Play/Pause (Space)"/>
+                                Click="PlayPauseButton_Click" ToolTip="Play/Pause (Space)"
+                                AutomationProperties.Name="Play Pause"
+                                AutomationProperties.HelpText="Toggle video playback"/>
                         <Button x:Name="StopButton" Content="&#xE71A;" FontFamily="Segoe MDL2 Assets"
                                 Style="{StaticResource SecondaryButton}" Padding="8,6" Margin="0,0,4,0"
-                                Click="StopButton_Click" ToolTip="Stop"/>
+                                Click="StopButton_Click" ToolTip="Stop"
+                                AutomationProperties.Name="Stop"
+                                AutomationProperties.HelpText="Stop playback and return to start"/>
                         <Button x:Name="StepForwardButton" Content="&#xE76C;" FontFamily="Segoe MDL2 Assets"
                                 Style="{StaticResource SecondaryButton}" Padding="8,6"
-                                Click="StepForwardButton_Click" ToolTip="Step Forward (.)"/>
+                                Click="StepForwardButton_Click" ToolTip="Step Forward (.)"
+                                AutomationProperties.Name="Step Forward"
+                                AutomationProperties.HelpText="Move one frame forward"/>
                     </StackPanel>
 
                     <!-- Center - Speed Control -->
@@ -93,7 +106,9 @@
                         <TextBlock Text="Speed:" Foreground="#BBBBBB" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <ComboBox x:Name="SpeedCombo" Width="70" SelectedIndex="3"
                                   SelectionChanged="SpeedCombo_SelectionChanged"
-                                  ToolTip="Playback speed (0.25x - 2x)">
+                                  ToolTip="Playback speed (0.25x - 2x)"
+                                  AutomationProperties.Name="Playback Speed"
+                                  AutomationProperties.HelpText="Select playback speed from 0.25x to 2x">
                             <ComboBoxItem Content="0.25x"/>
                             <ComboBoxItem Content="0.5x"/>
                             <ComboBoxItem Content="0.75x"/>
@@ -108,11 +123,15 @@
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
                         <Button x:Name="MuteButton" Content="&#xE767;" FontFamily="Segoe MDL2 Assets"
                                 Style="{StaticResource SecondaryButton}" Padding="8,6"
-                                Click="MuteButton_Click" ToolTip="Mute (M)"/>
+                                Click="MuteButton_Click" ToolTip="Mute (M)"
+                                AutomationProperties.Name="Mute"
+                                AutomationProperties.HelpText="Toggle audio mute"/>
                         <Slider x:Name="VolumeSlider" Width="80" Minimum="0" Maximum="100" Value="100"
                                 VerticalAlignment="Center" Margin="8,0,0,0"
                                 ValueChanged="VolumeSlider_ValueChanged"
-                                ToolTip="Volume control (0-100%)"/>
+                                ToolTip="Volume control (0-100%)"
+                                AutomationProperties.Name="Volume"
+                                AutomationProperties.HelpText="Adjust playback volume from 0 to 100 percent"/>
                         <TextBlock x:Name="VolumeText" Text="100%" Foreground="#BBBBBB" FontSize="11"
                                    VerticalAlignment="Center" Width="35" Margin="5,0,0,0"/>
                     </StackPanel>

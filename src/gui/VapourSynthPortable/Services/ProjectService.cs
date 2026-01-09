@@ -105,7 +105,7 @@ public class ProjectService
 
             foreach (var clip in track.Clips)
             {
-                trackData.Clips.Add(new ClipData
+                var clipData = new ClipData
                 {
                     Id = clip.Id,
                     Name = clip.Name,
@@ -121,7 +121,21 @@ public class ProjectService
                     IsLocked = clip.IsLocked,
                     ColorHex = clip.Color.ToString(),
                     Volume = clip.Volume
-                });
+                };
+
+                // Export per-clip color grade
+                if (clip.ColorGrade != null)
+                {
+                    clipData.ColorGrade = ColorGradeData.FromColorGrade(clip.ColorGrade);
+                }
+
+                // Export effects with keyframes
+                foreach (var effect in clip.Effects)
+                {
+                    clipData.Effects.Add(ExportEffect(effect));
+                }
+
+                trackData.Clips.Add(clipData);
             }
 
             foreach (var transition in track.Transitions)
@@ -205,6 +219,18 @@ public class ProjectService
                     clip.Color = clipData.TrackType == TrackType.Video
                         ? Color.FromRgb(0x4A, 0x9E, 0xCF)
                         : Color.FromRgb(0x4A, 0xCF, 0x6A);
+                }
+
+                // Import per-clip color grade
+                if (clipData.ColorGrade != null)
+                {
+                    clip.ColorGrade = clipData.ColorGrade.ToColorGrade();
+                }
+
+                // Import effects with keyframes
+                foreach (var effectData in clipData.Effects)
+                {
+                    clip.Effects.Add(ImportEffect(effectData));
                 }
 
                 track.Clips.Add(clip);
@@ -415,6 +441,238 @@ public class ProjectService
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         return Path.Combine(appData, "VapourSynthStudio", "settings.json");
     }
+
+    /// <summary>
+    /// Validates media file paths in a project
+    /// </summary>
+    public MediaValidationResult ValidateMediaPaths(Project project)
+    {
+        var result = new MediaValidationResult();
+        var checkedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Check media pool references
+        foreach (var reference in project.MediaReferences)
+        {
+            if (checkedPaths.Contains(reference.FilePath))
+                continue;
+
+            checkedPaths.Add(reference.FilePath);
+
+            if (File.Exists(reference.FilePath))
+            {
+                result.ValidFiles.Add(reference.FilePath);
+            }
+            else
+            {
+                result.MissingFiles.Add(reference.FilePath);
+            }
+        }
+
+        // Check clip source paths
+        foreach (var track in project.TimelineData.Tracks)
+        {
+            foreach (var clip in track.Clips)
+            {
+                if (string.IsNullOrEmpty(clip.SourcePath) || checkedPaths.Contains(clip.SourcePath))
+                    continue;
+
+                checkedPaths.Add(clip.SourcePath);
+
+                if (File.Exists(clip.SourcePath))
+                {
+                    result.ValidFiles.Add(clip.SourcePath);
+                }
+                else
+                {
+                    result.MissingFiles.Add(clip.SourcePath);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Exports a TimelineEffect to serializable EffectData
+    /// </summary>
+    private static EffectData ExportEffect(TimelineEffect effect)
+    {
+        var effectData = new EffectData
+        {
+            Id = effect.Id,
+            Name = effect.Name,
+            Category = effect.Category,
+            EffectType = effect.EffectType,
+            IsEnabled = effect.IsEnabled,
+            IsExpanded = effect.IsExpanded,
+            VsNamespace = effect.VsNamespace,
+            VsFunction = effect.VsFunction
+        };
+
+        // Export parameters
+        foreach (var param in effect.Parameters)
+        {
+            effectData.Parameters.Add(new EffectParameterData
+            {
+                Name = param.Name,
+                DisplayName = param.DisplayName,
+                Description = param.Description,
+                ParameterType = param.ParameterType,
+                ValueJson = SerializeValue(param.Value),
+                DefaultValueJson = SerializeValue(param.DefaultValue),
+                MinValue = param.MinValue,
+                MaxValue = param.MaxValue,
+                Options = [.. param.Options]
+            });
+        }
+
+        // Export keyframe tracks
+        foreach (var track in effect.KeyframeTracks)
+        {
+            var trackData = new KeyframeTrackData
+            {
+                Id = track.Id,
+                ParameterName = track.ParameterName,
+                DisplayName = track.DisplayName,
+                IsExpanded = track.IsExpanded,
+                IsEnabled = track.IsEnabled
+            };
+
+            foreach (var keyframe in track.Keyframes)
+            {
+                trackData.Keyframes.Add(new KeyframeData
+                {
+                    Id = keyframe.Id,
+                    Frame = keyframe.Frame,
+                    ValueJson = SerializeValue(keyframe.Value),
+                    Interpolation = keyframe.Interpolation,
+                    EaseInX = keyframe.EaseInX,
+                    EaseInY = keyframe.EaseInY,
+                    EaseOutX = keyframe.EaseOutX,
+                    EaseOutY = keyframe.EaseOutY
+                });
+            }
+
+            effectData.KeyframeTracks.Add(trackData);
+        }
+
+        return effectData;
+    }
+
+    /// <summary>
+    /// Imports EffectData to a TimelineEffect
+    /// </summary>
+    private static TimelineEffect ImportEffect(EffectData data)
+    {
+        var effect = new TimelineEffect
+        {
+            Name = data.Name,
+            Category = data.Category,
+            EffectType = data.EffectType,
+            IsEnabled = data.IsEnabled,
+            IsExpanded = data.IsExpanded,
+            VsNamespace = data.VsNamespace,
+            VsFunction = data.VsFunction
+        };
+
+        // Import parameters
+        foreach (var paramData in data.Parameters)
+        {
+            var param = new EffectParameter
+            {
+                Name = paramData.Name,
+                DisplayName = paramData.DisplayName,
+                Description = paramData.Description,
+                ParameterType = paramData.ParameterType,
+                Value = DeserializeValue(paramData.ValueJson, paramData.ParameterType),
+                DefaultValue = DeserializeValue(paramData.DefaultValueJson, paramData.ParameterType),
+                MinValue = paramData.MinValue,
+                MaxValue = paramData.MaxValue,
+                Options = [.. paramData.Options]
+            };
+            effect.Parameters.Add(param);
+        }
+
+        // Import keyframe tracks
+        foreach (var trackData in data.KeyframeTracks)
+        {
+            var track = new KeyframeTrack
+            {
+                ParameterName = trackData.ParameterName,
+                DisplayName = trackData.DisplayName,
+                IsExpanded = trackData.IsExpanded,
+                IsEnabled = trackData.IsEnabled,
+                Effect = effect,
+                Parameter = effect.Parameters.FirstOrDefault(p => p.Name == trackData.ParameterName)
+            };
+
+            foreach (var keyframeData in trackData.Keyframes)
+            {
+                var paramType = effect.Parameters.FirstOrDefault(p => p.Name == trackData.ParameterName)?.ParameterType
+                    ?? EffectParameterType.Float;
+
+                var keyframe = new Keyframe
+                {
+                    Frame = keyframeData.Frame,
+                    Value = DeserializeValue(keyframeData.ValueJson, paramType),
+                    Interpolation = keyframeData.Interpolation,
+                    EaseInX = keyframeData.EaseInX,
+                    EaseInY = keyframeData.EaseInY,
+                    EaseOutX = keyframeData.EaseOutX,
+                    EaseOutY = keyframeData.EaseOutY
+                };
+                track.Keyframes.Add(keyframe);
+            }
+
+            effect.KeyframeTracks.Add(track);
+        }
+
+        return effect;
+    }
+
+    /// <summary>
+    /// Serializes a parameter value to JSON string
+    /// </summary>
+    private static string? SerializeValue(object? value)
+    {
+        if (value == null)
+            return null;
+
+        try
+        {
+            return JsonSerializer.Serialize(value, JsonOptions);
+        }
+        catch
+        {
+            return value.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Deserializes a parameter value from JSON string
+    /// </summary>
+    private static object? DeserializeValue(string? json, EffectParameterType paramType)
+    {
+        if (string.IsNullOrEmpty(json))
+            return null;
+
+        try
+        {
+            return paramType switch
+            {
+                EffectParameterType.Integer => JsonSerializer.Deserialize<int>(json),
+                EffectParameterType.Float => JsonSerializer.Deserialize<double>(json),
+                EffectParameterType.Boolean => JsonSerializer.Deserialize<bool>(json),
+                EffectParameterType.String => JsonSerializer.Deserialize<string>(json),
+                EffectParameterType.Enum => JsonSerializer.Deserialize<string>(json),
+                _ => json
+            };
+        }
+        catch
+        {
+            return json;
+        }
+    }
 }
 
 internal class ProjectAppSettings
@@ -422,4 +680,14 @@ internal class ProjectAppSettings
     public List<string> RecentProjects { get; set; } = [];
     public string LastProjectPath { get; set; } = "";
     public string DefaultExportPath { get; set; } = "";
+}
+
+/// <summary>
+/// Result of validating media paths in a project
+/// </summary>
+public class MediaValidationResult
+{
+    public bool IsValid => MissingFiles.Count == 0;
+    public List<string> MissingFiles { get; set; } = [];
+    public List<string> ValidFiles { get; set; } = [];
 }

@@ -2,12 +2,15 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
+using VapourSynthPortable.Services;
 using VapourSynthPortable.ViewModels;
 
 namespace VapourSynthPortable.Pages;
 
 public partial class RestorePage : UserControl
 {
+    private readonly ILogger<RestorePage> _logger = LoggingService.GetLogger<RestorePage>();
     private string? _currentSource;
     private bool _showingOriginal;
 
@@ -77,30 +80,45 @@ public partial class RestorePage : UserControl
     {
         if (string.IsNullOrEmpty(path) || path == _currentSource) return;
 
-        _currentSource = path;
-        PreviewPlayer.LoadFile(path);
+        try
+        {
+            _currentSource = path;
+            PreviewPlayer.LoadFile(path);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load video for restoration: {Path}", path);
+            ToastService.Instance.ShowError("Failed to load video", ex.Message);
+        }
     }
 
     private void ComparisonPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (DataContext is not RestoreViewModel viewModel) return;
-
-        // Toggle between showing original and processed
-        _showingOriginal = !_showingOriginal;
-
-        if (_showingOriginal)
+        try
         {
-            ToggleImage.Source = viewModel.OriginalFrame;
-            ToggleLabel.Text = "ORIGINAL (click to toggle)";
-            ToggleLabel.Foreground = new System.Windows.Media.SolidColorBrush(
-                System.Windows.Media.Color.FromRgb(0x88, 0x88, 0x88));
+            if (DataContext is not RestoreViewModel viewModel) return;
+
+            // Toggle between showing original and processed
+            _showingOriginal = !_showingOriginal;
+
+            if (_showingOriginal)
+            {
+                ToggleImage.Source = viewModel.OriginalFrame;
+                ToggleLabel.Text = "ORIGINAL (click to toggle)";
+                ToggleLabel.Foreground = new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0x88, 0x88, 0x88));
+            }
+            else
+            {
+                ToggleImage.Source = viewModel.ProcessedFrame;
+                ToggleLabel.Text = "PROCESSED (click to toggle)";
+                ToggleLabel.Foreground = new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0x4A, 0xDE, 0x80));
+            }
         }
-        else
+        catch (Exception ex)
         {
-            ToggleImage.Source = viewModel.ProcessedFrame;
-            ToggleLabel.Text = "PROCESSED (click to toggle)";
-            ToggleLabel.Foreground = new System.Windows.Media.SolidColorBrush(
-                System.Windows.Media.Color.FromRgb(0x4A, 0xDE, 0x80));
+            _logger.LogError(ex, "Failed to toggle comparison view");
         }
     }
 }

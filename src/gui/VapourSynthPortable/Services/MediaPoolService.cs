@@ -27,6 +27,7 @@ public interface IMediaPoolService
     // Media operations
     Task<MediaItem?> ImportMediaAsync(string filePath);
     Task ImportMediaAsync(string[] filePaths);
+    void AddMedia(MediaItem item);
     void RemoveMedia(MediaItem item);
     void ClearPool();
 
@@ -137,6 +138,19 @@ public partial class MediaPoolService : ObservableObject, IMediaPoolService
         foreach (var path in filePaths)
         {
             await ImportMediaAsync(path);
+        }
+    }
+
+    public void AddMedia(MediaItem item)
+    {
+        if (item == null) return;
+
+        // Check if item already exists in pool
+        if (!MediaPool.Contains(item) && !MediaPool.Any(m => m.FilePath == item.FilePath))
+        {
+            MediaPool.Add(item);
+            MediaPoolChanged?.Invoke(this, EventArgs.Empty);
+            _logger.LogDebug("Added media to pool: {Name}", item.Name);
         }
     }
 
