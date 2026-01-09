@@ -72,12 +72,30 @@
 
                     <Button Content="Undo" Command="{Binding UndoCommand}"
                             IsEnabled="{Binding CanUndo}"
-                            ToolTip="Undo (Ctrl+Z)"
-                            Style="{StaticResource SecondaryButton}" Margin="8,0,4,0" Width="50"/>
+                            Style="{StaticResource SecondaryButton}" Margin="8,0,4,0" Width="50">
+                        <Button.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock Text="Undo (Ctrl+Z)" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding UndoDescription}" Foreground="#888"
+                                               Visibility="{Binding CanUndo, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                </StackPanel>
+                            </ToolTip>
+                        </Button.ToolTip>
+                    </Button>
                     <Button Content="Redo" Command="{Binding RedoCommand}"
                             IsEnabled="{Binding CanRedo}"
-                            ToolTip="Redo (Ctrl+Y)"
-                            Style="{StaticResource SecondaryButton}" Width="50"/>
+                            Style="{StaticResource SecondaryButton}" Width="50">
+                        <Button.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock Text="Redo (Ctrl+Y)" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding RedoDescription}" Foreground="#888"
+                                               Visibility="{Binding CanRedo, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                </StackPanel>
+                            </ToolTip>
+                        </Button.ToolTip>
+                    </Button>
 
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
 

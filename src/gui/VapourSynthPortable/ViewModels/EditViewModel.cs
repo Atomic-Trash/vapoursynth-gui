@@ -14,8 +14,7 @@ public partial class EditViewModel : ObservableObject, IDisposable
 {
     private readonly IMediaPoolService _mediaPoolService;
     private readonly FrameCacheService _frameCache;
-    private readonly Stack<TimelineAction> _undoStack = new();
-    private readonly Stack<TimelineAction> _redoStack = new();
+    private readonly UndoService _undoService;
     private CancellationTokenSource? _framePrefetchCts;
     private bool _disposed;
 
@@ -58,8 +57,11 @@ public partial class EditViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isScrubbing;
 
-    public bool CanUndo => _undoStack.Count > 0;
-    public bool CanRedo => _redoStack.Count > 0;
+    // Expose undo service properties for binding
+    public bool CanUndo => _undoService.CanUndo;
+    public bool CanRedo => _undoService.CanRedo;
+    public string UndoDescription => _undoService.UndoDescription;
+    public string RedoDescription => _undoService.RedoDescription;
 
     [ObservableProperty]
     private ObservableCollection<TransitionPreset> _transitionPresets = [];
@@ -75,6 +77,11 @@ public partial class EditViewModel : ObservableObject, IDisposable
 
         // Initialize frame cache for scrubbing
         _frameCache = new FrameCacheService(maxCacheSize: 150, maxConcurrentExtractions: 4);
+
+        // Initialize centralized undo service
+        _undoService = new UndoService(maxHistorySize: 100);
+        _undoService.StateChanged += OnUndoStateChanged;
+        _undoService.ActionExecuted += OnUndoActionExecuted;
 
         InitializeTimeline();
         LoadTransitionPresets();
@@ -472,42 +479,41 @@ public partial class EditViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Undo()
     {
-        if (_undoStack.Count == 0) return;
-
-        var action = _undoStack.Pop();
-        _redoStack.Push(CreateCurrentState("Redo"));
-
-        RestoreState(action);
-        OnPropertyChanged(nameof(CanUndo));
-        OnPropertyChanged(nameof(CanRedo));
-        StatusText = $"Undo: {action.Description}";
-        ToastService.Instance.ShowInfo("Undo", action.Description);
+        if (!_undoService.CanUndo) return;
+        _undoService.Undo();
     }
 
     [RelayCommand]
     private void Redo()
     {
-        if (_redoStack.Count == 0) return;
+        if (!_undoService.CanRedo) return;
+        _undoService.Redo();
+    }
 
-        var action = _redoStack.Pop();
-        _undoStack.Push(CreateCurrentState("Undo"));
-
-        RestoreState(action);
+    private void OnUndoStateChanged(object? sender, EventArgs e)
+    {
         OnPropertyChanged(nameof(CanUndo));
         OnPropertyChanged(nameof(CanRedo));
-        StatusText = $"Redo: {action.Description}";
-        ToastService.Instance.ShowInfo("Redo", action.Description);
+        OnPropertyChanged(nameof(UndoDescription));
+        OnPropertyChanged(nameof(RedoDescription));
+    }
+
+    private void OnUndoActionExecuted(object? sender, UndoActionEventArgs e)
+    {
+        var actionType = e.IsUndo ? "Undo" : "Redo";
+        StatusText = $"{actionType}: {e.Action.Description}";
+        ToastService.Instance.ShowInfo(actionType, e.Action.Description);
     }
 
     private void SaveUndoState(string description)
     {
-        _undoStack.Push(CreateCurrentState(description));
-        _redoStack.Clear();
-        OnPropertyChanged(nameof(CanUndo));
-        OnPropertyChanged(nameof(CanRedo));
+        // Create a snapshot action that captures current timeline state (before state)
+        // The after state is captured lazily when Undo() is called
+        var action = new TimelineStateUndoAction(description, Timeline, CaptureTimelineState, RestoreTimelineState);
+        _undoService.RecordAction(action);
     }
 
-    private TimelineAction CreateCurrentState(string description)
+    private TimelineState CaptureTimelineState()
     {
         var clips = new List<(int TrackId, TimelineClip Clip)>();
         foreach (var track in Timeline.Tracks)
@@ -524,15 +530,10 @@ public partial class EditViewModel : ObservableObject, IDisposable
             textOverlays.Add(overlay.Clone());
         }
 
-        return new TimelineAction
-        {
-            Description = description,
-            Clips = clips,
-            TextOverlays = textOverlays
-        };
+        return new TimelineState { Clips = clips, TextOverlays = textOverlays };
     }
 
-    private void RestoreState(TimelineAction action)
+    private void RestoreTimelineState(TimelineState state)
     {
         // Clear all clips
         foreach (var track in Timeline.Tracks)
@@ -541,7 +542,7 @@ public partial class EditViewModel : ObservableObject, IDisposable
         }
 
         // Restore clips
-        foreach (var (trackId, clip) in action.Clips)
+        foreach (var (trackId, clip) in state.Clips)
         {
             var track = Timeline.Tracks.FirstOrDefault(t => t.Id == trackId);
             if (track != null)
@@ -552,13 +553,21 @@ public partial class EditViewModel : ObservableObject, IDisposable
 
         // Clear and restore text overlays
         Timeline.TextOverlays.Clear();
-        foreach (var overlay in action.TextOverlays)
+        foreach (var overlay in state.TextOverlays)
         {
             Timeline.TextOverlays.Add(overlay);
         }
 
         Timeline.SelectedClip = null;
         Timeline.SelectedTextOverlay = null;
+    }
+
+    /// <summary>
+    /// Begin a transaction for grouping multiple related changes
+    /// </summary>
+    public UndoTransaction BeginUndoTransaction(string description)
+    {
+        return _undoService.BeginTransaction(description);
     }
 
     [RelayCommand]
@@ -880,16 +889,71 @@ public partial class EditViewModel : ObservableObject, IDisposable
         _mediaPoolService.CurrentSourceChanged -= OnCurrentSourceChanged;
         _mediaPoolService.MediaPoolChanged -= OnMediaPoolChanged;
         Timeline.PropertyChanged -= OnTimelinePropertyChanged;
+        _undoService.StateChanged -= OnUndoStateChanged;
+        _undoService.ActionExecuted -= OnUndoActionExecuted;
 
         _framePrefetchCts?.Cancel();
         _framePrefetchCts?.Dispose();
         _frameCache.Dispose();
+        _undoService.Dispose();
     }
 }
 
-internal class TimelineAction
+/// <summary>
+/// Captured state of the timeline for undo/redo
+/// </summary>
+internal class TimelineState
 {
-    public string Description { get; set; } = "";
     public List<(int TrackId, TimelineClip Clip)> Clips { get; set; } = [];
     public List<TimelineTextOverlay> TextOverlays { get; set; } = [];
+}
+
+/// <summary>
+/// Undo action that captures timeline state snapshots
+/// </summary>
+internal class TimelineStateUndoAction : IUndoAction
+{
+    private readonly Timeline _timeline;
+    private readonly Func<TimelineState> _captureFunc;
+    private readonly Action<TimelineState> _restoreFunc;
+    private readonly TimelineState _beforeState;
+    private TimelineState? _afterState;
+
+    public string Description { get; }
+
+    public TimelineStateUndoAction(
+        string description,
+        Timeline timeline,
+        Func<TimelineState> captureFunc,
+        Action<TimelineState> restoreFunc)
+    {
+        Description = description;
+        _timeline = timeline;
+        _captureFunc = captureFunc;
+        _restoreFunc = restoreFunc;
+        _beforeState = captureFunc();
+    }
+
+    /// <summary>
+    /// Call after the change is made to capture the after state
+    /// </summary>
+    public void CaptureAfterState()
+    {
+        _afterState = _captureFunc();
+    }
+
+    public void Undo()
+    {
+        // Before undoing, capture the current state as the after state if not already done
+        _afterState ??= _captureFunc();
+        _restoreFunc(_beforeState);
+    }
+
+    public void Redo()
+    {
+        if (_afterState != null)
+        {
+            _restoreFunc(_afterState);
+        }
+    }
 }
