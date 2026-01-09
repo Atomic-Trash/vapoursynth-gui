@@ -9,7 +9,27 @@
         <vm:NodeEditorViewModel />
     </UserControl.DataContext>
 
+    <UserControl.InputBindings>
+        <KeyBinding Key="Delete" Command="{Binding DeleteNodeCommand}" CommandParameter="{Binding SelectedNode}"/>
+        <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding DuplicateNodeCommand}" CommandParameter="{Binding SelectedNode}"/>
+        <KeyBinding Key="G" Modifiers="Ctrl" Command="{Binding GenerateScriptCommand}"/>
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveGraphCommand}"/>
+        <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding LoadGraphCommand}"/>
+        <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}"/>
+        <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}"/>
+    </UserControl.InputBindings>
+
     <UserControl.Resources>
+        <!-- Node Context Menu -->
+        <ContextMenu x:Key="NodeContextMenu">
+            <MenuItem Header="Duplicate" Command="{Binding DataContext.DuplicateNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                      CommandParameter="{Binding}" InputGestureText="Ctrl+D"/>
+            <MenuItem Header="Delete" Command="{Binding DataContext.DeleteNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                      CommandParameter="{Binding}" InputGestureText="Del"/>
+            <Separator/>
+            <MenuItem Header="Disconnect All" Command="{Binding DataContext.DisconnectNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                      CommandParameter="{Binding}"/>
+        </ContextMenu>
         <!-- Connector Template -->
         <DataTemplate x:Key="ConnectorTemplate" DataType="{x:Type vm:ConnectorViewModel}">
             <nodify:NodeInput x:Name="Connector"
@@ -45,7 +65,9 @@
                          Input="{Binding Input}"
                          Output="{Binding Output}"
                          InputConnectorTemplate="{StaticResource ConnectorTemplate}"
-                         OutputConnectorTemplate="{StaticResource OutputConnectorTemplate}">
+                         OutputConnectorTemplate="{StaticResource OutputConnectorTemplate}"
+                         HeaderBrush="#2D7D46"
+                         ContextMenu="{StaticResource NodeContextMenu}">
                 <StackPanel MinWidth="180" Margin="5">
                     <TextBlock Text="File:" Foreground="#999" FontSize="11"/>
                     <Grid Margin="0,4,0,0">
@@ -79,7 +101,9 @@
                          Input="{Binding Input}"
                          Output="{Binding Output}"
                          InputConnectorTemplate="{StaticResource ConnectorTemplate}"
-                         OutputConnectorTemplate="{StaticResource OutputConnectorTemplate}">
+                         OutputConnectorTemplate="{StaticResource OutputConnectorTemplate}"
+                         HeaderBrush="#8B4513"
+                         ContextMenu="{StaticResource NodeContextMenu}">
                 <StackPanel MinWidth="100" Margin="5">
                     <TextBlock Text="Output Index:" Foreground="#999" FontSize="11"/>
                     <TextBox Text="{Binding OutputIndex, UpdateSourceTrigger=PropertyChanged}"
@@ -96,7 +120,9 @@
                          Input="{Binding Input}"
                          Output="{Binding Output}"
                          InputConnectorTemplate="{StaticResource ConnectorTemplate}"
-                         OutputConnectorTemplate="{StaticResource OutputConnectorTemplate}">
+                         OutputConnectorTemplate="{StaticResource OutputConnectorTemplate}"
+                         HeaderBrush="#0E639C"
+                         ContextMenu="{StaticResource NodeContextMenu}">
                 <StackPanel MinWidth="150" Margin="5">
                     <ItemsControl ItemsSource="{Binding Parameters}">
                         <ItemsControl.ItemTemplate>
@@ -245,15 +271,39 @@
                                 Style="{StaticResource SecondaryButton}"
                                 HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
 
+                        <!-- Edit Actions -->
+                        <TextBlock Text="EDIT" FontSize="10" FontWeight="Bold"
+                                   Foreground="#888" Margin="5,20,0,8"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="Undo"
+                                    Command="{Binding UndoCommand}"
+                                    IsEnabled="{Binding CanUndo}"
+                                    ToolTip="Undo (Ctrl+Z)"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Margin="0,0,2,4"/>
+                            <Button Grid.Column="1" Content="Redo"
+                                    Command="{Binding RedoCommand}"
+                                    IsEnabled="{Binding CanRedo}"
+                                    ToolTip="Redo (Ctrl+Y)"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Margin="2,0,0,4"/>
+                        </Grid>
+
                         <!-- Graph Actions -->
                         <TextBlock Text="GRAPH" FontSize="10" FontWeight="Bold"
-                                   Foreground="#888" Margin="5,20,0,8"/>
+                                   Foreground="#888" Margin="5,10,0,8"/>
                         <Button Content="Save Graph"
                                 Command="{Binding SaveGraphCommand}"
+                                ToolTip="Save Graph (Ctrl+S)"
                                 Style="{StaticResource SecondaryButton}"
                                 HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
                         <Button Content="Load Graph"
                                 Command="{Binding LoadGraphCommand}"
+                                ToolTip="Load Graph (Ctrl+O)"
                                 Style="{StaticResource SecondaryButton}"
                                 HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
                         <Button Content="Clear Canvas"

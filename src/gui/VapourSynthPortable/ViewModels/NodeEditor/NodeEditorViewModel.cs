@@ -14,10 +14,12 @@ namespace VapourSynthPortable.ViewModels.NodeEditor;
 public partial class NodeEditorViewModel : ObservableObject
 {
     private readonly ScriptGeneratorService _scriptGenerator;
+    private readonly UndoService _undoService;
 
     public NodeEditorViewModel()
     {
         _scriptGenerator = new ScriptGeneratorService();
+        _undoService = new UndoService(maxHistorySize: 50);
         _pendingConnection = new PendingConnectionViewModel(this);
 
         // Available node types for the palette
@@ -26,7 +28,17 @@ public partial class NodeEditorViewModel : ObservableObject
             new("Video Source", "Source", "Load a video file"),
             new("Output", "Output", "Set script output"),
         };
+
+        // Subscribe to undo state changes
+        _undoService.StateChanged += (s, e) =>
+        {
+            OnPropertyChanged(nameof(CanUndo));
+            OnPropertyChanged(nameof(CanRedo));
+        };
     }
+
+    public bool CanUndo => _undoService.CanUndo;
+    public bool CanRedo => _undoService.CanRedo;
 
     public ObservableCollection<NodeViewModel> Nodes { get; } = new();
     public ObservableCollection<ConnectionViewModel> Connections { get; } = new();
@@ -46,10 +58,34 @@ public partial class NodeEditorViewModel : ObservableObject
     private PendingConnectionViewModel _pendingConnection;
 
     [RelayCommand]
+    private void Undo()
+    {
+        if (_undoService.CanUndo)
+        {
+            _undoService.Undo();
+        }
+    }
+
+    [RelayCommand]
+    private void Redo()
+    {
+        if (_undoService.CanRedo)
+        {
+            _undoService.Redo();
+        }
+    }
+
+    [RelayCommand]
     private void AddSourceNode()
     {
         var node = new SourceNode { X = 100, Y = 100 };
         var vm = new SourceNodeViewModel(node) { Location = new Point(100, 100) };
+
+        // Record undo action
+        _undoService.RecordAction("Add Source node",
+            () => Nodes.Remove(vm),
+            () => Nodes.Add(vm));
+
         Nodes.Add(vm);
         StatusMessage = "Added Source node";
     }
@@ -59,6 +95,12 @@ public partial class NodeEditorViewModel : ObservableObject
     {
         var node = new OutputNode { X = 400, Y = 100 };
         var vm = new OutputNodeViewModel(node) { Location = new Point(400, 100) };
+
+        // Record undo action
+        _undoService.RecordAction("Add Output node",
+            () => Nodes.Remove(vm),
+            () => Nodes.Add(vm));
+
         Nodes.Add(vm);
         StatusMessage = "Added Output node";
     }
@@ -90,6 +132,12 @@ public partial class NodeEditorViewModel : ObservableObject
         };
 
         var vm = new FilterNodeViewModel(node) { Location = new Point(250, 100) };
+
+        // Record undo action
+        _undoService.RecordAction($"Add {node.Title}",
+            () => Nodes.Remove(vm),
+            () => Nodes.Add(vm));
+
         Nodes.Add(vm);
         StatusMessage = $"Added {node.Title} node";
     }
@@ -229,18 +277,129 @@ public partial class NodeEditorViewModel : ObservableObject
     {
         if (node == null) return;
 
+        // Capture connections for undo
+        var connectionsToRemove = Connections
+            .Where(c => c.Source.Parent == node || c.Target.Parent == node)
+            .ToList();
+
+        // Record undo action (includes restoring connections)
+        _undoService.RecordAction($"Delete {node.Title}",
+            () =>
+            {
+                // Undo: restore node and connections
+                Nodes.Add(node);
+                foreach (var conn in connectionsToRemove)
+                {
+                    conn.Source.IsConnected = true;
+                    conn.Target.IsConnected = true;
+                    Connections.Add(conn);
+                }
+            },
+            () =>
+            {
+                // Redo: remove node and connections
+                foreach (var conn in connectionsToRemove)
+                {
+                    conn.Source.IsConnected = false;
+                    conn.Target.IsConnected = false;
+                    Connections.Remove(conn);
+                }
+                Nodes.Remove(node);
+            });
+
         // Remove connections involving this node
+        DisconnectNode(node);
+
+        Nodes.Remove(node);
+        StatusMessage = $"Deleted {node.Title}";
+    }
+
+    [RelayCommand]
+    private void DisconnectNode(NodeViewModel? node)
+    {
+        if (node == null) return;
+
         var connectionsToRemove = Connections
             .Where(c => c.Source.Parent == node || c.Target.Parent == node)
             .ToList();
 
         foreach (var connection in connectionsToRemove)
         {
+            connection.Source.IsConnected = false;
+            connection.Target.IsConnected = false;
             Connections.Remove(connection);
         }
 
-        Nodes.Remove(node);
-        StatusMessage = $"Deleted {node.Title}";
+        if (connectionsToRemove.Count > 0)
+        {
+            StatusMessage = $"Disconnected {connectionsToRemove.Count} connection(s)";
+        }
+    }
+
+    [RelayCommand]
+    private void DuplicateNode(NodeViewModel? node)
+    {
+        if (node == null) return;
+
+        NodeViewModel? newNode = null;
+        var offset = new Point(50, 50);
+
+        switch (node)
+        {
+            case SourceNodeViewModel sourceVm:
+                var sourceModel = new SourceNode
+                {
+                    FilePath = sourceVm.FilePath,
+                    SourcePlugin = sourceVm.SourcePlugin
+                };
+                newNode = new SourceNodeViewModel(sourceModel)
+                {
+                    Location = new Point(node.Location.X + offset.X, node.Location.Y + offset.Y)
+                };
+                break;
+
+            case FilterNodeViewModel filterVm:
+                var filterModel = new FilterNode(filterVm.Title, filterVm.PluginNamespace, filterVm.Function);
+                foreach (var param in filterVm.Parameters)
+                {
+                    filterModel.Parameters.Add(new NodeParameter
+                    {
+                        Name = param.Name,
+                        Value = param.Value,
+                        Type = param.Type,
+                        DefaultValue = param.DefaultValue,
+                        Description = param.Description
+                    });
+                }
+                newNode = new FilterNodeViewModel(filterModel)
+                {
+                    Location = new Point(node.Location.X + offset.X, node.Location.Y + offset.Y)
+                };
+                break;
+
+            case OutputNodeViewModel outputVm:
+                var outputModel = new OutputNode
+                {
+                    OutputIndex = outputVm.OutputIndex
+                };
+                newNode = new OutputNodeViewModel(outputModel)
+                {
+                    Location = new Point(node.Location.X + offset.X, node.Location.Y + offset.Y)
+                };
+                break;
+        }
+
+        if (newNode != null)
+        {
+            // Record undo action
+            _undoService.RecordAction($"Duplicate {node.Title}",
+                () => Nodes.Remove(newNode),
+                () => Nodes.Add(newNode));
+
+            Nodes.Add(newNode);
+            SelectedNode = newNode;
+            StatusMessage = $"Duplicated {node.Title}";
+        }
     }
 
     public void Connect(ConnectorViewModel source, ConnectorViewModel target)
@@ -256,11 +415,43 @@ public partial class NodeEditorViewModel : ObservableObject
         var existingConnection = Connections.FirstOrDefault(c => c.Target == target);
         if (existingConnection != null)
         {
+            // Record removal of existing connection
+            var oldConn = existingConnection;
+            _undoService.RecordAction("Replace connection",
+                () =>
+                {
+                    oldConn.Source.IsConnected = true;
+                    oldConn.Target.IsConnected = true;
+                    Connections.Add(oldConn);
+                },
+                () =>
+                {
+                    oldConn.Source.IsConnected = false;
+                    oldConn.Target.IsConnected = false;
+                    Connections.Remove(oldConn);
+                });
+
             Connections.Remove(existingConnection);
             existingConnection.Target.IsConnected = false;
         }
 
         var connection = new ConnectionViewModel(source, target);
+
+        // Record undo action for new connection
+        _undoService.RecordAction("Connect nodes",
+            () =>
+            {
+                connection.Source.IsConnected = false;
+                connection.Target.IsConnected = false;
+                Connections.Remove(connection);
+            },
+            () =>
+            {
+                connection.Source.IsConnected = true;
+                connection.Target.IsConnected = true;
+                Connections.Add(connection);
+            });
+
         Connections.Add(connection);
         StatusMessage = "Connected nodes";
     }
