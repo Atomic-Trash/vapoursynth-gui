@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
@@ -11,6 +12,9 @@ namespace VapourSynthPortable.ViewModels;
 public partial class ColorViewModel : ObservableObject, IDisposable
 {
     private readonly IMediaPoolService _mediaPool;
+    private readonly ColorGradingService _colorGradingService;
+    private readonly FrameCacheService _frameCache;
+    private CancellationTokenSource? _previewUpdateCts;
     private bool _disposed;
 
     [ObservableProperty]
@@ -77,6 +81,18 @@ public partial class ColorViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _statusText = "No clip loaded";
 
+    [ObservableProperty]
+    private BitmapSource? _originalFrame;
+
+    [ObservableProperty]
+    private BitmapSource? _gradedFrame;
+
+    [ObservableProperty]
+    private bool _isProcessingPreview;
+
+    [ObservableProperty]
+    private double _previewPosition;
+
     // Undo/Redo stack
     private readonly Stack<ColorGrade> _undoStack = new();
     private readonly Stack<ColorGrade> _redoStack = new();
@@ -89,8 +105,14 @@ public partial class ColorViewModel : ObservableObject, IDisposable
         _mediaPool = mediaPool;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
 
+        _colorGradingService = new ColorGradingService();
+        _frameCache = new FrameCacheService(maxCacheSize: 50);
+
         LoadPresets();
         LoadLuts();
+
+        // Subscribe to grade changes for real-time preview
+        CurrentGrade.PropertyChanged += OnGradePropertyChanged;
     }
 
     // Parameterless constructor for XAML design-time support
@@ -104,6 +126,101 @@ public partial class ColorViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SourcePath));
         OnPropertyChanged(nameof(HasSource));
         StatusText = item != null ? $"Source: {item.Name}" : "No clip loaded";
+
+        // Extract a preview frame when source changes
+        if (item != null)
+        {
+            _ = ExtractPreviewFrameAsync();
+        }
+        else
+        {
+            OriginalFrame = null;
+            GradedFrame = null;
+        }
+    }
+
+    private void OnGradePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // Debounce preview updates during rapid changes
+        _ = UpdateGradedPreviewAsync();
+    }
+
+    /// <summary>
+    /// Extract a frame from the source video for preview
+    /// </summary>
+    private async Task ExtractPreviewFrameAsync()
+    {
+        if (!HasSource || string.IsNullOrEmpty(SourcePath))
+            return;
+
+        IsProcessingPreview = true;
+        try
+        {
+            _previewUpdateCts?.Cancel();
+            _previewUpdateCts = new CancellationTokenSource();
+
+            // Extract frame at current preview position
+            var frameRate = _mediaPool.CurrentSource?.FrameRate ?? 24.0;
+            var frameNumber = (long)(PreviewPosition * frameRate);
+
+            var frame = await _frameCache.GetFrameAsync(
+                SourcePath,
+                frameNumber,
+                frameRate,
+                width: 640,
+                height: 360,
+                ct: _previewUpdateCts.Token);
+
+            if (frame != null)
+            {
+                OriginalFrame = frame;
+                await UpdateGradedPreviewAsync();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore
+        }
+        finally
+        {
+            IsProcessingPreview = false;
+        }
+    }
+
+    /// <summary>
+    /// Apply the current grade to the preview frame
+    /// </summary>
+    private async Task UpdateGradedPreviewAsync()
+    {
+        if (OriginalFrame == null)
+            return;
+
+        IsProcessingPreview = true;
+        try
+        {
+            _previewUpdateCts?.Cancel();
+            _previewUpdateCts = new CancellationTokenSource();
+
+            // Run grading on background thread
+            var graded = await Task.Run(() =>
+                _colorGradingService.ApplyGrade(OriginalFrame, CurrentGrade),
+                _previewUpdateCts.Token);
+
+            GradedFrame = graded;
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore
+        }
+        finally
+        {
+            IsProcessingPreview = false;
+        }
+    }
+
+    partial void OnPreviewPositionChanged(double value)
+    {
+        _ = ExtractPreviewFrameAsync();
     }
 
     private void LoadPresets()
@@ -526,6 +643,11 @@ public partial class ColorViewModel : ObservableObject, IDisposable
         _disposed = true;
 
         _mediaPool.CurrentSourceChanged -= OnCurrentSourceChanged;
+        CurrentGrade.PropertyChanged -= OnGradePropertyChanged;
+
+        _previewUpdateCts?.Cancel();
+        _previewUpdateCts?.Dispose();
+        _frameCache.Dispose();
     }
 }
 
