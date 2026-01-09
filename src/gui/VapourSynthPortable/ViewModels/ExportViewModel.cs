@@ -12,8 +12,24 @@ public partial class ExportViewModel : ObservableObject, IDisposable
 {
     private readonly IMediaPoolService _mediaPool;
     private readonly FFmpegService _ffmpegService = new();
+    private readonly VapourSynthService _vapourSynthService = new();
+    private readonly EffectService _effectService = EffectService.Instance;
     private CancellationTokenSource? _cancellationTokenSource;
     private bool _disposed;
+
+    // Timeline reference for timeline export mode
+    [ObservableProperty]
+    private Timeline? _timeline;
+
+    // Export mode selection
+    [ObservableProperty]
+    private ExportMode _exportMode = ExportMode.DirectEncode;
+
+    [ObservableProperty]
+    private ObservableCollection<ExportMode> _exportModes = [ExportMode.DirectEncode, ExportMode.TimelineWithEffects];
+
+    // VapourSynth availability
+    public bool IsVapourSynthAvailable => _vapourSynthService.IsAvailable;
 
     // InputPath now delegates to MediaPoolService, but can be overridden
     [ObservableProperty]
@@ -126,6 +142,12 @@ public partial class ExportViewModel : ObservableObject, IDisposable
         _ffmpegService.LogMessage += OnLogMessage;
         _ffmpegService.EncodingStarted += OnEncodingStarted;
         _ffmpegService.EncodingCompleted += OnEncodingCompleted;
+
+        // VapourSynth service events
+        _vapourSynthService.ProgressChanged += OnVsProgressChanged;
+        _vapourSynthService.LogMessage += OnLogMessage;
+        _vapourSynthService.ProcessingStarted += OnVsProcessingStarted;
+        _vapourSynthService.ProcessingCompleted += OnVsProcessingCompleted;
     }
 
     // Parameterless constructor for XAML design-time support
@@ -324,10 +346,29 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task StartExportAsync()
     {
-        if (string.IsNullOrEmpty(InputPath) || string.IsNullOrEmpty(OutputPath))
+        // Validate based on export mode
+        if (ExportMode == ExportMode.TimelineWithEffects)
         {
-            StatusText = "Please select input and output files";
-            return;
+            if (Timeline == null || !Timeline.HasClips)
+            {
+                StatusText = "No timeline clips to export";
+                return;
+            }
+
+            if (!IsVapourSynthAvailable)
+            {
+                StatusText = "VapourSynth not available. Please build the distribution first.";
+                AppendLog("Error: VSPipe not found. Run Build-Portable.ps1 to set up VapourSynth.");
+                return;
+            }
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(InputPath) || string.IsNullOrEmpty(OutputPath))
+            {
+                StatusText = "Please select input and output files";
+                return;
+            }
         }
 
         if (IsEncoding)
@@ -357,7 +398,7 @@ public partial class ExportViewModel : ObservableObject, IDisposable
         var job = new ExportJob
         {
             Name = Path.GetFileName(OutputPath),
-            InputPath = InputPath,
+            InputPath = ExportMode == ExportMode.TimelineWithEffects ? "Timeline" : InputPath,
             OutputPath = OutputPath,
             Settings = settings,
             Status = ExportJobStatus.Encoding,
@@ -366,13 +407,23 @@ public partial class ExportViewModel : ObservableObject, IDisposable
 
         CurrentJob = job;
         IsEncoding = true;
-        StatusText = "Encoding...";
 
         _cancellationTokenSource = new CancellationTokenSource();
 
         try
         {
-            var success = await _ffmpegService.EncodeAsync(settings, _cancellationTokenSource.Token);
+            bool success;
+
+            if (ExportMode == ExportMode.TimelineWithEffects)
+            {
+                StatusText = "Rendering timeline with VapourSynth...";
+                success = await ExportTimelineWithVapourSynthAsync(_cancellationTokenSource.Token);
+            }
+            else
+            {
+                StatusText = "Encoding...";
+                success = await _ffmpegService.EncodeAsync(settings, _cancellationTokenSource.Token);
+            }
 
             job.EndTime = DateTime.Now;
             job.Status = success ? ExportJobStatus.Completed : ExportJobStatus.Failed;
@@ -393,6 +444,57 @@ public partial class ExportViewModel : ObservableObject, IDisposable
             IsEncoding = false;
             _cancellationTokenSource?.Dispose();
             _cancellationTokenSource = null;
+        }
+    }
+
+    /// <summary>
+    /// Export timeline using VapourSynth pipeline for effect processing
+    /// </summary>
+    private async Task<bool> ExportTimelineWithVapourSynthAsync(CancellationToken ct)
+    {
+        if (Timeline == null) return false;
+
+        string? scriptPath = null;
+
+        try
+        {
+            // Generate VapourSynth script from timeline
+            AppendLog("Generating VapourSynth script from timeline...");
+            var scriptContent = _effectService.GenerateTimelineScript(Timeline, OutputPath);
+
+            // Save script to temp file
+            scriptPath = Path.Combine(Path.GetTempPath(), $"timeline_export_{Guid.NewGuid():N}.vpy");
+            await File.WriteAllTextAsync(scriptPath, scriptContent, ct);
+
+            AppendLog($"Script saved to: {scriptPath}");
+            AppendLog("Starting VapourSynth pipeline...");
+
+            // Create encoding settings for VSPipe output
+            var vsSettings = new VapourSynthEncodingSettings
+            {
+                VideoCodec = SelectedVideoCodec,
+                Quality = Quality,
+                Preset = SelectedPresetSpeed,
+                PixelFormat = "yuv420p"
+            };
+
+            // Process script with VapourSynth → FFmpeg pipeline
+            var success = await _vapourSynthService.ProcessScriptAsync(
+                scriptPath,
+                OutputPath,
+                vsSettings,
+                ct);
+
+            return success;
+        }
+        finally
+        {
+            // Clean up temp script
+            if (scriptPath != null && File.Exists(scriptPath))
+            {
+                try { File.Delete(scriptPath); }
+                catch { /* Ignore cleanup errors */ }
+            }
         }
     }
 
@@ -452,6 +554,7 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     {
         _cancellationTokenSource?.Cancel();
         _ffmpegService.Cancel();
+        _vapourSynthService.Cancel();
 
         if (CurrentJob != null)
         {
@@ -566,6 +669,53 @@ public partial class ExportViewModel : ObservableObject, IDisposable
         });
     }
 
+    // VapourSynth event handlers
+    private void OnVsProgressChanged(object? sender, VapourSynthProgressEventArgs e)
+    {
+        System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            if (CurrentJob != null)
+            {
+                CurrentJob.Progress = e.Progress;
+            }
+            var eta = e.EstimatedTimeRemaining;
+            var etaStr = eta.TotalSeconds > 0 ? $" ETA: {eta:hh\\:mm\\:ss}" : "";
+            StatusText = $"Rendering: {e.Progress:F1}% ({e.CurrentFrame}/{e.TotalFrames} frames) @ {e.Fps:F1} fps{etaStr}";
+        });
+    }
+
+    private void OnVsProcessingStarted(object? sender, EventArgs e)
+    {
+        System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            StatusText = "VapourSynth processing started...";
+            AppendLog("VapourSynth pipeline started");
+        });
+    }
+
+    private void OnVsProcessingCompleted(object? sender, VapourSynthCompletedEventArgs e)
+    {
+        System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            if (e.Success)
+            {
+                StatusText = "Timeline export completed!";
+                AppendLog($"Completed: {e.OutputPath} ({e.TotalFrames} frames)");
+            }
+            else if (e.Cancelled)
+            {
+                StatusText = "Export cancelled";
+                AppendLog("VapourSynth processing cancelled");
+            }
+            else
+            {
+                StatusText = "Export failed";
+                if (!string.IsNullOrEmpty(e.ErrorMessage))
+                    AppendLog($"Error: {e.ErrorMessage}");
+            }
+        });
+    }
+
     private void AppendLog(string message)
     {
         var timestamp = DateTime.Now.ToString("HH:mm:ss");
@@ -607,8 +757,30 @@ public partial class ExportViewModel : ObservableObject, IDisposable
         _ffmpegService.EncodingStarted -= OnEncodingStarted;
         _ffmpegService.EncodingCompleted -= OnEncodingCompleted;
 
+        // Unsubscribe from VapourSynth service events
+        _vapourSynthService.ProgressChanged -= OnVsProgressChanged;
+        _vapourSynthService.LogMessage -= OnLogMessage;
+        _vapourSynthService.ProcessingStarted -= OnVsProcessingStarted;
+        _vapourSynthService.ProcessingCompleted -= OnVsProcessingCompleted;
+
         _cancellationTokenSource?.Dispose();
     }
+}
+
+/// <summary>
+/// Export mode options
+/// </summary>
+public enum ExportMode
+{
+    /// <summary>
+    /// Direct FFmpeg encoding (file to file)
+    /// </summary>
+    DirectEncode,
+
+    /// <summary>
+    /// Timeline export using VapourSynth for effect processing
+    /// </summary>
+    TimelineWithEffects
 }
 
 public class ResolutionOption
