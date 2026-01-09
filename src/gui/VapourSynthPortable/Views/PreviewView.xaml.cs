@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using VapourSynthPortable.ViewModels;
 
@@ -76,6 +78,27 @@ public partial class PreviewView : UserControl
                     ViewModel.RefreshCommand.Execute(null);
                 e.Handled = true;
                 break;
+
+            case Key.C:
+                // Toggle comparison mode
+                if (ViewModel.ToggleComparisonCommand.CanExecute(null))
+                    ViewModel.ToggleComparisonCommand.Execute(null);
+                e.Handled = true;
+                break;
+
+            case Key.M:
+                // Cycle comparison modes when in comparison view
+                if (ViewModel.ShowComparison && ViewModel.CycleComparisonModeCommand.CanExecute(null))
+                    ViewModel.CycleComparisonModeCommand.Execute(null);
+                e.Handled = true;
+                break;
+
+            case Key.I:
+                // Toggle metadata information overlay
+                if (ViewModel.ToggleMetadataOverlayCommand.CanExecute(null))
+                    ViewModel.ToggleMetadataOverlayCommand.Execute(null);
+                e.Handled = true;
+                break;
         }
     }
 
@@ -107,4 +130,87 @@ public partial class PreviewView : UserControl
     /// Gets the underlying view model for external access.
     /// </summary>
     public PreviewViewModel? GetViewModel() => ViewModel;
+
+    /// <summary>
+    /// Sets the comparison script for A/B preview
+    /// </summary>
+    public void SetComparisonScript(string? scriptPath)
+    {
+        if (ViewModel != null && ViewModel.SetComparisonScriptCommand.CanExecute(scriptPath))
+        {
+            ViewModel.SetComparisonScriptCommand.Execute(scriptPath);
+        }
+    }
+
+    private void ComparisonModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ViewModel == null || ComparisonModeCombo.SelectedIndex < 0) return;
+
+        var mode = (ComparisonMode)ComparisonModeCombo.SelectedIndex;
+        if (ViewModel.SetComparisonModeCommand.CanExecute(mode))
+        {
+            ViewModel.SetComparisonModeCommand.Execute(mode);
+        }
+    }
+
+    private void ToggleImage_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        // Show B image when mouse is held down
+        ToggleImageA.Visibility = Visibility.Collapsed;
+        ToggleImageB.Visibility = Visibility.Visible;
+        ToggleLabel.Text = "B (release for A)";
+    }
+
+    private void ToggleImage_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        // Show A image when mouse is released
+        ToggleImageA.Visibility = Visibility.Visible;
+        ToggleImageB.Visibility = Visibility.Collapsed;
+        ToggleLabel.Text = "A (hold to see B)";
+    }
+}
+
+/// <summary>
+/// Converts wipe position and dimensions to a clip rectangle
+/// </summary>
+public class WipeClipConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 3 ||
+            values[0] is not double position ||
+            values[1] is not double width ||
+            values[2] is not double height)
+        {
+            return new Rect(0, 0, 100, 100);
+        }
+
+        return new Rect(0, 0, width * position, height);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts wipe position to a left margin for the divider line
+/// </summary>
+public class WipeMarginConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is not double position)
+            return new Thickness(0);
+
+        // This is a simplified approach - in a real implementation,
+        // we'd bind to the actual width of the container
+        return new Thickness(0, 0, 0, 0);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
 }

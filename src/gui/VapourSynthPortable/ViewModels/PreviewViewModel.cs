@@ -78,6 +78,29 @@ public partial class PreviewViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _fitToWindow = true;
 
+    // A/B Comparison Mode
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsComparisonEnabled))]
+    private string? _comparisonScriptPath;
+
+    [ObservableProperty]
+    private WriteableBitmap? _comparisonFrame;
+
+    [ObservableProperty]
+    private bool _showComparison;
+
+    [ObservableProperty]
+    private ComparisonMode _comparisonMode = ComparisonMode.SideBySide;
+
+    [ObservableProperty]
+    private double _wipePosition = 0.5; // 0.0 to 1.0
+
+    // Metadata overlay
+    [ObservableProperty]
+    private bool _showMetadataOverlay;
+
+    public bool IsComparisonEnabled => !string.IsNullOrEmpty(ComparisonScriptPath);
+
     // Computed Properties
     public string FrameInfoText => HasVideo
         ? $"Frame {CurrentFrameNumber + 1} / {TotalFrames}"
@@ -90,6 +113,63 @@ public partial class PreviewViewModel : ObservableObject, IDisposable
     public string FormatText => VideoInfo?.Format ?? "";
 
     public bool HasVideo => TotalFrames > 0 && VideoInfo != null;
+
+    // Extended metadata properties for overlay
+    public string FrameRateText => VideoInfo != null
+        ? $"{VideoInfo.Fps:F3} fps"
+        : "";
+
+    public string AspectRatioText => VideoInfo != null && VideoInfo.Width > 0 && VideoInfo.Height > 0
+        ? CalculateAspectRatio(VideoInfo.Width, VideoInfo.Height)
+        : "";
+
+    public string BitDepthText => VideoInfo?.BitsPerSample > 0
+        ? $"{VideoInfo.BitsPerSample}-bit"
+        : "";
+
+    public string DurationText => VideoInfo != null && VideoInfo.Fps > 0
+        ? FormatDuration(TotalFrames / VideoInfo.Fps)
+        : "";
+
+    public string ColorSpaceText => VideoInfo?.ColorFamily ?? "";
+
+    private static string CalculateAspectRatio(int width, int height)
+    {
+        var gcd = GCD(width, height);
+        var ratioW = width / gcd;
+        var ratioH = height / gcd;
+
+        // Map to common aspect ratios
+        var ratio = (double)width / height;
+        return ratio switch
+        {
+            >= 2.35 and <= 2.40 => "2.39:1 (Scope)",
+            >= 1.77 and <= 1.78 => "16:9",
+            >= 1.85 and <= 1.86 => "1.85:1",
+            >= 1.33 and <= 1.34 => "4:3",
+            >= 2.0 and <= 2.01 => "2:1",
+            _ => $"{ratioW}:{ratioH}"
+        };
+    }
+
+    private static int GCD(int a, int b)
+    {
+        while (b != 0)
+        {
+            var t = b;
+            b = a % b;
+            a = t;
+        }
+        return a;
+    }
+
+    private static string FormatDuration(double totalSeconds)
+    {
+        var ts = TimeSpan.FromSeconds(totalSeconds);
+        return ts.TotalHours >= 1
+            ? $"{(int)ts.TotalHours}:{ts.Minutes:D2}:{ts.Seconds:D2}"
+            : $"{ts.Minutes}:{ts.Seconds:D2}";
+    }
     public bool CanNavigate => HasVideo && !IsLoading;
     public bool IsVSPipeAvailable => _frameService.IsAvailable;
 
@@ -188,6 +268,12 @@ public partial class PreviewViewModel : ObservableObject, IDisposable
             // Cache and display
             _cacheService.AddFrame(frameNumber, bitmap);
             CurrentFrame = bitmap;
+
+            // Load comparison frame if enabled
+            if (ShowComparison && IsComparisonEnabled)
+            {
+                await LoadComparisonFrameAsync(frameNumber);
+            }
 
             StatusMessage = $"Frame {frameNumber + 1} / {TotalFrames}";
         }
@@ -288,6 +374,75 @@ public partial class PreviewViewModel : ObservableObject, IDisposable
         }
     }
 
+    [RelayCommand]
+    private async Task SetComparisonScriptAsync(string? scriptPath)
+    {
+        ComparisonScriptPath = scriptPath;
+        if (!string.IsNullOrEmpty(scriptPath) && HasVideo)
+        {
+            await LoadComparisonFrameAsync(CurrentFrameNumber);
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleComparison()
+    {
+        ShowComparison = !ShowComparison && IsComparisonEnabled;
+    }
+
+    [RelayCommand]
+    private void SetComparisonMode(ComparisonMode mode)
+    {
+        ComparisonMode = mode;
+    }
+
+    [RelayCommand]
+    private void CycleComparisonMode()
+    {
+        ComparisonMode = ComparisonMode switch
+        {
+            ComparisonMode.SideBySide => ComparisonMode.Wipe,
+            ComparisonMode.Wipe => ComparisonMode.Toggle,
+            ComparisonMode.Toggle => ComparisonMode.SideBySide,
+            _ => ComparisonMode.SideBySide
+        };
+    }
+
+    [RelayCommand]
+    private void ToggleMetadataOverlay()
+    {
+        ShowMetadataOverlay = !ShowMetadataOverlay;
+    }
+
+    private async Task LoadComparisonFrameAsync(int frameNumber)
+    {
+        if (string.IsNullOrEmpty(ComparisonScriptPath) || VideoInfo == null)
+            return;
+
+        try
+        {
+            var frameData = await _frameService.ExtractFrameAsync(
+                ComparisonScriptPath,
+                frameNumber,
+                VideoInfo,
+                _loadCts?.Token ?? CancellationToken.None);
+
+            ComparisonFrame = FrameConverter.FromY4M(frameData);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Comparison error: {ex.Message}";
+        }
+    }
+
+    partial void OnShowComparisonChanged(bool value)
+    {
+        if (value && IsComparisonEnabled && ComparisonFrame == null)
+        {
+            _ = LoadComparisonFrameAsync(CurrentFrameNumber);
+        }
+    }
+
     public void Cancel()
     {
         _loadCts?.Cancel();
@@ -309,4 +464,17 @@ public partial class PreviewViewModel : ObservableObject, IDisposable
         _loadCts?.Dispose();
         _cacheService.Clear();
     }
+}
+
+/// <summary>
+/// Comparison display modes
+/// </summary>
+public enum ComparisonMode
+{
+    /// <summary>Side by side view</summary>
+    SideBySide,
+    /// <summary>Wipe/split view with adjustable position</summary>
+    Wipe,
+    /// <summary>Toggle between A and B</summary>
+    Toggle
 }
