@@ -195,9 +195,7 @@
                               HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Auto">
                     <ScrollViewer.Visibility>
-                        <MultiBinding Converter="{StaticResource BoolToVis}">
-                            <Binding Path="HasVideo"/>
-                        </MultiBinding>
+                        <Binding Path="HasVideo" Converter="{StaticResource BoolToVis}"/>
                     </ScrollViewer.Visibility>
                     <ScrollViewer.Style>
                         <Style TargetType="ScrollViewer">
