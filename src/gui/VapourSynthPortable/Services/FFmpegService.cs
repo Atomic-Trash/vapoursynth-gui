@@ -1,39 +1,63 @@
 using System.Diagnostics;
 using System.IO;
-using System.Text.RegularExpressions;
+using FFMpegCore;
+using FFMpegCore.Enums;
+using FFMpegCore.Pipes;
 using Microsoft.Extensions.Logging;
 
 namespace VapourSynthPortable.Services;
 
 /// <summary>
-/// Service for FFmpeg encoding operations
+/// Service for FFmpeg encoding operations using FFMpegCore
 /// </summary>
 public class FFmpegService
 {
     private static readonly ILogger<FFmpegService> _logger = LoggingService.GetLogger<FFmpegService>();
 
-    private readonly string _ffmpegPath;
-    private readonly string _ffprobePath;
-    private Process? _currentProcess;
-    private bool _isCancelled;
+    private CancellationTokenSource? _encodingCts;
+    private bool _isEncoding;
+    private static bool _isConfigured;
+    private static readonly object _configLock = new();
 
     public event EventHandler<EncodingProgressEventArgs>? ProgressChanged;
     public event EventHandler<string>? LogMessage;
     public event EventHandler? EncodingStarted;
     public event EventHandler<EncodingCompletedEventArgs>? EncodingCompleted;
 
-    public bool IsEncoding => _currentProcess != null && !_currentProcess.HasExited;
+    public bool IsEncoding => _isEncoding;
 
     public FFmpegService()
     {
-        _ffmpegPath = FindExecutable("ffmpeg.exe");
-        _ffprobePath = FindExecutable("ffprobe.exe");
-
-        _logger.LogInformation("FFmpegService initialized. FFmpeg: {FFmpegPath}, Available: {IsAvailable}",
-            _ffmpegPath, IsAvailable);
+        ConfigureFFMpegCore();
+        _logger.LogInformation("FFmpegService initialized with FFMpegCore. Available: {IsAvailable}", IsAvailable);
     }
 
-    private static string FindExecutable(string name)
+    private static void ConfigureFFMpegCore()
+    {
+        lock (_configLock)
+        {
+            if (_isConfigured) return;
+
+            var ffmpegPath = FindFFmpegDirectory();
+            if (!string.IsNullOrEmpty(ffmpegPath))
+            {
+                GlobalFFOptions.Configure(options =>
+                {
+                    options.BinaryFolder = ffmpegPath;
+                    options.TemporaryFilesFolder = Path.GetTempPath();
+                });
+                _logger.LogInformation("FFMpegCore configured with binary folder: {Path}", ffmpegPath);
+            }
+            else
+            {
+                _logger.LogWarning("FFmpeg binaries not found in expected locations");
+            }
+
+            _isConfigured = true;
+        }
+    }
+
+    private static string? FindFFmpegDirectory()
     {
         var basePath = AppDomain.CurrentDomain.BaseDirectory;
         var distPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "..", "dist"));
@@ -42,51 +66,126 @@ public class FFmpegService
         var ffmpegDir = Path.Combine(distPath, "ffmpeg");
         if (Directory.Exists(ffmpegDir))
         {
-            var inFfmpegDir = Path.Combine(ffmpegDir, name);
-            if (File.Exists(inFfmpegDir)) return inFfmpegDir;
+            if (File.Exists(Path.Combine(ffmpegDir, "ffmpeg.exe")))
+                return ffmpegDir;
 
-            var inBin = Path.Combine(ffmpegDir, "bin", name);
-            if (File.Exists(inBin)) return inBin;
+            var binDir = Path.Combine(ffmpegDir, "bin");
+            if (File.Exists(Path.Combine(binDir, "ffmpeg.exe")))
+                return binDir;
         }
 
         // Check app directory
-        var inApp = Path.Combine(basePath, name);
-        if (File.Exists(inApp)) return inApp;
+        if (File.Exists(Path.Combine(basePath, "ffmpeg.exe")))
+            return basePath;
 
         // Check PATH
         var pathDirs = Environment.GetEnvironmentVariable("PATH")?.Split(';') ?? [];
         foreach (var dir in pathDirs)
         {
-            var fullPath = Path.Combine(dir, name);
-            if (File.Exists(fullPath)) return fullPath;
+            if (File.Exists(Path.Combine(dir, "ffmpeg.exe")))
+                return dir;
         }
 
-        return name; // Fall back to just the name
+        return null;
     }
 
-    public bool IsAvailable => File.Exists(_ffmpegPath) || CheckInPath("ffmpeg.exe");
-
-    private static bool CheckInPath(string exe)
+    public bool IsAvailable
     {
+        get
+        {
+            try
+            {
+                var ffmpegPath = GlobalFFOptions.Current.BinaryFolder;
+                return !string.IsNullOrEmpty(ffmpegPath) &&
+                       File.Exists(Path.Combine(ffmpegPath, "ffmpeg.exe"));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Analyze a media file and return detailed information
+    /// </summary>
+    public async Task<MediaAnalysis?> AnalyzeAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(filePath))
+        {
+            _logger.LogError("File not found for analysis: {FilePath}", filePath);
+            return null;
+        }
+
         try
         {
-            var psi = new ProcessStartInfo(exe, "-version")
+            var mediaInfo = await FFProbe.AnalyseAsync(filePath, cancellationToken: cancellationToken);
+            _logger.LogDebug("Analyzed {FilePath}: {Duration}s, {Width}x{Height}",
+                filePath, mediaInfo.Duration.TotalSeconds,
+                mediaInfo.PrimaryVideoStream?.Width ?? 0,
+                mediaInfo.PrimaryVideoStream?.Height ?? 0);
+
+            // Get file size from FileInfo since FFMpegCore doesn't expose it directly
+            var fileInfo = new FileInfo(filePath);
+
+            return new MediaAnalysis
             {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
+                FilePath = filePath,
+                Duration = mediaInfo.Duration,
+                Format = mediaInfo.Format.FormatName,
+                FormatLongName = mediaInfo.Format.FormatLongName,
+                FileSize = fileInfo.Length,
+                BitRate = (long)mediaInfo.Format.BitRate,
+                VideoStream = mediaInfo.PrimaryVideoStream != null ? new VideoStreamInfo
+                {
+                    Codec = mediaInfo.PrimaryVideoStream.CodecName,
+                    CodecLongName = mediaInfo.PrimaryVideoStream.CodecLongName,
+                    Width = mediaInfo.PrimaryVideoStream.Width,
+                    Height = mediaInfo.PrimaryVideoStream.Height,
+                    FrameRate = mediaInfo.PrimaryVideoStream.FrameRate,
+                    BitRate = mediaInfo.PrimaryVideoStream.BitRate,
+                    PixelFormat = mediaInfo.PrimaryVideoStream.PixelFormat,
+                    Duration = mediaInfo.PrimaryVideoStream.Duration
+                } : null,
+                AudioStream = mediaInfo.PrimaryAudioStream != null ? new AudioStreamInfo
+                {
+                    Codec = mediaInfo.PrimaryAudioStream.CodecName,
+                    CodecLongName = mediaInfo.PrimaryAudioStream.CodecLongName,
+                    SampleRate = mediaInfo.PrimaryAudioStream.SampleRateHz,
+                    Channels = mediaInfo.PrimaryAudioStream.Channels,
+                    ChannelLayout = mediaInfo.PrimaryAudioStream.ChannelLayout,
+                    BitRate = mediaInfo.PrimaryAudioStream.BitRate,
+                    Duration = mediaInfo.PrimaryAudioStream.Duration
+                } : null
             };
-            using var p = Process.Start(psi);
-            p?.WaitForExit(1000);
-            return p?.ExitCode == 0;
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Failed to check {Exe} in PATH", exe);
-            return false;
+            _logger.LogError(ex, "Failed to analyze file: {FilePath}", filePath);
+            return null;
         }
     }
 
+    /// <summary>
+    /// Get duration of a media file in seconds
+    /// </summary>
+    public async Task<double> GetDurationAsync(string filePath)
+    {
+        try
+        {
+            var mediaInfo = await FFProbe.AnalyseAsync(filePath);
+            return mediaInfo.Duration.TotalSeconds;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get duration for: {FilePath}", filePath);
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Encode a file with the specified settings
+    /// </summary>
     public async Task<bool> EncodeAsync(ExportSettings settings, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Starting encode: {InputPath} -> {OutputPath}", settings.InputPath, settings.OutputPath);
@@ -98,286 +197,343 @@ public class FFmpegService
             return false;
         }
 
-        _isCancelled = false;
-        var args = BuildFFmpegArguments(settings);
+        _encodingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _isEncoding = true;
 
-        _logger.LogDebug("FFmpeg args: {Args}", args);
         LogMessage?.Invoke(this, $"Starting encode: {Path.GetFileName(settings.InputPath)}");
         LogMessage?.Invoke(this, $"Output: {settings.OutputPath}");
-        LogMessage?.Invoke(this, $"FFmpeg args: {args}");
-
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = _ffmpegPath,
-            Arguments = args,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
 
         try
         {
-            _currentProcess = new Process { StartInfo = startInfo };
-            _currentProcess.Start();
+            // Get duration for progress reporting
+            var mediaInfo = await FFProbe.AnalyseAsync(settings.InputPath, cancellationToken: _encodingCts.Token);
+            var totalDuration = mediaInfo.Duration.TotalSeconds;
 
             EncodingStarted?.Invoke(this, EventArgs.Empty);
 
-            // Get duration for progress calculation
-            var duration = await GetDurationAsync(settings.InputPath);
+            LogMessage?.Invoke(this, $"Encoding with: {settings.VideoCodec} / {settings.AudioCodec}");
 
-            // Read stderr for progress (FFmpeg outputs to stderr)
-            var progressTask = ReadProgressAsync(_currentProcess.StandardError, duration, cancellationToken);
+            // Build FFMpeg arguments using fluent API
+            var processor = BuildFFMpegArgumentProcessor(settings);
 
-            await _currentProcess.WaitForExitAsync(cancellationToken);
-            await progressTask;
+            // Execute with progress tracking
+            var totalTimeSpan = TimeSpan.FromSeconds(totalDuration);
+            var success = await processor
+                .NotifyOnProgress((double currentSeconds) =>
+                {
+                    // currentSeconds is a double representing elapsed seconds
+                    var progressPercent = totalDuration > 0
+                        ? (currentSeconds / totalDuration) * 100
+                        : 0.0;
 
-            var success = _currentProcess.ExitCode == 0 && !_isCancelled;
+                    ProgressChanged?.Invoke(this, new EncodingProgressEventArgs
+                    {
+                        Progress = Math.Min(100, progressPercent),
+                        CurrentTime = currentSeconds,
+                        TotalDuration = totalDuration,
+                        Fps = 0, // FFMpegCore doesn't provide FPS in progress
+                        Bitrate = 0,
+                        Speed = 0
+                    });
+                }, totalTimeSpan)
+                .NotifyOnError(error =>
+                {
+                    LogMessage?.Invoke(this, $"FFmpeg: {error}");
+                })
+                .NotifyOnOutput(output =>
+                {
+                    if (output.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+                        output.Contains("warning", StringComparison.OrdinalIgnoreCase))
+                    {
+                        LogMessage?.Invoke(this, $"FFmpeg: {output}");
+                    }
+                })
+                .CancellableThrough(_encodingCts.Token)
+                .ProcessAsynchronously(throwOnError: false);
+
+            var cancelled = _encodingCts.IsCancellationRequested;
 
             EncodingCompleted?.Invoke(this, new EncodingCompletedEventArgs
             {
-                Success = success,
+                Success = success && !cancelled,
                 OutputPath = settings.OutputPath,
-                Cancelled = _isCancelled
+                Cancelled = cancelled
             });
 
-            if (success)
+            if (success && !cancelled)
             {
                 _logger.LogInformation("Encoding completed successfully: {OutputPath}", settings.OutputPath);
                 LogMessage?.Invoke(this, "Encoding completed successfully!");
             }
-            else if (_isCancelled)
+            else if (cancelled)
             {
                 _logger.LogInformation("Encoding cancelled by user");
                 LogMessage?.Invoke(this, "Encoding cancelled.");
                 // Clean up partial file
-                if (File.Exists(settings.OutputPath))
-                {
-                    try { File.Delete(settings.OutputPath); }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to delete partial output file: {OutputPath}", settings.OutputPath);
-                    }
-                }
+                TryDeleteFile(settings.OutputPath);
             }
             else
             {
-                _logger.LogError("Encoding failed with exit code: {ExitCode}", _currentProcess.ExitCode);
-                LogMessage?.Invoke(this, $"Encoding failed with exit code: {_currentProcess.ExitCode}");
+                _logger.LogError("Encoding failed");
+                LogMessage?.Invoke(this, "Encoding failed.");
             }
 
-            return success;
+            return success && !cancelled;
         }
         catch (OperationCanceledException)
         {
             _logger.LogInformation("Encoding operation cancelled");
-            Cancel();
+            TryDeleteFile(settings.OutputPath);
+            EncodingCompleted?.Invoke(this, new EncodingCompletedEventArgs
+            {
+                Success = false,
+                OutputPath = settings.OutputPath,
+                Cancelled = true
+            });
             return false;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Encoding failed with exception");
             LogMessage?.Invoke(this, $"Error: {ex.Message}");
+            EncodingCompleted?.Invoke(this, new EncodingCompletedEventArgs
+            {
+                Success = false,
+                OutputPath = settings.OutputPath,
+                Cancelled = false
+            });
             return false;
         }
         finally
         {
-            _currentProcess = null;
+            _isEncoding = false;
+            _encodingCts?.Dispose();
+            _encodingCts = null;
         }
     }
 
-    private async Task ReadProgressAsync(StreamReader stderr, double totalDuration, CancellationToken cancellationToken)
+    private FFMpegArgumentProcessor BuildFFMpegArgumentProcessor(ExportSettings settings)
     {
-        var timeRegex = new Regex(@"time=(\d+):(\d+):(\d+)\.(\d+)", RegexOptions.Compiled);
-        var fpsRegex = new Regex(@"fps=\s*([\d.]+)", RegexOptions.Compiled);
-        var bitrateRegex = new Regex(@"bitrate=\s*([\d.]+)kbits/s", RegexOptions.Compiled);
-        var speedRegex = new Regex(@"speed=\s*([\d.]+)x", RegexOptions.Compiled);
-
-        while (!stderr.EndOfStream && !cancellationToken.IsCancellationRequested)
-        {
-            var line = await stderr.ReadLineAsync(cancellationToken);
-            if (string.IsNullOrEmpty(line)) continue;
-
-            // Log verbose output
-            if (line.StartsWith("frame=") || line.Contains("error") || line.Contains("Error"))
+        return FFMpegArguments
+            .FromFileInput(settings.InputPath)
+            .OutputToFile(settings.OutputPath, overwrite: true, options =>
             {
-                LogMessage?.Invoke(this, line);
-            }
-
-            // Parse progress
-            var timeMatch = timeRegex.Match(line);
-            if (timeMatch.Success && totalDuration > 0)
-            {
-                var hours = int.Parse(timeMatch.Groups[1].Value);
-                var minutes = int.Parse(timeMatch.Groups[2].Value);
-                var seconds = int.Parse(timeMatch.Groups[3].Value);
-                var ms = int.Parse(timeMatch.Groups[4].Value);
-
-                var currentTime = hours * 3600 + minutes * 60 + seconds + ms / 100.0;
-                var progress = Math.Min(100, (currentTime / totalDuration) * 100);
-
-                double fps = 0, bitrate = 0, speed = 0;
-
-                var fpsMatch = fpsRegex.Match(line);
-                if (fpsMatch.Success) double.TryParse(fpsMatch.Groups[1].Value, out fps);
-
-                var bitrateMatch = bitrateRegex.Match(line);
-                if (bitrateMatch.Success) double.TryParse(bitrateMatch.Groups[1].Value, out bitrate);
-
-                var speedMatch = speedRegex.Match(line);
-                if (speedMatch.Success) double.TryParse(speedMatch.Groups[1].Value, out speed);
-
-                ProgressChanged?.Invoke(this, new EncodingProgressEventArgs
+                // Video settings
+                if (settings.VideoEnabled)
                 {
-                    Progress = progress,
-                    CurrentTime = currentTime,
-                    TotalDuration = totalDuration,
-                    Fps = fps,
-                    Bitrate = bitrate,
-                    Speed = speed
-                });
-            }
-        }
-    }
+                    // Set video codec
+                    options.WithVideoCodec(settings.VideoCodec);
 
-    private string BuildFFmpegArguments(ExportSettings settings)
-    {
-        var args = new List<string>
-        {
-            "-y", // Overwrite output
-            "-i", $"\"{settings.InputPath}\""
-        };
+                    // Codec-specific settings
+                    if (settings.VideoCodec == "libx264" || settings.VideoCodec == "libx265")
+                    {
+                        options.WithConstantRateFactor(settings.Quality);
+                        options.WithSpeedPreset((Speed)Enum.Parse(typeof(Speed), settings.Preset, true));
 
-        // Video codec settings
-        if (settings.VideoEnabled)
-        {
-            args.Add($"-c:v {settings.VideoCodec}");
+                        if (settings.VideoCodec == "libx265")
+                        {
+                            options.WithCustomArgument("-tag:v hvc1");
+                        }
+                    }
+                    else if (settings.VideoCodec == "h264_nvenc" || settings.VideoCodec == "hevc_nvenc")
+                    {
+                        options.WithCustomArgument($"-preset {settings.HardwarePreset}");
+                        options.WithCustomArgument($"-cq {settings.Quality}");
+                    }
+                    else if (settings.VideoCodec == "prores_ks")
+                    {
+                        options.WithCustomArgument($"-profile:v {settings.ProResProfile}");
+                    }
 
-            if (settings.VideoCodec == "libx264" || settings.VideoCodec == "libx265")
-            {
-                args.Add($"-preset {settings.Preset}");
-                args.Add($"-crf {settings.Quality}");
+                    // Resolution
+                    if (settings.Width > 0 && settings.Height > 0)
+                    {
+                        options.WithVideoFilters(filters =>
+                            filters.Scale(settings.Width, settings.Height));
+                    }
 
-                if (settings.VideoCodec == "libx265")
-                {
-                    args.Add("-tag:v hvc1"); // For better compatibility
+                    // Frame rate
+                    if (settings.FrameRate > 0)
+                    {
+                        options.WithFramerate(settings.FrameRate);
+                    }
+
+                    // Pixel format
+                    if (!string.IsNullOrEmpty(settings.PixelFormat))
+                    {
+                        options.WithCustomArgument($"-pix_fmt {settings.PixelFormat}");
+                    }
                 }
-            }
-            else if (settings.VideoCodec == "h264_nvenc" || settings.VideoCodec == "hevc_nvenc")
-            {
-                args.Add($"-preset {settings.HardwarePreset}");
-                args.Add($"-cq {settings.Quality}");
-            }
-            else if (settings.VideoCodec == "prores_ks")
-            {
-                args.Add($"-profile:v {settings.ProResProfile}");
-            }
+                else
+                {
+                    options.DisableChannel(Channel.Video);
+                }
 
-            // Resolution
-            if (settings.Width > 0 && settings.Height > 0)
-            {
-                args.Add($"-vf scale={settings.Width}:{settings.Height}");
-            }
+                // Audio settings
+                if (settings.AudioEnabled)
+                {
+                    options.WithAudioCodec(settings.AudioCodec);
 
-            // Frame rate
-            if (settings.FrameRate > 0)
-            {
-                args.Add($"-r {settings.FrameRate}");
-            }
+                    if (settings.AudioCodec == "aac" || settings.AudioCodec == "libmp3lame")
+                    {
+                        options.WithAudioBitrate(settings.AudioBitrate);
+                    }
 
-            // Pixel format
-            if (!string.IsNullOrEmpty(settings.PixelFormat))
-            {
-                args.Add($"-pix_fmt {settings.PixelFormat}");
-            }
-        }
-        else
-        {
-            args.Add("-vn"); // No video
-        }
+                    if (settings.AudioSampleRate > 0)
+                    {
+                        options.WithAudioSamplingRate(settings.AudioSampleRate);
+                    }
+                }
+                else
+                {
+                    options.DisableChannel(Channel.Audio);
+                }
 
-        // Audio codec settings
-        if (settings.AudioEnabled)
-        {
-            args.Add($"-c:a {settings.AudioCodec}");
+                // Container-specific options
+                if (settings.OutputPath.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase))
+                {
+                    options.WithCustomArgument("-movflags +faststart");
+                }
 
-            if (settings.AudioCodec == "aac" || settings.AudioCodec == "libmp3lame")
-            {
-                args.Add($"-b:a {settings.AudioBitrate}k");
-            }
-            else if (settings.AudioCodec == "flac" || settings.AudioCodec == "pcm_s16le")
-            {
-                // Lossless - no bitrate needed
-            }
-
-            if (settings.AudioSampleRate > 0)
-            {
-                args.Add($"-ar {settings.AudioSampleRate}");
-            }
-        }
-        else
-        {
-            args.Add("-an"); // No audio
-        }
-
-        // Container-specific options
-        if (settings.OutputPath.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase))
-        {
-            args.Add("-movflags +faststart"); // Web optimization
-        }
-
-        args.Add($"\"{settings.OutputPath}\"");
-
-        return string.Join(" ", args);
+                // Fast seek for better performance
+                options.WithFastStart();
+            });
     }
 
-    public async Task<double> GetDurationAsync(string filePath)
+    /// <summary>
+    /// Extract a single frame as an image
+    /// </summary>
+    public async Task<bool> ExtractFrameAsync(string inputPath, string outputPath, TimeSpan position,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = _ffprobePath,
-                Arguments = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{filePath}\"",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
+            await FFMpegArguments
+                .FromFileInput(inputPath, verifyExists: true, options => options.Seek(position))
+                .OutputToFile(outputPath, overwrite: true, options => options
+                    .WithVideoCodec("mjpeg")
+                    .WithFrameOutputCount(1)
+                    .DisableChannel(Channel.Audio))
+                .CancellableThrough(cancellationToken)
+                .ProcessAsynchronously();
 
-            using var process = Process.Start(startInfo);
-            if (process == null) return 0;
-
-            var output = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            if (double.TryParse(output.Trim(), out var duration))
-            {
-                _logger.LogDebug("Duration of {FilePath}: {Duration:F2}s", filePath, duration);
-                return duration;
-            }
+            return File.Exists(outputPath);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to get duration for: {FilePath}", filePath);
+            _logger.LogError(ex, "Failed to extract frame at {Position} from {InputPath}", position, inputPath);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Generate a thumbnail image
+    /// </summary>
+    public async Task<bool> GenerateThumbnailAsync(string inputPath, string outputPath,
+        int width = 320, int height = 180, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Get duration and seek to 10% of the video
+            var mediaInfo = await FFProbe.AnalyseAsync(inputPath);
+            var seekPosition = TimeSpan.FromSeconds(mediaInfo.Duration.TotalSeconds * 0.1);
+
+            await FFMpegArguments
+                .FromFileInput(inputPath, verifyExists: true, options => options.Seek(seekPosition))
+                .OutputToFile(outputPath, overwrite: true, options => options
+                    .WithVideoCodec("mjpeg")
+                    .WithVideoFilters(filters => filters.Scale(width, height))
+                    .WithFrameOutputCount(1)
+                    .DisableChannel(Channel.Audio))
+                .CancellableThrough(cancellationToken)
+                .ProcessAsynchronously();
+
+            return File.Exists(outputPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate thumbnail for {InputPath}", inputPath);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Detect available hardware encoders
+    /// </summary>
+    public async Task<HardwareAcceleration> DetectHardwareAccelerationAsync()
+    {
+        var result = new HardwareAcceleration();
+
+        try
+        {
+            // Check for NVIDIA NVENC
+            result.NvencAvailable = await CheckEncoderAvailableAsync("h264_nvenc");
+            result.NvencHevcAvailable = await CheckEncoderAvailableAsync("hevc_nvenc");
+
+            // Check for Intel QSV
+            result.QsvAvailable = await CheckEncoderAvailableAsync("h264_qsv");
+            result.QsvHevcAvailable = await CheckEncoderAvailableAsync("hevc_qsv");
+
+            // Check for AMD AMF
+            result.AmfAvailable = await CheckEncoderAvailableAsync("h264_amf");
+            result.AmfHevcAvailable = await CheckEncoderAvailableAsync("hevc_amf");
+
+            _logger.LogInformation("Hardware acceleration detected: NVENC={Nvenc}, QSV={Qsv}, AMF={Amf}",
+                result.NvencAvailable, result.QsvAvailable, result.AmfAvailable);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error detecting hardware acceleration");
         }
 
-        return 0;
+        return result;
+    }
+
+    private async Task<bool> CheckEncoderAvailableAsync(string encoderName)
+    {
+        try
+        {
+            var ffmpegPath = Path.Combine(GlobalFFOptions.Current.BinaryFolder, "ffmpeg.exe");
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = ffmpegPath,
+                    Arguments = $"-hide_banner -encoders",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return output.Contains(encoderName, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public void Cancel()
     {
         _logger.LogInformation("Cancelling encoding");
-        _isCancelled = true;
-        if (_currentProcess != null && !_currentProcess.HasExited)
+        _encodingCts?.Cancel();
+    }
+
+    private void TryDeleteFile(string path)
+    {
+        try
         {
-            try
-            {
-                _currentProcess.Kill();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Error killing FFmpeg process");
-            }
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete file: {Path}", path);
         }
     }
 
@@ -414,6 +570,8 @@ public class FFmpegService
         };
     }
 }
+
+#region Models
 
 public class ExportSettings
 {
@@ -499,3 +657,101 @@ public class EncodingCompletedEventArgs : EventArgs
     public bool Cancelled { get; set; }
     public string OutputPath { get; set; } = "";
 }
+
+/// <summary>
+/// Detailed media file analysis results
+/// </summary>
+public class MediaAnalysis
+{
+    public string FilePath { get; set; } = "";
+    public TimeSpan Duration { get; set; }
+    public string Format { get; set; } = "";
+    public string FormatLongName { get; set; } = "";
+    public long FileSize { get; set; }
+    public long BitRate { get; set; }
+    public VideoStreamInfo? VideoStream { get; set; }
+    public AudioStreamInfo? AudioStream { get; set; }
+
+    public string Resolution => VideoStream != null
+        ? $"{VideoStream.Width}x{VideoStream.Height}"
+        : "";
+
+    public string DurationFormatted
+    {
+        get
+        {
+            var ts = Duration;
+            return ts.Hours > 0
+                ? $"{ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}"
+                : $"{ts.Minutes:D2}:{ts.Seconds:D2}";
+        }
+    }
+
+    public string FileSizeFormatted
+    {
+        get
+        {
+            if (FileSize < 1024) return $"{FileSize} B";
+            if (FileSize < 1024 * 1024) return $"{FileSize / 1024.0:F1} KB";
+            if (FileSize < 1024 * 1024 * 1024) return $"{FileSize / (1024.0 * 1024):F1} MB";
+            return $"{FileSize / (1024.0 * 1024 * 1024):F2} GB";
+        }
+    }
+}
+
+public class VideoStreamInfo
+{
+    public string Codec { get; set; } = "";
+    public string CodecLongName { get; set; } = "";
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public double FrameRate { get; set; }
+    public long BitRate { get; set; }
+    public string PixelFormat { get; set; } = "";
+    public TimeSpan Duration { get; set; }
+}
+
+public class AudioStreamInfo
+{
+    public string Codec { get; set; } = "";
+    public string CodecLongName { get; set; } = "";
+    public int SampleRate { get; set; }
+    public int Channels { get; set; }
+    public string ChannelLayout { get; set; } = "";
+    public long BitRate { get; set; }
+    public TimeSpan Duration { get; set; }
+}
+
+/// <summary>
+/// Hardware acceleration availability
+/// </summary>
+public class HardwareAcceleration
+{
+    public bool NvencAvailable { get; set; }
+    public bool NvencHevcAvailable { get; set; }
+    public bool QsvAvailable { get; set; }
+    public bool QsvHevcAvailable { get; set; }
+    public bool AmfAvailable { get; set; }
+    public bool AmfHevcAvailable { get; set; }
+
+    public bool AnyAvailable =>
+        NvencAvailable || QsvAvailable || AmfAvailable;
+
+    public string GetBestH264Encoder()
+    {
+        if (NvencAvailable) return "h264_nvenc";
+        if (QsvAvailable) return "h264_qsv";
+        if (AmfAvailable) return "h264_amf";
+        return "libx264";
+    }
+
+    public string GetBestHevcEncoder()
+    {
+        if (NvencHevcAvailable) return "hevc_nvenc";
+        if (QsvHevcAvailable) return "hevc_qsv";
+        if (AmfHevcAvailable) return "hevc_amf";
+        return "libx265";
+    }
+}
+
+#endregion
