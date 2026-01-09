@@ -261,19 +261,15 @@
                                     <RadioButton Content="Side by Side" GroupName="CompareMode"
                                                  Style="{StaticResource CategoryPillButton}"
                                                  IsChecked="{Binding ComparisonMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=SideBySide}"
-                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="SideBySide"/>
-                                    <RadioButton Content="Split" GroupName="CompareMode"
-                                                 Style="{StaticResource CategoryPillButton}"
-                                                 IsChecked="{Binding ComparisonMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=Split}"
-                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="Split"/>
+                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="{x:Static vm:ComparisonMode.SideBySide}"/>
                                     <RadioButton Content="Wipe" GroupName="CompareMode"
                                                  Style="{StaticResource CategoryPillButton}"
                                                  IsChecked="{Binding ComparisonMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=Wipe}"
-                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="Wipe"/>
+                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="{x:Static vm:ComparisonMode.Wipe}"/>
                                     <RadioButton Content="Toggle" GroupName="CompareMode"
                                                  Style="{StaticResource CategoryPillButton}"
                                                  IsChecked="{Binding ComparisonMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=Toggle}"
-                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="Toggle"/>
+                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="{x:Static vm:ComparisonMode.Toggle}"/>
                                 </StackPanel>
                             </Border>
 
@@ -321,22 +317,6 @@
                                         <Image x:Name="ToggleImage" Source="{Binding ProcessedFrame}" Stretch="Uniform"/>
                                         <TextBlock x:Name="ToggleLabel" Text="PROCESSED (click to toggle)" Foreground="#4ADE80" FontSize="9" FontWeight="Bold"
                                                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,8"/>
-                                    </Grid>
-
-                                    <!-- Split Mode -->
-                                    <Grid Visibility="{Binding ComparisonMode, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Split}">
-                                        <Image Source="{Binding OriginalFrame}" Stretch="Uniform"/>
-                                        <Image Source="{Binding ProcessedFrame}" Stretch="Uniform"
-                                               HorizontalAlignment="Right">
-                                            <Image.Clip>
-                                                <RectangleGeometry>
-                                                    <RectangleGeometry.Rect>
-                                                        <Rect X="0" Y="0" Width="1000" Height="2000"/>
-                                                    </RectangleGeometry.Rect>
-                                                </RectangleGeometry>
-                                            </Image.Clip>
-                                        </Image>
-                                        <Border Width="2" Background="#0E639C" HorizontalAlignment="Center"/>
                                     </Grid>
                                 </Grid>
 
@@ -433,20 +413,23 @@
                                                                        ToolTip="{Binding Description}"/>
                                                         </StackPanel>
 
-                                                        <!-- Float/Int Slider -->
+                                                        <!-- Float Slider -->
                                                         <Grid Grid.Row="1" Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Float}">
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="50"/>
                                                             </Grid.ColumnDefinitions>
-                                                            <Slider Grid.Column="0" Minimum="{Binding MinValue}" Maximum="{Binding MaxValue}"
-                                                                    Value="{Binding CurrentValue, Mode=TwoWay}"
-                                                                    SmallChange="{Binding Step}" LargeChange="{Binding Step}"
+                                                            <Slider Grid.Column="0"
+                                                                    Minimum="{Binding MinValue, TargetNullValue=0}"
+                                                                    Maximum="{Binding MaxValue, TargetNullValue=100}"
+                                                                    Value="{Binding CurrentValue, Mode=TwoWay, TargetNullValue=0}"
+                                                                    SmallChange="{Binding Step, TargetNullValue=0.1}"
+                                                                    LargeChange="{Binding Step, TargetNullValue=0.1}"
                                                                     VerticalAlignment="Center"/>
-                                                            <TextBox Grid.Column="1" Text="{Binding CurrentValue, StringFormat='{}{0:F1}'}"
-                                                                     Background="#252526" Foreground="#CCC" BorderBrush="#444"
-                                                                     TextAlignment="Center" Padding="4,2" Margin="8,0,0,0"
-                                                                     FontSize="10"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding CurrentValue, StringFormat=F1}"
+                                                                       Foreground="#CCC" Background="#252526"
+                                                                       TextAlignment="Center" Padding="4,2" Margin="8,0,0,0"
+                                                                       FontSize="10" VerticalAlignment="Center"/>
                                                         </Grid>
 
                                                         <!-- Int Slider -->
@@ -455,20 +438,24 @@
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="50"/>
                                                             </Grid.ColumnDefinitions>
-                                                            <Slider Grid.Column="0" Minimum="{Binding MinValue}" Maximum="{Binding MaxValue}"
-                                                                    Value="{Binding CurrentValue, Mode=TwoWay}"
-                                                                    SmallChange="{Binding Step}" LargeChange="{Binding Step}"
-                                                                    IsSnapToTickEnabled="True" TickFrequency="{Binding Step}"
+                                                            <Slider Grid.Column="0"
+                                                                    Minimum="{Binding MinValue, TargetNullValue=0}"
+                                                                    Maximum="{Binding MaxValue, TargetNullValue=100}"
+                                                                    Value="{Binding CurrentValue, Mode=TwoWay, TargetNullValue=0}"
+                                                                    SmallChange="{Binding Step, TargetNullValue=1}"
+                                                                    LargeChange="{Binding Step, TargetNullValue=1}"
+                                                                    IsSnapToTickEnabled="True"
+                                                                    TickFrequency="{Binding Step, TargetNullValue=1}"
                                                                     VerticalAlignment="Center"/>
-                                                            <TextBox Grid.Column="1" Text="{Binding CurrentValue, StringFormat='{}{0:F0}'}"
-                                                                     Background="#252526" Foreground="#CCC" BorderBrush="#444"
-                                                                     TextAlignment="Center" Padding="4,2" Margin="8,0,0,0"
-                                                                     FontSize="10"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding CurrentValue, StringFormat=F0}"
+                                                                       Foreground="#CCC" Background="#252526"
+                                                                       TextAlignment="Center" Padding="4,2" Margin="8,0,0,0"
+                                                                       FontSize="10" VerticalAlignment="Center"/>
                                                         </Grid>
 
                                                         <!-- Bool Toggle -->
                                                         <CheckBox Grid.Row="1" IsChecked="{Binding CurrentValue, Mode=TwoWay}"
-                                                                  Content="{Binding DisplayName}" Foreground="#AAA" FontSize="10"
+                                                                  Foreground="#AAA" FontSize="10"
                                                                   Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Bool}"/>
 
                                                         <!-- Enum ComboBox -->
