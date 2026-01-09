@@ -1,0 +1,276 @@
+<UserControl x:Class="VapourSynthPortable.Pages.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:VapourSynthPortable.ViewModels"
+             Background="#1E1E1E">
+
+    <UserControl.Resources>
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#007ACC"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,20,0,10"/>
+        </Style>
+
+        <Style x:Key="SettingLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#CCC"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Width" Value="180"/>
+        </Style>
+
+        <Style x:Key="SettingTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#333"/>
+            <Setter Property="Foreground" Value="#FFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#444"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="SettingComboBox" TargetType="ComboBox">
+            <Setter Property="Background" Value="#333"/>
+            <Setter Property="Foreground" Value="#FFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#444"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Background" Value="#007ACC"/>
+            <Setter Property="Foreground" Value="#FFF"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1E90FF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#0066CC"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+            <Setter Property="Background" Value="#3E3E42"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#505054"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#606064"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#252526" Padding="20,15">
+            <TextBlock Text="Settings" Foreground="#F1F1F1" FontSize="20" FontWeight="SemiBold"/>
+        </Border>
+
+        <!-- Settings Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="20">
+            <StackPanel MaxWidth="600">
+
+                <!-- Export Defaults -->
+                <TextBlock Text="Export Defaults" Style="{StaticResource SectionHeader}"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Default Format" Style="{StaticResource SettingLabel}"/>
+                    <ComboBox ItemsSource="{Binding ExportFormats}"
+                              SelectedItem="{Binding DefaultExportFormat}"
+                              Style="{StaticResource SettingComboBox}" Width="150"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Video Codec" Style="{StaticResource SettingLabel}"/>
+                    <ComboBox ItemsSource="{Binding VideoCodecs}"
+                              SelectedItem="{Binding DefaultVideoCodec}"
+                              Style="{StaticResource SettingComboBox}" Width="150"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Audio Codec" Style="{StaticResource SettingLabel}"/>
+                    <ComboBox ItemsSource="{Binding AudioCodecs}"
+                              SelectedItem="{Binding DefaultAudioCodec}"
+                              Style="{StaticResource SettingComboBox}" Width="150"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Video Quality (CRF)" Style="{StaticResource SettingLabel}"/>
+                    <Slider Minimum="0" Maximum="51"
+                            Value="{Binding DefaultVideoQuality}"
+                            Width="150" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding DefaultVideoQuality}" Foreground="#888" Margin="10,0,0,0"
+                               VerticalAlignment="Center" Width="30"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Audio Bitrate (kbps)" Style="{StaticResource SettingLabel}"/>
+                    <ComboBox Width="150" Style="{StaticResource SettingComboBox}"
+                              SelectedItem="{Binding DefaultAudioBitrate}">
+                        <ComboBox.Items>
+                            <sys:Int32 xmlns:sys="clr-namespace:System;assembly=mscorlib">128</sys:Int32>
+                            <sys:Int32 xmlns:sys="clr-namespace:System;assembly=mscorlib">192</sys:Int32>
+                            <sys:Int32 xmlns:sys="clr-namespace:System;assembly=mscorlib">256</sys:Int32>
+                            <sys:Int32 xmlns:sys="clr-namespace:System;assembly=mscorlib">320</sys:Int32>
+                        </ComboBox.Items>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- Hardware Acceleration -->
+                <TextBlock Text="Hardware Acceleration" Style="{StaticResource SectionHeader}"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="GPU Preference" Style="{StaticResource SettingLabel}"/>
+                    <ComboBox ItemsSource="{Binding GpuPreferences}"
+                              SelectedItem="{Binding GpuPreference}"
+                              Style="{StaticResource SettingComboBox}" Width="150"/>
+                </StackPanel>
+
+                <!-- Cache Settings -->
+                <TextBlock Text="Cache" Style="{StaticResource SectionHeader}"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Cache Directory" Style="{StaticResource SettingLabel}"/>
+                    <TextBox Text="{Binding CacheDirectory}" Style="{StaticResource SettingTextBox}" Width="200"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Max Cache Size (MB)" Style="{StaticResource SettingLabel}"/>
+                    <TextBox Text="{Binding MaxCacheSizeMB}" Style="{StaticResource SettingTextBox}" Width="100"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Current Cache Size" Style="{StaticResource SettingLabel}"/>
+                    <TextBlock Text="{Binding CacheSize}" Foreground="#888" VerticalAlignment="Center"/>
+                    <Button Content="Clear Cache" Command="{Binding ClearCacheCommand}"
+                            Style="{StaticResource SecondaryButton}" Margin="20,0,0,0" Padding="10,5"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Auto-clear on Exit" Style="{StaticResource SettingLabel}"/>
+                    <CheckBox IsChecked="{Binding AutoClearCache}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Project Settings -->
+                <TextBlock Text="Projects" Style="{StaticResource SectionHeader}"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Recent Projects Limit" Style="{StaticResource SettingLabel}"/>
+                    <TextBox Text="{Binding RecentProjectsLimit}" Style="{StaticResource SettingTextBox}" Width="100"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Auto-save Enabled" Style="{StaticResource SettingLabel}"/>
+                    <CheckBox IsChecked="{Binding AutoSaveEnabled}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Auto-save Interval (min)" Style="{StaticResource SettingLabel}"/>
+                    <TextBox Text="{Binding AutoSaveIntervalMinutes}" Style="{StaticResource SettingTextBox}" Width="100"
+                             IsEnabled="{Binding AutoSaveEnabled}"/>
+                </StackPanel>
+
+                <!-- UI Settings -->
+                <TextBlock Text="Interface" Style="{StaticResource SectionHeader}"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Show Log Panel" Style="{StaticResource SettingLabel}"/>
+                    <CheckBox IsChecked="{Binding ShowLogPanel}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Confirm on Delete" Style="{StaticResource SettingLabel}"/>
+                    <CheckBox IsChecked="{Binding ConfirmOnDelete}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Default Timeline Zoom" Style="{StaticResource SettingLabel}"/>
+                    <Slider Minimum="0.1" Maximum="5"
+                            Value="{Binding TimelineZoom}"
+                            Width="150" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TimelineZoom, StringFormat=F1}" Foreground="#888" Margin="10,0,0,0"
+                               VerticalAlignment="Center" Width="30"/>
+                </StackPanel>
+
+                <!-- VapourSynth Configuration (Read-only info) -->
+                <TextBlock Text="VapourSynth Configuration" Style="{StaticResource SectionHeader}"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Project Root" Style="{StaticResource SettingLabel}"/>
+                    <TextBlock Text="{Binding ProjectRoot}" Foreground="#888" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" MaxWidth="350"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Output Directory" Style="{StaticResource SettingLabel}"/>
+                    <TextBox Text="{Binding OutputDirectory}" Style="{StaticResource SettingTextBox}" Width="200"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Default Plugin Set" Style="{StaticResource SettingLabel}"/>
+                    <ComboBox ItemsSource="{Binding PluginSets}"
+                              SelectedItem="{Binding DefaultPluginSet}"
+                              Style="{StaticResource SettingComboBox}" Width="150"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Python Version" Style="{StaticResource SettingLabel}"/>
+                    <TextBlock Text="{Binding PythonVersion}" Foreground="#888" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="VapourSynth Version" Style="{StaticResource SettingLabel}"/>
+                    <TextBlock Text="{Binding VapourSynthVersion}" Foreground="#888" VerticalAlignment="Center"/>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer Actions -->
+        <Border Grid.Row="2" Background="#252526" Padding="20,15">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Reset to Defaults" Command="{Binding ResetToDefaultsCommand}"
+                        Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
+                <Button Content="Cancel" Command="{Binding CancelCommand}"
+                        Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
+                <Button Content="Save Settings" Command="{Binding SaveCommand}"
+                        Style="{StaticResource ActionButton}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

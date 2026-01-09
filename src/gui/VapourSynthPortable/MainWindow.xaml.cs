@@ -8,9 +8,12 @@ using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable;
 
+// Note: Window state management is handled by loading/saving AppSettings
+
 public partial class MainWindow : Window
 {
     private readonly ProjectService _projectService = new();
+    private readonly SettingsService _settingsService = new();
     private Project _currentProject;
 
     /// <summary>
@@ -53,6 +56,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        // Restore window state from settings
+        RestoreWindowState();
+
         // Create a new project on startup
         _currentProject = _projectService.CreateNew();
         UpdateTitle();
@@ -72,6 +78,85 @@ public partial class MainWindow : Window
         CommandBindings.Add(new CommandBinding(saveAsCommand, (s, e) => SaveProjectAs_Click(s, e)));
     }
 
+    private void RestoreWindowState()
+    {
+        var settings = _settingsService.Load();
+
+        // Restore window size
+        if (settings.WindowWidth > 0 && settings.WindowHeight > 0)
+        {
+            Width = settings.WindowWidth;
+            Height = settings.WindowHeight;
+        }
+
+        // Restore window position (only if valid coordinates)
+        if (settings.WindowLeft >= 0 && settings.WindowTop >= 0)
+        {
+            // Ensure window is visible on screen
+            var screenWidth = SystemParameters.VirtualScreenWidth;
+            var screenHeight = SystemParameters.VirtualScreenHeight;
+
+            if (settings.WindowLeft < screenWidth - 100 && settings.WindowTop < screenHeight - 100)
+            {
+                Left = settings.WindowLeft;
+                Top = settings.WindowTop;
+            }
+        }
+
+        // Restore maximized state
+        if (settings.WindowMaximized)
+        {
+            WindowState = WindowState.Maximized;
+        }
+
+        // Restore log panel visibility
+        if (!settings.ShowLogPanel)
+        {
+            LogPanelRow.Height = new GridLength(0);
+            LogViewer.Visibility = Visibility.Collapsed;
+            LogPanelToggle.IsChecked = false;
+        }
+    }
+
+    private void SaveWindowState()
+    {
+        var settings = _settingsService.Load();
+
+        // Save window state (only if not minimized)
+        if (WindowState != WindowState.Minimized)
+        {
+            settings.WindowMaximized = WindowState == WindowState.Maximized;
+
+            // Save position/size only when in normal state
+            if (WindowState == WindowState.Normal)
+            {
+                settings.WindowLeft = Left;
+                settings.WindowTop = Top;
+                settings.WindowWidth = Width;
+                settings.WindowHeight = Height;
+            }
+        }
+
+        // Save log panel visibility
+        settings.ShowLogPanel = LogPanelToggle.IsChecked == true;
+
+        // Save active page
+        settings.LastActivePage = GetActivePageName();
+
+        _settingsService.Save(settings);
+    }
+
+    private string GetActivePageName()
+    {
+        if (NavMedia?.IsChecked == true) return "Media";
+        if (NavEdit?.IsChecked == true) return "Edit";
+        if (NavRestore?.IsChecked == true) return "Restore";
+        if (NavColor?.IsChecked == true) return "Color";
+        if (NavExport?.IsChecked == true) return "Export";
+        if (NavSettings?.IsChecked == true) return "Settings";
+        return "Restore"; // Default
+    }
+
     private void NavButton_Checked(object sender, RoutedEventArgs e)
     {
         // Hide all pages (null checks for designer support)
@@ -80,6 +165,7 @@ public partial class MainWindow : Window
         PageRestore?.SetValue(VisibilityProperty, Visibility.Collapsed);
         PageColor?.SetValue(VisibilityProperty, Visibility.Collapsed);
         PageExport?.SetValue(VisibilityProperty, Visibility.Collapsed);
+        PageSettings?.SetValue(VisibilityProperty, Visibility.Collapsed);
 
         // Show selected page
         if (sender == NavMedia && PageMedia != null)
@@ -92,6 +178,8 @@ public partial class MainWindow : Window
             PageColor.Visibility = Visibility.Visible;
         else if (sender == NavExport && PageExport != null)
             PageExport.Visibility = Visibility.Visible;
+        else if (sender == NavSettings && PageSettings != null)
+            PageSettings.Visibility = Visibility.Visible;
     }
 
     private void UpdateTitle()
@@ -330,6 +418,9 @@ public partial class MainWindow : Window
                 await SaveProjectAsync();
             }
         }
+
+        // Save window state before closing
+        SaveWindowState();
 
         base.OnClosing(e);
     }

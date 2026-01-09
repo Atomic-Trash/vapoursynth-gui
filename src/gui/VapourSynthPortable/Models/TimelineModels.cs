@@ -92,6 +92,16 @@ public partial class TimelineClip : ObservableObject
 
     public bool IsVideo => TrackType == TrackType.Video;
 
+    /// <summary>
+    /// Source in-point as a percentage (0.0-1.0) for waveform display
+    /// </summary>
+    public double SourceInPoint => SourceDurationFrames > 0 ? SourceInFrame / (double)SourceDurationFrames : 0;
+
+    /// <summary>
+    /// Source out-point as a percentage (0.0-1.0) for waveform display
+    /// </summary>
+    public double SourceOutPoint => SourceDurationFrames > 0 ? SourceOutFrame / (double)SourceDurationFrames : 1;
+
     public double StartSeconds => StartFrame / FrameRate;
 
     public double EndSeconds => EndFrame / FrameRate;

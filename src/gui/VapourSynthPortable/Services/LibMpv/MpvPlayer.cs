@@ -32,7 +32,14 @@ public class MpvPlayer : IDisposable
     public double Duration { get; private set; }
     public double Position { get; private set; }
     public double Volume { get; private set; } = 100;
+    public double Speed { get; private set; } = 1.0;
+    public double FrameRate { get; private set; } = 24.0;
     public string? CurrentFile { get; private set; }
+
+    // AB Loop support
+    public double? LoopStartPoint { get; private set; }
+    public double? LoopEndPoint { get; private set; }
+    public bool IsLoopEnabled => LoopStartPoint.HasValue && LoopEndPoint.HasValue;
 
     public static bool IsLibraryAvailable => FindLibrary() != null;
 
@@ -376,6 +383,206 @@ public class MpvPlayer : IDisposable
         if (_handle == IntPtr.Zero) return;
 
         SetProperty("loop-file", loop ? "inf" : "no");
+    }
+
+    /// <summary>
+    /// Seek to a specific frame number
+    /// </summary>
+    public void SeekToFrame(long frame, double? frameRate = null)
+    {
+        var fps = frameRate ?? FrameRate;
+        if (fps <= 0) fps = 24.0;
+
+        var position = frame / fps;
+        Seek(position);
+    }
+
+    /// <summary>
+    /// Get the current frame number
+    /// </summary>
+    public long GetCurrentFrame(double? frameRate = null)
+    {
+        var fps = frameRate ?? FrameRate;
+        if (fps <= 0) fps = 24.0;
+
+        return (long)(Position * fps);
+    }
+
+    /// <summary>
+    /// Set the frame rate for frame-based operations
+    /// </summary>
+    public void SetFrameRate(double fps)
+    {
+        FrameRate = fps > 0 ? fps : 24.0;
+    }
+
+    /// <summary>
+    /// Set AB loop points for region playback
+    /// </summary>
+    public void SetABLoop(double? startPoint, double? endPoint)
+    {
+        if (_handle == IntPtr.Zero) return;
+
+        LoopStartPoint = startPoint;
+        LoopEndPoint = endPoint;
+
+        if (startPoint.HasValue && endPoint.HasValue)
+        {
+            SetProperty("ab-loop-a", startPoint.Value.ToString("F3"));
+            SetProperty("ab-loop-b", endPoint.Value.ToString("F3"));
+            _logger.LogDebug("AB Loop set: {Start} - {End}", startPoint, endPoint);
+        }
+        else
+        {
+            ClearABLoop();
+        }
+    }
+
+    /// <summary>
+    /// Set AB loop using frame numbers
+    /// </summary>
+    public void SetABLoopFrames(long startFrame, long endFrame, double? frameRate = null)
+    {
+        var fps = frameRate ?? FrameRate;
+        if (fps <= 0) fps = 24.0;
+
+        SetABLoop(startFrame / fps, endFrame / fps);
+    }
+
+    /// <summary>
+    /// Clear AB loop points
+    /// </summary>
+    public void ClearABLoop()
+    {
+        if (_handle == IntPtr.Zero) return;
+
+        LoopStartPoint = null;
+        LoopEndPoint = null;
+        SetProperty("ab-loop-a", "no");
+        SetProperty("ab-loop-b", "no");
+        _logger.LogDebug("AB Loop cleared");
+    }
+
+    /// <summary>
+    /// Toggle AB loop - sets A point first, then B point, then clears
+    /// </summary>
+    public void ToggleABLoopPoint()
+    {
+        if (!LoopStartPoint.HasValue)
+        {
+            LoopStartPoint = Position;
+            SetProperty("ab-loop-a", Position.ToString("F3"));
+            _logger.LogDebug("AB Loop A point set: {Position}", Position);
+        }
+        else if (!LoopEndPoint.HasValue)
+        {
+            LoopEndPoint = Position;
+            SetProperty("ab-loop-b", Position.ToString("F3"));
+            _logger.LogDebug("AB Loop B point set: {Position}", Position);
+        }
+        else
+        {
+            ClearABLoop();
+        }
+    }
+
+    /// <summary>
+    /// Playback speed control - J/K/L style
+    /// J = slower/reverse, K = pause, L = faster
+    /// </summary>
+    private static readonly double[] _speedLevels = [0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0];
+    private int _currentSpeedIndex = 2; // Start at 1.0x
+
+    public void SpeedUp()
+    {
+        if (_handle == IntPtr.Zero) return;
+
+        if (_currentSpeedIndex < _speedLevels.Length - 1)
+        {
+            _currentSpeedIndex++;
+            Speed = _speedLevels[_currentSpeedIndex];
+            SetSpeed(Speed);
+            _logger.LogDebug("Speed increased to {Speed}x", Speed);
+        }
+    }
+
+    public void SlowDown()
+    {
+        if (_handle == IntPtr.Zero) return;
+
+        if (_currentSpeedIndex > 0)
+        {
+            _currentSpeedIndex--;
+            Speed = _speedLevels[_currentSpeedIndex];
+            SetSpeed(Speed);
+            _logger.LogDebug("Speed decreased to {Speed}x", Speed);
+        }
+    }
+
+    public void ResetSpeed()
+    {
+        if (_handle == IntPtr.Zero) return;
+
+        _currentSpeedIndex = 2;
+        Speed = 1.0;
+        SetSpeed(1.0);
+        _logger.LogDebug("Speed reset to 1.0x");
+    }
+
+    /// <summary>
+    /// Step forward by specified number of frames
+    /// </summary>
+    public void StepForwardFrames(int frames)
+    {
+        if (_handle == IntPtr.Zero || frames <= 0) return;
+
+        for (int i = 0; i < frames; i++)
+        {
+            Command("frame-step");
+        }
+    }
+
+    /// <summary>
+    /// Step backward by specified number of frames
+    /// </summary>
+    public void StepBackwardFrames(int frames)
+    {
+        if (_handle == IntPtr.Zero || frames <= 0) return;
+
+        for (int i = 0; i < frames; i++)
+        {
+            Command("frame-back-step");
+        }
+    }
+
+    /// <summary>
+    /// Seek to the beginning of the file
+    /// </summary>
+    public void SeekToStart()
+    {
+        Seek(0);
+    }
+
+    /// <summary>
+    /// Seek to the end of the file
+    /// </summary>
+    public void SeekToEnd()
+    {
+        if (Duration > 0)
+        {
+            Seek(Duration - 0.001);
+        }
+    }
+
+    /// <summary>
+    /// Seek forward by a percentage of total duration
+    /// </summary>
+    public void SeekPercent(double percent)
+    {
+        if (_handle == IntPtr.Zero || Duration <= 0) return;
+
+        var position = Duration * (percent / 100.0);
+        Seek(Math.Clamp(position, 0, Duration));
     }
 
     private void Command(string cmd)

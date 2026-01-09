@@ -2,6 +2,7 @@ namespace VapourSynthPortable.Models;
 
 public class AppSettings
 {
+    // Build settings
     public string OutputDirectory { get; set; } = "dist";
     public string CacheDirectory { get; set; } = "build";
     public string DefaultPluginSet { get; set; } = "standard";
@@ -10,6 +11,47 @@ public class AppSettings
 
     // Custom media bins
     public List<CustomBinSettings> CustomBins { get; set; } = [];
+
+    // Export preferences
+    public string DefaultExportFormat { get; set; } = "mp4";
+    public string DefaultVideoCodec { get; set; } = "libx264";
+    public string DefaultAudioCodec { get; set; } = "aac";
+    public int DefaultVideoQuality { get; set; } = 22;
+    public int DefaultAudioBitrate { get; set; } = 192;
+
+    // Hardware acceleration
+    public GpuPreference GpuPreference { get; set; } = GpuPreference.Auto;
+
+    // Cache settings
+    public int MaxCacheSizeMB { get; set; } = 1024;
+    public bool AutoClearCache { get; set; } = false;
+
+    // Project settings
+    public int RecentProjectsLimit { get; set; } = 10;
+    public int AutoSaveIntervalMinutes { get; set; } = 5;
+    public bool AutoSaveEnabled { get; set; } = true;
+
+    // UI preferences
+    public bool ShowLogPanel { get; set; } = false;
+    public double TimelineZoom { get; set; } = 1.0;
+    public bool ConfirmOnDelete { get; set; } = true;
+
+    // Window state
+    public double WindowLeft { get; set; } = -1;
+    public double WindowTop { get; set; } = -1;
+    public double WindowWidth { get; set; } = 1400;
+    public double WindowHeight { get; set; } = 900;
+    public bool WindowMaximized { get; set; } = false;
+    public string LastActivePage { get; set; } = "Media";
+}
+
+public enum GpuPreference
+{
+    Auto,
+    NVIDIA,
+    AMD,
+    Intel,
+    CPU
 }
 
 public class CustomBinSettings

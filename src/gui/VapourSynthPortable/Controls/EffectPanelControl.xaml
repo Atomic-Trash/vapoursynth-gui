@@ -7,6 +7,7 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis"/>
+        <local:ParameterTypeToVisibilityConverter x:Key="ParameterTypeToVisibility"/>
 
         <Style x:Key="EffectButton" TargetType="Button">
             <Setter Property="Background" Value="#3E3E42"/>
@@ -195,6 +196,7 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="90"/>
                                                         <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
 
                                                     <TextBlock Grid.Column="0"
@@ -203,12 +205,103 @@
                                                                VerticalAlignment="Center"
                                                                ToolTip="{Binding Description}"/>
 
-                                                    <!-- Parameter Editor - simple TextBox for all types -->
+                                                    <!-- Integer Parameter - Slider + TextBox -->
+                                                    <Grid Grid.Column="1"
+                                                          Visibility="{Binding ParameterType, Converter={StaticResource ParameterTypeToVisibility}, ConverterParameter=Integer}">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="50"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Slider Grid.Column="0" VerticalAlignment="Center"
+                                                                Minimum="{Binding MinValue, FallbackValue=0}"
+                                                                Maximum="{Binding MaxValue, FallbackValue=100}"
+                                                                Value="{Binding Value, Mode=TwoWay}"
+                                                                SmallChange="1" LargeChange="10"
+                                                                IsSnapToTickEnabled="True" TickFrequency="1"
+                                                                Margin="0,0,8,0"/>
+                                                        <TextBox Grid.Column="1"
+                                                                 Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Background="#333" Foreground="#CCC"
+                                                                 BorderThickness="0" Padding="4,2"
+                                                                 FontSize="10" TextAlignment="Center"/>
+                                                    </Grid>
+
+                                                    <!-- Float Parameter - Slider + TextBox -->
+                                                    <Grid Grid.Column="1"
+                                                          Visibility="{Binding ParameterType, Converter={StaticResource ParameterTypeToVisibility}, ConverterParameter=Float}">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="50"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Slider Grid.Column="0" VerticalAlignment="Center"
+                                                                Minimum="{Binding MinValue, FallbackValue=0}"
+                                                                Maximum="{Binding MaxValue, FallbackValue=1}"
+                                                                Value="{Binding Value, Mode=TwoWay}"
+                                                                SmallChange="0.01" LargeChange="0.1"
+                                                                Margin="0,0,8,0"/>
+                                                        <TextBox Grid.Column="1"
+                                                                 Text="{Binding Value, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Background="#333" Foreground="#CCC"
+                                                                 BorderThickness="0" Padding="4,2"
+                                                                 FontSize="10" TextAlignment="Center"/>
+                                                    </Grid>
+
+                                                    <!-- Boolean Parameter - CheckBox -->
+                                                    <CheckBox Grid.Column="1"
+                                                              IsChecked="{Binding Value}"
+                                                              VerticalAlignment="Center"
+                                                              Visibility="{Binding ParameterType, Converter={StaticResource ParameterTypeToVisibility}, ConverterParameter=Boolean}"/>
+
+                                                    <!-- Enum Parameter - ComboBox -->
+                                                    <ComboBox Grid.Column="1"
+                                                              ItemsSource="{Binding Options}"
+                                                              SelectedItem="{Binding Value}"
+                                                              Background="#333" Foreground="#CCC"
+                                                              BorderThickness="0" Padding="4,2"
+                                                              FontSize="10"
+                                                              Visibility="{Binding ParameterType, Converter={StaticResource ParameterTypeToVisibility}, ConverterParameter=Enum}"/>
+
+                                                    <!-- String Parameter - TextBox -->
                                                     <TextBox Grid.Column="1"
                                                              Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
                                                              Background="#333" Foreground="#CCC"
                                                              BorderThickness="0" Padding="6,4"
-                                                             FontSize="10"/>
+                                                             FontSize="10"
+                                                             Visibility="{Binding ParameterType, Converter={StaticResource ParameterTypeToVisibility}, ConverterParameter=String}"/>
+
+                                                    <!-- Color Parameter - Color Picker Button -->
+                                                    <Button Grid.Column="1"
+                                                            Content="Pick Color"
+                                                            Style="{StaticResource EffectButton}"
+                                                            FontSize="9" Padding="4,2"
+                                                            Click="ColorPicker_Click" Tag="{Binding}"
+                                                            Visibility="{Binding ParameterType, Converter={StaticResource ParameterTypeToVisibility}, ConverterParameter=Color}"/>
+
+                                                    <!-- File Parameter - Browse Button -->
+                                                    <Grid Grid.Column="1"
+                                                          Visibility="{Binding ParameterType, Converter={StaticResource ParameterTypeToVisibility}, ConverterParameter=File}">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBox Grid.Column="0"
+                                                                 Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Background="#333" Foreground="#CCC"
+                                                                 BorderThickness="0" Padding="4,2"
+                                                                 FontSize="10"/>
+                                                        <Button Grid.Column="1" Content="..."
+                                                                Style="{StaticResource EffectButton}"
+                                                                FontSize="10" Padding="6,2" Margin="4,0,0,0"
+                                                                Click="BrowseFile_Click" Tag="{Binding}"/>
+                                                    </Grid>
+
+                                                    <!-- Reset Button (shown when modified) -->
+                                                    <Button Grid.Column="2" Content="&#xE72C;"
+                                                            Style="{StaticResource IconButton}"
+                                                            Width="20" Height="20" FontSize="10"
+                                                            ToolTip="Reset to Default"
+                                                            Click="ResetParameter_Click" Tag="{Binding}"
+                                                            Visibility="{Binding IsModified, Converter={StaticResource BoolToVis}}"/>
                                                 </Grid>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>

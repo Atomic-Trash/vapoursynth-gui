@@ -112,8 +112,9 @@
 
                 <!-- Right Side Controls -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="15,8">
-                    <Button Content="Settings" Style="{StaticResource SecondaryButton}" Padding="12,6"
-                            ToolTip="Application settings and preferences"/>
+                    <RadioButton x:Name="NavSettings" Content="Settings" Style="{StaticResource NavButton}"
+                                 GroupName="PageNav" Checked="NavButton_Checked"
+                                 ToolTip="Application settings and preferences"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -125,6 +126,7 @@
             <pages:RestorePage x:Name="PageRestore" Visibility="Visible"/>
             <pages:ColorPage x:Name="PageColor" Visibility="Collapsed"/>
             <pages:ExportPage x:Name="PageExport" Visibility="Collapsed"/>
+            <pages:SettingsPage x:Name="PageSettings" Visibility="Collapsed"/>
 
             <!-- Toast Notification Overlay -->
             <controls:ToastNotification x:Name="ToastNotification"
