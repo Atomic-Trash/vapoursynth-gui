@@ -12,7 +12,7 @@
 
         <!-- Title -->
         <TextBlock x:Name="TitleText" Grid.Row="0" Text="Lift"
-                   HorizontalAlignment="Center" Foreground="#AAA"
+                   HorizontalAlignment="Center" Foreground="#DDD"
                    FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"/>
 
         <!-- Color Wheel -->
@@ -21,7 +21,8 @@
                     MouseLeftButtonDown="WheelCanvas_MouseLeftButtonDown"
                     MouseLeftButtonUp="WheelCanvas_MouseLeftButtonUp"
                     MouseMove="WheelCanvas_MouseMove"
-                    MouseLeave="WheelCanvas_MouseLeave">
+                    MouseLeave="WheelCanvas_MouseLeave"
+                    ToolTip="Drag to select color tint">
 
                 <!-- Wheel Background (drawn in code) -->
                 <Ellipse x:Name="WheelEllipse" Width="120" Height="120"
@@ -39,8 +40,8 @@
                          Canvas.Left="2" Canvas.Top="2" Opacity="0.7" IsHitTestVisible="False"/>
 
                 <!-- Center crosshair -->
-                <Line X1="60" Y1="55" X2="60" Y2="65" Stroke="#777" StrokeThickness="2"/>
-                <Line X1="55" Y1="60" X2="65" Y2="60" Stroke="#777" StrokeThickness="2"/>
+                <Line X1="60" Y1="55" X2="60" Y2="65" Stroke="#888" StrokeThickness="2"/>
+                <Line X1="55" Y1="60" X2="65" Y2="60" Stroke="#888" StrokeThickness="2"/>
 
                 <!-- Position indicator -->
                 <Ellipse x:Name="PositionIndicator" Width="14" Height="14"
@@ -63,9 +64,10 @@
             <Slider x:Name="MasterSlider" Grid.Column="0"
                     Minimum="-1" Maximum="1" Value="0"
                     VerticalAlignment="Center"
-                    ValueChanged="MasterSlider_ValueChanged"/>
+                    ValueChanged="MasterSlider_ValueChanged"
+                    ToolTip="Adjust overall brightness (-1 to +1)"/>
             <TextBlock x:Name="MasterValueText" Grid.Column="1"
-                       Text="0.00" Foreground="#AAA" FontSize="9"
+                       Text="0.00" Foreground="#CCC" FontSize="10"
                        HorizontalAlignment="Right" VerticalAlignment="Center"/>
         </Grid>
     </Grid>
