@@ -185,7 +185,7 @@
         <!-- Track Headers Area -->
         <Border Grid.Row="0" Grid.Column="0" Background="#2A2A2A" BorderBrush="#333" BorderThickness="0,0,1,1">
             <Grid>
-                <TextBlock Text="Tracks" Foreground="#888" FontSize="11"
+                <TextBlock Text="Tracks" Foreground="#AAA" FontSize="11"
                            VerticalAlignment="Center" Margin="10,0"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,0">
                     <Button x:Name="AddVideoTrackButton" Content="V+" ToolTip="Add Video Track"
@@ -357,13 +357,14 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="Zoom:" Foreground="#888" FontSize="11"
+                <TextBlock Grid.Column="0" Text="Zoom:" Foreground="#AAA" FontSize="11"
                            VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <Slider Grid.Column="1" x:Name="ZoomSlider" Minimum="0.1" Maximum="5" Value="1"
-                        VerticalAlignment="Center" ValueChanged="ZoomSlider_ValueChanged"/>
+                        VerticalAlignment="Center" ValueChanged="ZoomSlider_ValueChanged"
+                        ToolTip="Timeline zoom level"/>
 
                 <StackPanel Grid.Column="3" Orientation="Horizontal">
-                    <TextBlock Text="Duration:" Foreground="#666" FontSize="10"
+                    <TextBlock Text="Duration:" Foreground="#999" FontSize="10"
                                VerticalAlignment="Center" Margin="0,0,5,0"/>
                     <TextBlock x:Name="DurationText" Text="00:00:00:00" Foreground="#AAA" FontSize="10"
                                VerticalAlignment="Center" FontFamily="Consolas"/>

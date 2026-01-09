@@ -197,7 +197,7 @@ public partial class TimelineControl : UserControl
                 {
                     Text = timecode,
                     Foreground = new SolidColorBrush(Color.FromRgb(0xAA, 0xAA, 0xAA)),
-                    FontSize = 9,
+                    FontSize = 10,
                     FontFamily = new FontFamily("Consolas")
                 };
                 Canvas.SetLeft(text, x + 3);
