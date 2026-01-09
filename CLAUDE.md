@@ -15,18 +15,26 @@ This project creates a portable VapourSynth distribution for Windows 11. It bund
 
 ```
 vapoursynth-portable/
-├── scripts/          # Build scripts (PowerShell)
-│   ├── Build-Portable.ps1      # Main build script
-│   └── Check-Dependencies.ps1  # Dependency analyzer
-├── config/           # Configuration files
+├── scripts/                    # All scripts organized by purpose
+│   ├── build/
+│   │   ├── Build-Portable.ps1  # Main build script
+│   │   └── Check-Updates.ps1   # Dependency checker
+│   ├── util/
+│   │   ├── VSPortable.ps1      # PowerShell launcher
+│   │   ├── install-mpv.ps1     # MPV player installer
+│   │   └── Launch-VapourSynth.bat  # Batch launcher
+│   ├── screenshots/            # Screenshot automation
+│   └── test/                   # Test scripts
+├── src/gui/                    # WPF application source
+│   └── VapourSynthPortable/    # Main app project
+├── config/                     # Configuration files
 │   └── plugins.json            # Plugin definitions
-├── dist/             # Output distribution
-│   ├── python/       # Embedded Python
-│   ├── vapoursynth/  # VS core files
-│   ├── plugins/      # VS plugins (.dll)
-│   └── scripts/      # Python scripts (.vpy)
-├── Launch-VapourSynth.bat      # Batch launcher
-└── VSPortable.ps1              # PowerShell launcher
+├── dist/                       # Output distribution
+│   ├── python/                 # Embedded Python
+│   ├── vapoursynth/            # VS core files
+│   ├── plugins/                # VS plugins (.dll)
+│   └── scripts/                # Python scripts (.vpy)
+└── docs/                       # Documentation
 ```
 
 ## Common Tasks
@@ -45,7 +53,7 @@ vapoursynth-portable/
      "files": ["plugin.dll"]
    }
    ```
-3. Run `.\scripts\Build-Portable.ps1 -Components plugins`
+3. Run `.\scripts\build\Build-Portable.ps1 -Components plugins`
 
 ### Creating VapourSynth Scripts
 
@@ -84,7 +92,7 @@ clip.set_output()
 
 ### Plugin Won't Load
 1. Check architecture (must be x64)
-2. Run `Check-Dependencies.ps1`
+2. Run `.\scripts\build\Check-Updates.ps1`
 3. Ensure VC++ Runtime is installed
 4. Check VapourSynth version compatibility
 

@@ -7,7 +7,7 @@ Instructions:
    - `full` - All available plugins
 
 2. Run the build script:
-   `powershell -ExecutionPolicy Bypass -File Build-Portable.ps1 -PluginSet <set>`
+   `powershell -ExecutionPolicy Bypass -File scripts/build/Build-Portable.ps1 -PluginSet <set>`
 
 3. If user specifies `--clean`, add `-Clean` flag to rebuild from scratch
 

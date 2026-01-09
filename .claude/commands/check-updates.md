@@ -5,7 +5,7 @@ Instructions:
    `dotnet list src/gui/VapourSynthPortable.sln package --outdated`
 
 2. Check VapourSynth plugins (if Check-Updates.ps1 exists):
-   `powershell -ExecutionPolicy Bypass -File Check-Updates.ps1`
+   `powershell -ExecutionPolicy Bypass -File scripts/build/Check-Updates.ps1`
 
 3. Summarize available updates with current vs latest versions
 

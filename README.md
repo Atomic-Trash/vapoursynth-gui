@@ -82,7 +82,7 @@ dotnet run
 
 ```powershell
 # Build VapourSynth + plugins distribution
-.\Build-Portable.ps1 -PluginSet standard
+.\scripts\build\Build-Portable.ps1 -PluginSet standard
 
 # Run the application
 cd src/gui/VapourSynthPortable
@@ -131,8 +131,12 @@ vapoursynth-gui/
 │   ├── ViewModels/         # MVVM view models
 │   ├── Models/             # Data models
 │   └── Services/           # Backend services
+├── scripts/                # All scripts organized by purpose
+│   ├── build/              # Build & update scripts
+│   ├── util/               # Utility & launcher scripts
+│   ├── screenshots/        # Screenshot automation
+│   └── test/               # Test scripts
 ├── templates/              # VapourSynth script templates
-├── Build-Portable.ps1      # Distribution builder
 └── plugins.json            # Plugin definitions
 ```
 

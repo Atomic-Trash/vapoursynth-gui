@@ -358,7 +358,7 @@ public partial class ExportViewModel : ObservableObject, IDisposable
             if (!IsVapourSynthAvailable)
             {
                 StatusText = "VapourSynth not available. Please build the distribution first.";
-                AppendLog("Error: VSPipe not found. Run Build-Portable.ps1 to set up VapourSynth.");
+                AppendLog("Error: VSPipe not found. Run scripts/build/Build-Portable.ps1 to set up VapourSynth.");
                 return;
             }
         }

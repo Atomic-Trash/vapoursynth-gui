@@ -22,9 +22,16 @@ public class BuildService
         var dir = new DirectoryInfo(startDir);
         for (int i = 0; i < 10 && dir != null; i++)
         {
+            // Check root directory first (legacy location)
             var scriptPath = Path.Combine(dir.FullName, scriptName);
             if (File.Exists(scriptPath))
                 return scriptPath;
+
+            // Check scripts/build/ subdirectory (new organized location)
+            scriptPath = Path.Combine(dir.FullName, "scripts", "build", scriptName);
+            if (File.Exists(scriptPath))
+                return scriptPath;
+
             dir = dir.Parent;
         }
         return null;
