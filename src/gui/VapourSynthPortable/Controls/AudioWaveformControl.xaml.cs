@@ -250,7 +250,7 @@ public partial class AudioWaveformControl : UserControl
             Y1 = centerY,
             X2 = width,
             Y2 = centerY,
-            Stroke = new SolidColorBrush(Color.FromArgb(30, 255, 255, 255)),
+            Stroke = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)),
             StrokeThickness = 1
         };
         WaveformCanvas.Children.Add(centerLine);

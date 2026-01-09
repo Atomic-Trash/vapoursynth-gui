@@ -4,5 +4,6 @@
              x:Name="WaveformRoot">
 
     <Canvas x:Name="WaveformCanvas" ClipToBounds="True"
-            SizeChanged="WaveformCanvas_SizeChanged"/>
+            SizeChanged="WaveformCanvas_SizeChanged"
+            ToolTip="Audio waveform visualization"/>
 </UserControl>
