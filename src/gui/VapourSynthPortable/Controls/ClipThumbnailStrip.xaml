@@ -1,0 +1,10 @@
+<UserControl x:Class="VapourSynthPortable.Controls.ClipThumbnailStrip"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="ThumbnailStripRoot"
+             Background="Transparent"
+             ClipToBounds="True">
+
+    <Canvas x:Name="ThumbnailCanvas" ClipToBounds="True"
+            SizeChanged="ThumbnailCanvas_SizeChanged"/>
+</UserControl>

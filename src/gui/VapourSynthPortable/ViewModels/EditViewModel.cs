@@ -17,6 +17,9 @@ public partial class EditViewModel : ObservableObject, IDisposable
     private readonly FrameCacheService _frameCache;
     private readonly UndoService _undoService;
     private CancellationTokenSource? _framePrefetchCts;
+    private CancellationTokenSource? _scrubDebounceCts;
+    private DateTime _lastScrubUpdate = DateTime.MinValue;
+    private const int ScrubDebounceMs = 50; // Debounce rapid scrubbing
     private bool _disposed;
 
     [ObservableProperty]
@@ -180,7 +183,7 @@ public partial class EditViewModel : ObservableObject, IDisposable
     private async Task UpdateScrubPreviewAsync()
     {
         var clip = Timeline.GetClipAtFrame(Timeline.PlayheadFrame);
-        if (clip == null)
+        if (clip == null || clip.TrackType != TrackType.Video)
         {
             ScrubPreviewFrame = null;
             return;
@@ -189,23 +192,44 @@ public partial class EditViewModel : ObservableObject, IDisposable
         // Calculate frame position within the source clip
         var frameInClip = Timeline.PlayheadFrame - clip.StartFrame + clip.SourceInFrame;
 
+        // Try to get from cache first (synchronous, no debounce needed)
+        var cachedFrame = _frameCache.TryGetFrame(clip.SourcePath, frameInClip, 480, 270);
+        if (cachedFrame != null)
+        {
+            ScrubPreviewFrame = cachedFrame;
+            _lastScrubUpdate = DateTime.UtcNow;
+            return;
+        }
+
+        // Debounce async extraction during rapid scrubbing
+        var now = DateTime.UtcNow;
+        if ((now - _lastScrubUpdate).TotalMilliseconds < ScrubDebounceMs)
+        {
+            // Cancel previous debounce and start new one
+            _scrubDebounceCts?.Cancel();
+            _scrubDebounceCts = new CancellationTokenSource();
+
+            try
+            {
+                await Task.Delay(ScrubDebounceMs, _scrubDebounceCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return; // New scrub position cancelled this
+            }
+        }
+
+        _lastScrubUpdate = DateTime.UtcNow;
+
         try
         {
-            // Try to get from cache first (synchronous)
-            var cachedFrame = _frameCache.TryGetFrame(clip.SourcePath, frameInClip, 320, 180);
-            if (cachedFrame != null)
-            {
-                ScrubPreviewFrame = cachedFrame;
-                return;
-            }
-
-            // Extract frame asynchronously
+            // Extract frame asynchronously at higher resolution for preview
             var frame = await _frameCache.GetFrameAsync(
                 clip.SourcePath,
                 frameInClip,
                 Timeline.FrameRate,
-                width: 320,
-                height: 180,
+                width: 480,
+                height: 270,
                 ct: _framePrefetchCts?.Token ?? CancellationToken.None);
 
             if (frame != null)
@@ -1069,6 +1093,8 @@ public partial class EditViewModel : ObservableObject, IDisposable
 
         _framePrefetchCts?.Cancel();
         _framePrefetchCts?.Dispose();
+        _scrubDebounceCts?.Cancel();
+        _scrubDebounceCts?.Dispose();
         _frameCache.Dispose();
         _undoService.Dispose();
     }
