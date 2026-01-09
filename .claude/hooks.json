@@ -12,6 +12,16 @@
         "matcher": "Bash(git push:*)",
         "command": "echo Consider creating a PR with /pr if on a feature branch",
         "description": "Remind about PR creation after push"
+      },
+      {
+        "matcher": "Edit(**/Pages/*.xaml:*)",
+        "command": "echo Reminder: Run /analyze-ui to check WCAG contrast after UI changes",
+        "description": "Accessibility reminder for UI changes"
+      },
+      {
+        "matcher": "Edit(**/Services/*.cs:*)",
+        "command": "echo Reminder: Consider adding unit tests for service changes",
+        "description": "Test reminder for service changes"
       }
     ]
   }
