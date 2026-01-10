@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using VapourSynthPortable.Helpers;
 using VapourSynthPortable.Models;
 
 namespace VapourSynthPortable.Services;
@@ -480,32 +481,18 @@ public class PluginService : IPluginService
     {
         var packages = new List<InstalledPythonPackage>();
 
-        if (!File.Exists(_pythonPath))
+        if (!ProcessHelper.Paths.IsPythonAvailable)
         {
-            _logger.LogWarning("Python not found at {PythonPath}", _pythonPath);
+            _logger.LogWarning("Python not found at {PythonPath}", ProcessHelper.Paths.PythonExePath);
             return packages;
         }
 
         try
         {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = _pythonPath,
-                Arguments = "-m pip list --format=json",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-                WorkingDirectory = _projectRoot
-            };
+            var startInfo = ProcessHelper.CreatePythonProcess("-m pip list --format=json");
+            var (exitCode, output, _) = await ProcessHelper.RunProcessAsync(startInfo, cancellationToken);
 
-            using var process = new Process { StartInfo = startInfo };
-            process.Start();
-
-            var output = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-            await process.WaitForExitAsync(cancellationToken);
-
-            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
+            if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
             {
                 // Parse JSON output from pip list
                 var pipPackages = JsonConvert.DeserializeObject<List<PipPackage>>(output);
