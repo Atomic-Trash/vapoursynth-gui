@@ -440,8 +440,14 @@
                                             </Image.Clip>
                                         </Image>
                                         <!-- Wipe line indicator -->
-                                        <Border Width="2" Background="#0E639C" HorizontalAlignment="Left"
-                                                Margin="{Binding WipePosition, Converter={StaticResource WipeLineMarginConverter}, ConverterParameter={x:Reference WipeContainer}}"/>
+                                        <Border Width="2" Background="#0E639C" HorizontalAlignment="Left">
+                                            <Border.Margin>
+                                                <MultiBinding Converter="{StaticResource WipeLineMarginConverter}">
+                                                    <Binding Path="ActualWidth" ElementName="WipeContainer"/>
+                                                    <Binding Path="WipePosition"/>
+                                                </MultiBinding>
+                                            </Border.Margin>
+                                        </Border>
                                         <Grid VerticalAlignment="Bottom" Margin="20,0,20,20">
                                             <TextBlock Text="ORIGINAL" Foreground="#9E9E9E" FontSize="9" FontWeight="Bold"
                                                        HorizontalAlignment="Left"/>

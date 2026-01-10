@@ -502,26 +502,23 @@ public class WipeRectConverter : IMultiValueConverter
 }
 
 /// <summary>
-/// Converts wipe position to margin for wipe line indicator
+/// Converts wipe position and container width to margin for wipe line indicator
 /// </summary>
-public class WipeLineMarginConverter : IValueConverter
+public class WipeLineMarginConverter : IMultiValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is double position && parameter is FrameworkElement container)
+        if (values.Length >= 2 &&
+            values[0] is double width &&
+            values[1] is double position)
         {
-            var x = container.ActualWidth * position;
+            var x = width * position;
             return new Thickness(x, 0, 0, 0);
-        }
-        if (value is double pos)
-        {
-            // Fallback: assume reasonable width
-            return new Thickness(pos * 500, 0, 0, 0);
         }
         return new Thickness(0);
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
     }
