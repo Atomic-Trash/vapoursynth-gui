@@ -4,7 +4,8 @@
 
 .DESCRIPTION
     Downloads and packages VapourSynth, Python, and plugins into a
-    self-contained portable distribution.
+    self-contained portable distribution. Supports SHA256 checksum
+    verification for downloaded files.
 
 .PARAMETER Clean
     Remove existing build artifacts before building.
@@ -16,11 +17,27 @@
 .PARAMETER PluginSet
     Plugin set to install: minimal, standard (default), full
 
+.PARAMETER UpdateChecksums
+    After building, update config/checksums.json with SHA256 hashes
+    of all downloaded files.
+
+.PARAMETER SkipChecksums
+    Skip checksum verification during download. Use for development
+    or when checksums are not yet computed.
+
 .EXAMPLE
     .\Build-Portable.ps1
 
 .EXAMPLE
     .\Build-Portable.ps1 -Clean -PluginSet full
+
+.EXAMPLE
+    .\Build-Portable.ps1 -UpdateChecksums
+    Downloads files and updates checksums.json with computed hashes.
+
+.EXAMPLE
+    .\Build-Portable.ps1 -SkipChecksums
+    Builds without verifying checksums (for development).
 #>
 
 [CmdletBinding()]
@@ -28,7 +45,9 @@ param(
     [switch]$Clean,
     [string]$Components = "all",
     [ValidateSet("minimal", "standard", "full")]
-    [string]$PluginSet = "standard"
+    [string]$PluginSet = "standard",
+    [switch]$UpdateChecksums,
+    [switch]$SkipChecksums
 )
 
 # Configuration
@@ -63,6 +82,94 @@ $script:Config = @{
     DistDir = Join-Path $projectRoot "dist"
     PythonUrl = "https://www.python.org/ftp/python/{0}/python-{0}-embed-amd64.zip"
     VapourSynthUrl = "https://github.com/vapoursynth/vapoursynth/releases/download/{0}/VapourSynth64-Portable-{0}.zip"
+}
+
+# Load checksums from config
+$checksumsFile = Join-Path $projectRoot "config\checksums.json"
+$script:Checksums = @{}
+if (Test-Path $checksumsFile) {
+    $checksumConfig = Get-Content $checksumsFile | ConvertFrom-Json
+    # Flatten checksums into a lookup table by filename
+    foreach ($prop in $checksumConfig.core.PSObject.Properties) {
+        $script:Checksums[$prop.Name] = $prop.Value.sha256
+    }
+    foreach ($prop in $checksumConfig.plugins.PSObject.Properties) {
+        $script:Checksums[$prop.Name] = $prop.Value.sha256
+    }
+}
+
+# Checksum verification functions
+function Test-FileChecksum {
+    param(
+        [string]$Path,
+        [string]$ExpectedHash
+    )
+
+    if (-not (Test-Path $Path)) {
+        return $false
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ExpectedHash) -or $ExpectedHash -eq "TO_BE_COMPUTED") {
+        return $true  # Skip verification if no hash available
+    }
+
+    $actualHash = (Get-FileHash -Path $Path -Algorithm SHA256).Hash
+    return $actualHash -eq $ExpectedHash.ToUpper()
+}
+
+function Get-ExpectedChecksum {
+    param([string]$Filename)
+
+    if ($script:Checksums.ContainsKey($Filename)) {
+        return $script:Checksums[$Filename]
+    }
+    return $null
+}
+
+function Update-Checksums {
+    Write-Step "Updating checksums for downloaded files"
+
+    $checksumsPath = Join-Path $script:Config.RootDir "config\checksums.json"
+    $checksumConfig = Get-Content $checksumsPath | ConvertFrom-Json
+    $updated = $false
+
+    # Update core checksums
+    foreach ($prop in $checksumConfig.core.PSObject.Properties) {
+        $filename = $prop.Name
+        $filepath = Join-Path $script:Config.BuildDir $filename
+
+        if (Test-Path $filepath) {
+            $hash = (Get-FileHash -Path $filepath -Algorithm SHA256).Hash
+            if ($prop.Value.sha256 -ne $hash) {
+                $prop.Value.sha256 = $hash
+                Write-Success "Updated: $filename"
+                $updated = $true
+            }
+        }
+    }
+
+    # Update plugin checksums
+    foreach ($prop in $checksumConfig.plugins.PSObject.Properties) {
+        $filename = $prop.Name
+        $filepath = Join-Path $script:Config.BuildDir $filename
+
+        if (Test-Path $filepath) {
+            $hash = (Get-FileHash -Path $filepath -Algorithm SHA256).Hash
+            if ($prop.Value.sha256 -ne $hash) {
+                $prop.Value.sha256 = $hash
+                Write-Success "Updated: $filename"
+                $updated = $true
+            }
+        }
+    }
+
+    if ($updated) {
+        $checksumConfig.lastUpdated = (Get-Date -Format "yyyy-MM-dd")
+        $checksumConfig | ConvertTo-Json -Depth 5 | Set-Content -Path $checksumsPath
+        Write-Success "Checksums file updated"
+    } else {
+        Write-BuildWarning "No new checksums to update"
+    }
 }
 
 # Logging functions
@@ -112,18 +219,49 @@ function Get-FileFromUrl {
     param(
         [string]$Url,
         [string]$Destination,
-        [string]$Description
+        [string]$Description,
+        [switch]$VerifyChecksum
     )
 
+    $filename = [System.IO.Path]::GetFileName($Destination)
+    $expectedHash = Get-ExpectedChecksum -Filename $filename
+
     if (Test-Path $Destination) {
-        Write-Success "$Description already downloaded"
-        return $true
+        # Verify existing file if checksums enabled
+        if ($VerifyChecksum -and -not $SkipChecksums -and $expectedHash -and $expectedHash -ne "TO_BE_COMPUTED") {
+            if (-not (Test-FileChecksum -Path $Destination -ExpectedHash $expectedHash)) {
+                Write-BuildWarning "$Description exists but checksum mismatch, re-downloading..."
+                Remove-Item $Destination -Force
+            } else {
+                Write-Success "$Description already downloaded (checksum verified)"
+                return $true
+            }
+        } else {
+            Write-Success "$Description already downloaded"
+            return $true
+        }
     }
 
     Write-Host "  Downloading: $Description..." -NoNewline
     try {
         Invoke-WebRequest -Uri $Url -OutFile $Destination -UseBasicParsing
         Write-Host " Done" -ForegroundColor Green
+
+        # Verify checksum after download
+        if ($VerifyChecksum -and -not $SkipChecksums -and $expectedHash -and $expectedHash -ne "TO_BE_COMPUTED") {
+            Write-Host "  Verifying checksum..." -NoNewline
+            if (Test-FileChecksum -Path $Destination -ExpectedHash $expectedHash) {
+                Write-Host " OK" -ForegroundColor Green
+            } else {
+                Write-Host " FAILED" -ForegroundColor Red
+                $actualHash = (Get-FileHash -Path $Destination -Algorithm SHA256).Hash
+                Write-BuildError "Checksum mismatch for $filename"
+                Write-BuildError "Expected: $expectedHash"
+                Write-BuildError "Actual:   $actualHash"
+                throw "Checksum verification failed for $Description"
+            }
+        }
+
         return $true
     }
     catch {
@@ -151,11 +289,12 @@ function Expand-ArchivePortable {
 function Install-Python {
     Write-Step "Installing Embedded Python $($script:Config.PythonVersion)"
 
-    $pythonZip = Join-Path $script:Config.BuildDir "python-embed.zip"
+    $pythonFilename = "python-$($script:Config.PythonVersion)-embed-amd64.zip"
+    $pythonZip = Join-Path $script:Config.BuildDir $pythonFilename
     $pythonDir = Join-Path $script:Config.DistDir "python"
     $url = $script:Config.PythonUrl -f $script:Config.PythonVersion
 
-    if (-not (Get-FileFromUrl -Url $url -Destination $pythonZip -Description "Python Embedded")) {
+    if (-not (Get-FileFromUrl -Url $url -Destination $pythonZip -Description "Python Embedded" -VerifyChecksum)) {
         throw "Failed to download Python"
     }
 
@@ -185,11 +324,12 @@ function Install-Python {
 function Install-VapourSynth {
     Write-Step "Installing VapourSynth $($script:Config.VapourSynthVersion)"
 
-    $vsZip = Join-Path $script:Config.BuildDir "vapoursynth-portable.zip"
+    $vsFilename = "VapourSynth64-Portable-$($script:Config.VapourSynthVersion).zip"
+    $vsZip = Join-Path $script:Config.BuildDir $vsFilename
     $vsDir = Join-Path $script:Config.DistDir "vapoursynth"
     $url = $script:Config.VapourSynthUrl -f $script:Config.VapourSynthVersion
 
-    if (-not (Get-FileFromUrl -Url $url -Destination $vsZip -Description "VapourSynth Portable")) {
+    if (-not (Get-FileFromUrl -Url $url -Destination $vsZip -Description "VapourSynth Portable" -VerifyChecksum)) {
         throw "Failed to download VapourSynth"
     }
 
@@ -220,17 +360,14 @@ function Install-Plugins {
         if ($PluginSet -eq "minimal" -and $plugin.set -ne "minimal") { continue }
         if ($PluginSet -eq "standard" -and $plugin.set -eq "full") { continue }
 
-        Write-Host "  Installing: $($plugin.name)..." -NoNewline
-
         try {
-            # Get file extension from URL
+            # Get actual filename from URL for checksum verification
             $urlPath = [System.Uri]::new($plugin.url).AbsolutePath
-            $ext = [System.IO.Path]::GetExtension($urlPath)
-            if (-not $ext) { $ext = ".zip" }
-            $tempFile = Join-Path $script:Config.BuildDir "$($plugin.name)$ext"
+            $filename = [System.IO.Path]::GetFileName($urlPath)
+            $tempFile = Join-Path $script:Config.BuildDir $filename
 
-            if (-not (Test-Path $tempFile)) {
-                Invoke-WebRequest -Uri $plugin.url -OutFile $tempFile -UseBasicParsing
+            if (-not (Get-FileFromUrl -Url $plugin.url -Destination $tempFile -Description $plugin.name -VerifyChecksum)) {
+                throw "Download failed"
             }
 
             # Extract to temp and copy DLLs
@@ -242,10 +379,9 @@ function Install-Plugins {
                 Where-Object { $_.Name -match "x64|64" -or $_.Directory.Name -match "x64|64" -or $_.Directory.Name -eq $plugin.name } |
                 Copy-Item -Destination $pluginDir -Force
 
-            Write-Host " Done" -ForegroundColor Green
+            Write-Success "Installed $($plugin.name)"
         }
         catch {
-            Write-Host " Failed" -ForegroundColor Red
             Write-BuildWarning "Could not install $($plugin.name): $($_.Exception.Message)"
         }
     }
@@ -487,10 +623,19 @@ function Start-Build {
         }
     }
 
+    # Update checksums if requested
+    if ($UpdateChecksums) {
+        Update-Checksums
+    }
+
     Write-Host "`n========================================" -ForegroundColor Green
     Write-Host "   Build Complete!" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
     Write-Host "`nRun .\Launch-VapourSynth.bat to start`n" -ForegroundColor Cyan
+
+    if ($SkipChecksums) {
+        Write-BuildWarning "Checksum verification was skipped"
+    }
 }
 
 # Entry point

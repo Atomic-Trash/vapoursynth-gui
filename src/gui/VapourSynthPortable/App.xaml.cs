@@ -35,6 +35,51 @@ public partial class App : Application
         CrashReporter.CleanupOldReports(10);
 
         base.OnStartup(e);
+
+        // Check dependencies after window is shown (non-blocking)
+        _ = CheckDependenciesOnStartupAsync();
+    }
+
+    private async Task CheckDependenciesOnStartupAsync()
+    {
+        var logger = LoggingService.GetLogger<App>();
+
+        try
+        {
+            var dependencyService = Services.GetService<IDependencyStatusService>();
+            if (dependencyService == null)
+            {
+                logger.LogWarning("DependencyStatusService not available");
+                return;
+            }
+
+            var status = await dependencyService.CheckDependenciesAsync();
+
+            if (!status.AllRequiredAvailable)
+            {
+                var missing = status.GetMissingSummary();
+                logger.LogWarning("Missing required dependencies: {Missing}", missing);
+
+                // Show toast notification about missing dependencies
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    ToastService.Instance.ShowWarning(
+                        "Some features may be unavailable",
+                        missing ?? "Required dependencies not found");
+                });
+            }
+            else
+            {
+                logger.LogInformation(
+                    "All dependencies available. VS: {VSVersion}, FFmpeg: {FFmpegVersion}",
+                    status.VapourSynth.Version,
+                    status.FFmpeg.Version);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking dependencies on startup");
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -114,6 +159,8 @@ public partial class App : Application
         services.AddSingleton<IPluginService, PluginService>();
         services.AddSingleton<IBuildService, BuildService>();
         services.AddSingleton<IVapourSynthService, VapourSynthService>();
+        services.AddSingleton<INavigationService, NavigationService>();
+        services.AddSingleton<IDependencyStatusService, DependencyStatusService>();
         services.AddSingleton<ThumbnailService>();
         services.AddSingleton<UndoService>();
 

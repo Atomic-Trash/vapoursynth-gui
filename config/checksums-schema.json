@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "checksums-schema.json",
+  "title": "VapourSynth Portable Checksums",
+  "description": "Schema for SHA256 checksum verification",
+  "type": "object",
+  "required": ["core", "plugins"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of this configuration file"
+    },
+    "lastUpdated": {
+      "type": "string",
+      "description": "Date when checksums were last updated",
+      "format": "date"
+    },
+    "core": {
+      "type": "object",
+      "description": "Checksums for core components (Python, VapourSynth)",
+      "additionalProperties": {
+        "$ref": "#/definitions/checksumEntry"
+      }
+    },
+    "plugins": {
+      "type": "object",
+      "description": "Checksums for plugin archives",
+      "additionalProperties": {
+        "$ref": "#/definitions/checksumEntry"
+      }
+    }
+  },
+  "definitions": {
+    "checksumEntry": {
+      "type": "object",
+      "required": ["url", "sha256"],
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "Download URL for verification",
+          "format": "uri"
+        },
+        "sha256": {
+          "type": "string",
+          "description": "SHA256 hash (64 hex characters or TO_BE_COMPUTED)",
+          "pattern": "^([A-Fa-f0-9]{64}|TO_BE_COMPUTED)$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,4 +1,5 @@
 using System.IO;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using VapourSynthPortable.Models;
 
@@ -9,9 +10,18 @@ public class PluginService : IPluginService
     private readonly string _configPath;
     private readonly string _enabledPluginsPath;
     private readonly string _pluginsDir;
+    private readonly ILogger<PluginService> _logger;
+
+    // Lazy loading cache
+    private List<Plugin>? _cachedPlugins;
+    private List<PythonPackage>? _cachedPythonPackages;
+    private DateTime _cacheTimestamp;
+    private static readonly TimeSpan CacheExpiry = TimeSpan.FromMinutes(5);
+    private readonly object _cacheLock = new();
 
     public PluginService()
     {
+        _logger = LoggingService.GetLogger<PluginService>();
         // Look for plugins.json in parent directories
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
         _configPath = FindConfig(baseDir, "plugins.json") ?? "";
@@ -52,7 +62,7 @@ public class PluginService : IPluginService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to load enabled plugins from {_enabledPluginsPath}: {ex.Message}");
+            _logger.LogWarning(ex, "Failed to load enabled plugins from {EnabledPluginsPath}", _enabledPluginsPath);
         }
 
         // Default: all plugins enabled
@@ -91,39 +101,65 @@ public class PluginService : IPluginService
 
     public List<Plugin> LoadPlugins()
     {
-        if (string.IsNullOrEmpty(_configPath) || !File.Exists(_configPath))
+        lock (_cacheLock)
         {
-            return new List<Plugin>();
-        }
+            // Return cached data if still valid
+            if (_cachedPlugins != null && DateTime.UtcNow - _cacheTimestamp < CacheExpiry)
+            {
+                _logger.LogDebug("Returning cached plugins ({Count} plugins)", _cachedPlugins.Count);
+                return _cachedPlugins;
+            }
 
-        try
-        {
-            var json = File.ReadAllText(_configPath);
-            var config = JsonConvert.DeserializeObject<PluginConfig>(json);
-            return config?.Plugins ?? new List<Plugin>();
-        }
-        catch (Exception)
-        {
-            return new List<Plugin>();
+            if (string.IsNullOrEmpty(_configPath) || !File.Exists(_configPath))
+            {
+                return new List<Plugin>();
+            }
+
+            try
+            {
+                _logger.LogDebug("Loading plugins from {ConfigPath}", _configPath);
+                var json = File.ReadAllText(_configPath);
+                var config = JsonConvert.DeserializeObject<PluginConfig>(json);
+                _cachedPlugins = config?.Plugins ?? new List<Plugin>();
+                _cachedPythonPackages = config?.PythonPackages ?? new List<PythonPackage>();
+                _cacheTimestamp = DateTime.UtcNow;
+                _logger.LogDebug("Loaded {Count} plugins", _cachedPlugins.Count);
+                return _cachedPlugins;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load plugins from {ConfigPath}", _configPath);
+                return new List<Plugin>();
+            }
         }
     }
 
     public List<PythonPackage> LoadPythonPackages()
     {
-        if (string.IsNullOrEmpty(_configPath) || !File.Exists(_configPath))
+        lock (_cacheLock)
         {
-            return new List<PythonPackage>();
-        }
+            // Return cached data if still valid
+            if (_cachedPythonPackages != null && DateTime.UtcNow - _cacheTimestamp < CacheExpiry)
+            {
+                return _cachedPythonPackages;
+            }
 
-        try
-        {
-            var json = File.ReadAllText(_configPath);
-            var config = JsonConvert.DeserializeObject<PluginConfig>(json);
-            return config?.PythonPackages ?? new List<PythonPackage>();
+            // LoadPlugins will also populate _cachedPythonPackages
+            LoadPlugins();
+            return _cachedPythonPackages ?? new List<PythonPackage>();
         }
-        catch (Exception)
+    }
+
+    /// <summary>
+    /// Invalidates the plugin cache, forcing a reload on next access
+    /// </summary>
+    public void InvalidateCache()
+    {
+        lock (_cacheLock)
         {
-            return new List<PythonPackage>();
+            _cachedPlugins = null;
+            _cachedPythonPackages = null;
+            _logger.LogDebug("Plugin cache invalidated");
         }
     }
 
@@ -132,15 +168,21 @@ public class PluginService : IPluginService
         if (string.IsNullOrEmpty(_configPath))
             throw new InvalidOperationException("Config path not found");
 
+        var pythonPackages = LoadPythonPackages();
+
         var config = new PluginConfig
         {
             Version = "1.0.0",
             Description = "VapourSynth plugins configuration for portable distribution",
             Plugins = plugins,
-            PythonPackages = LoadPythonPackages()
+            PythonPackages = pythonPackages
         };
 
         var json = JsonConvert.SerializeObject(config, Formatting.Indented);
         File.WriteAllText(_configPath, json);
+
+        // Invalidate cache after saving
+        InvalidateCache();
+        _logger.LogInformation("Saved {Count} plugins to {ConfigPath}", plugins.Count, _configPath);
     }
 }

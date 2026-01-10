@@ -10,15 +10,21 @@ namespace VapourSynthPortable.ViewModels;
 /// <summary>
 /// ViewModel for the main application window
 /// </summary>
-public partial class MainWindowViewModel : ObservableObject
+public partial class MainWindowViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly IProjectService _projectService;
     private readonly ISettingsService _settingsService;
+    private readonly INavigationService _navigationService;
 
-    public MainWindowViewModel(IProjectService projectService, ISettingsService settingsService)
+    public MainWindowViewModel(IProjectService projectService, ISettingsService settingsService, INavigationService navigationService)
     {
         _projectService = projectService;
         _settingsService = settingsService;
+        _navigationService = navigationService;
+
+        // Subscribe to navigation changes
+        _navigationService.PageChanged += OnPageChanged;
 
         // Initialize with a new project
         _currentProject = _projectService.CreateNew();
@@ -29,8 +35,16 @@ public partial class MainWindowViewModel : ObservableObject
     // Parameterless constructor for XAML designer
     public MainWindowViewModel() : this(
         App.Services?.GetService(typeof(IProjectService)) as IProjectService ?? new ProjectService(),
-        App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService())
+        App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService(),
+        App.Services?.GetService(typeof(INavigationService)) as INavigationService ?? new NavigationService())
     {
+    }
+
+    private void OnPageChanged(object? sender, PageChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(CurrentPage));
+        OnPropertyChanged(nameof(CanGoBack));
+        OnPropertyChanged(nameof(CanGoForward));
     }
 
     #region Project State
@@ -114,15 +128,62 @@ public partial class MainWindowViewModel : ObservableObject
 
     #region Navigation
 
-    [ObservableProperty]
-    private string _currentPage = "Restore";
+    /// <summary>
+    /// The current page as a string for XAML binding compatibility
+    /// </summary>
+    public string CurrentPage => _navigationService.CurrentPage.ToDisplayName();
 
     /// <summary>
-    /// Navigate to a specific page
+    /// The current page type
+    /// </summary>
+    public PageType CurrentPageType => _navigationService.CurrentPage;
+
+    /// <summary>
+    /// Whether back navigation is available
+    /// </summary>
+    public bool CanGoBack => _navigationService.CanGoBack;
+
+    /// <summary>
+    /// Whether forward navigation is available
+    /// </summary>
+    public bool CanGoForward => _navigationService.CanGoForward;
+
+    /// <summary>
+    /// Navigate to a specific page by name (for backwards compatibility)
     /// </summary>
     public void NavigateTo(string pageName)
     {
-        CurrentPage = pageName;
+        var pageType = PageTypeExtensions.ParsePageType(pageName);
+        if (pageType.HasValue)
+        {
+            _navigationService.NavigateTo(pageType.Value);
+        }
+    }
+
+    /// <summary>
+    /// Navigate to a specific page type
+    /// </summary>
+    public void NavigateTo(PageType page)
+    {
+        _navigationService.NavigateTo(page);
+    }
+
+    /// <summary>
+    /// Navigate back to the previous page
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanGoBack))]
+    private void GoBack()
+    {
+        _navigationService.GoBack();
+    }
+
+    /// <summary>
+    /// Navigate forward to the next page
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanGoForward))]
+    private void GoForward()
+    {
+        _navigationService.GoForward();
     }
 
     #endregion
@@ -321,6 +382,24 @@ public partial class MainWindowViewModel : ObservableObject
     public void SaveSettings(AppSettings settings)
     {
         _settingsService.Save(settings);
+    }
+
+    #endregion
+
+    #region IDisposable
+
+    /// <summary>
+    /// Releases resources used by the ViewModel
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        // Unsubscribe from navigation events
+        _navigationService.PageChanged -= OnPageChanged;
+
+        GC.SuppressFinalize(this);
     }
 
     #endregion

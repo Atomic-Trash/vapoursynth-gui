@@ -1,0 +1,97 @@
+{
+  "$schema": "./checksums-schema.json",
+  "description": "SHA256 checksums for downloaded files. Run Build-Portable.ps1 -UpdateChecksums to regenerate.",
+  "lastUpdated": "2024-01-09",
+  "core": {
+    "python-3.12.4-embed-amd64.zip": {
+      "url": "https://www.python.org/ftp/python/3.12.4/python-3.12.4-embed-amd64.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "VapourSynth64-Portable-R68.zip": {
+      "url": "https://github.com/vapoursynth/vapoursynth/releases/download/R68/VapourSynth64-Portable-R68.zip",
+      "sha256": "TO_BE_COMPUTED"
+    }
+  },
+  "plugins": {
+    "ffms2-5.0-msvc.7z": {
+      "url": "https://github.com/FFMS/ffms2/releases/download/5.0/ffms2-5.0-msvc.7z",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "L-SMASH-Works-r1266.0.0.0.7z": {
+      "url": "https://github.com/HomeOfAviSynthPlusEvolution/L-SMASH-Works/releases/download/1266.0.0.0/L-SMASH-Works-r1266.0.0.0.7z",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "vapoursynth-mvtools-v24-win64.7z": {
+      "url": "https://github.com/dubhater/vapoursynth-mvtools/releases/download/v24/vapoursynth-mvtools-v24-win64.7z",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "fmtconv-r30.zip": {
+      "url": "https://github.com/EleonoreMizo/fmtconv/releases/download/r30/fmtconv-r30.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "znedi3_r2.1.7z": {
+      "url": "https://github.com/sekrit-twc/znedi3/releases/download/r2.1/znedi3_r2.1.7z",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "NNEDI3CL-r8.7z": {
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-NNEDI3CL/releases/download/r8/NNEDI3CL-r8.7z",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "release-amd64.zip": {
+      "url": "https://github.com/AmusementClub/VapourSynth-BM3D/releases/download/r9.AC/release-amd64.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "VapourSynth-BM3DCUDA_x64.zip": {
+      "url": "https://github.com/WolframRhodium/VapourSynth-BM3DCUDA/releases/download/R2.16/VapourSynth-BM3DCUDA_x64.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "KNLMeansCL-v1.1.1.zip": {
+      "url": "https://github.com/Khanattila/KNLMeansCL/releases/download/v1.1.1/KNLMeansCL-v1.1.1.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "descale-win64.zip": {
+      "url": "https://github.com/Jaded-Encoding-Thaumaturgy/vapoursynth-descale/releases/download/r11/descale-win64.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "EEDI3-r8.7z": {
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3/releases/download/r8/EEDI3-r8.7z",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "DFTTest-r7.7z": {
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-DFTTest/releases/download/r7/DFTTest-r7.7z",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "VapourSynth-TCanny-r14.zip": {
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-TCanny/releases/download/r14/VapourSynth-TCanny-r14.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "VapourSynth-Bilateral-r4.zip": {
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Bilateral/releases/download/r4/VapourSynth-Bilateral-r4.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "VapourSynth-CTMF-r5.zip": {
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-CTMF/releases/download/r5/VapourSynth-CTMF-r5.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "VapourSynth-Retinex-r4.zip": {
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Retinex/releases/download/r4/VapourSynth-Retinex-r4.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "VapourSynth-CAS-r2.zip": {
+      "url": "https://github.com/HomeOfVapourSynthEvolution/VapourSynth-CAS/releases/download/r2/VapourSynth-CAS-r2.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "VSFilterMod_bin.zip": {
+      "url": "https://github.com/sorayuki/VSFilterMod/releases/download/r5.2.6/VSFilterMod_bin.zip",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "subtext-r5.7z": {
+      "url": "https://github.com/vapoursynth/subtext/releases/download/R5/subtext-r5.7z",
+      "sha256": "TO_BE_COMPUTED"
+    },
+    "remap-v1.1-win64.zip": {
+      "url": "https://github.com/Irrational-Encoding-Wizardry/vapoursynth-remap/releases/download/v1.1/remap-v1.1-win64.zip",
+      "sha256": "TO_BE_COMPUTED"
+    }
+  }
+}

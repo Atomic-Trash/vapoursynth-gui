@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using VapourSynthPortable.Models;
 using VapourSynthPortable.Services;
@@ -16,6 +17,7 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     private readonly IMediaPoolService _mediaPool;
     private readonly IVapourSynthService _vapourSynthService;
     private readonly QuickPreviewService _quickPreviewService;
+    private readonly ILogger<RestoreViewModel> _logger;
     private bool _disposed;
 
     [ObservableProperty]
@@ -129,6 +131,7 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
 
     public RestoreViewModel(IMediaPoolService mediaPool, IVapourSynthService vapourSynthService)
     {
+        _logger = LoggingService.GetLogger<RestoreViewModel>();
         _mediaPool = mediaPool;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
 
@@ -460,8 +463,7 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
 
     private void OnVapourSynthLogMessage(object? sender, string message)
     {
-        // Could log to a log window or status
-        System.Diagnostics.Debug.WriteLine($"[VapourSynth] {message}");
+        _logger.LogDebug("[VapourSynth] {Message}", message);
     }
 
     private async Task LoadSourceInfo(string path)

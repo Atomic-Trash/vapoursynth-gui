@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "plugins-schema.json",
+  "title": "VapourSynth Plugins Configuration",
+  "description": "Schema for VapourSynth portable distribution plugin definitions",
+  "type": "object",
+  "required": ["plugins"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "version": {
+      "type": "string",
+      "description": "Configuration file version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of this configuration file"
+    },
+    "plugins": {
+      "type": "array",
+      "description": "List of VapourSynth plugins to install",
+      "items": {
+        "type": "object",
+        "required": ["name", "url", "version", "files"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Plugin identifier (lowercase, no spaces)",
+            "pattern": "^[a-z0-9_-]+$"
+          },
+          "description": {
+            "type": "string",
+            "description": "Brief description of what the plugin does"
+          },
+          "set": {
+            "type": "string",
+            "description": "Plugin set this belongs to",
+            "enum": ["minimal", "standard", "full"]
+          },
+          "url": {
+            "type": "string",
+            "description": "Download URL for the plugin archive",
+            "format": "uri",
+            "pattern": "^https://"
+          },
+          "version": {
+            "type": "string",
+            "description": "Plugin version (must match actual release version)",
+            "pattern": "^[vVrR]?[0-9]"
+          },
+          "files": {
+            "type": "array",
+            "description": "DLL files included in the plugin",
+            "items": {
+              "type": "string",
+              "pattern": "\\.dll$"
+            },
+            "minItems": 1
+          },
+          "dependencies": {
+            "type": "array",
+            "description": "Runtime dependencies required by this plugin",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "pythonPackages": {
+      "type": "array",
+      "description": "Python packages to install via pip",
+      "items": {
+        "type": "object",
+        "required": ["name", "set"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "PyPI package name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Brief description of the package"
+          },
+          "set": {
+            "type": "string",
+            "description": "Plugin set this belongs to",
+            "enum": ["minimal", "standard", "full"]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

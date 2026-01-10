@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "versions-schema.json",
+  "title": "VapourSynth Portable Versions",
+  "description": "Schema for shared version configuration",
+  "type": "object",
+  "required": ["python", "vapoursynth"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of this configuration file"
+    },
+    "python": {
+      "type": "object",
+      "description": "Python embedded configuration",
+      "required": ["version"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Python version (e.g., 3.12.4)",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL template for Python download ({version} placeholder)",
+          "format": "uri-template"
+        }
+      },
+      "additionalProperties": false
+    },
+    "vapoursynth": {
+      "type": "object",
+      "description": "VapourSynth configuration",
+      "required": ["version"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "VapourSynth version (e.g., R68)",
+          "pattern": "^R\\d+$"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL template for VapourSynth download ({version} placeholder)",
+          "format": "uri-template"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ffmpeg": {
+      "type": "object",
+      "description": "FFmpeg configuration (optional)",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "FFmpeg version"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL for FFmpeg download",
+          "format": "uri"
+        }
+      },
+      "additionalProperties": false
+    },
+    "mpv": {
+      "type": "object",
+      "description": "MPV player configuration (optional)",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "MPV version"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL for MPV download",
+          "format": "uri"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

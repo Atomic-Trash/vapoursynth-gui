@@ -1,4 +1,5 @@
 using System.IO;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using VapourSynthPortable.Models;
 
@@ -8,9 +9,11 @@ public class SettingsService : ISettingsService
 {
     private readonly string _settingsPath;
     private readonly string _projectRoot;
+    private readonly ILogger<SettingsService> _logger;
 
     public SettingsService()
     {
+        _logger = LoggingService.GetLogger<SettingsService>();
         _projectRoot = FindProjectRoot(AppDomain.CurrentDomain.BaseDirectory) ?? AppDomain.CurrentDomain.BaseDirectory;
         _settingsPath = Path.Combine(_projectRoot, "settings.json");
     }
@@ -42,7 +45,7 @@ public class SettingsService : ISettingsService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to load settings from {_settingsPath}: {ex.Message}");
+            _logger.LogWarning(ex, "Failed to load settings from {SettingsPath}", _settingsPath);
         }
         return new AppSettings();
     }
@@ -88,7 +91,7 @@ public class SettingsService : ISettingsService
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Failed to delete cache file {file}: {ex.Message}");
+                    _logger.LogWarning(ex, "Failed to delete cache file {CacheFile}", file);
                 }
             }
         }
