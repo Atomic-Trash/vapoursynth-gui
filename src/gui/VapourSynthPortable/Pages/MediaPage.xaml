@@ -9,7 +9,11 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              KeyDown="MediaPage_KeyDown"
-             Focusable="True">
+             Focusable="True"
+             AutomationProperties.Name="Media Page"
+             AutomationProperties.HelpText="Import and manage media files"
+             KeyboardNavigation.TabNavigation="Cycle"
+             KeyboardNavigation.DirectionalNavigation="Contained">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>

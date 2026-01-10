@@ -3,7 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:VapourSynthPortable.ViewModels"
              xmlns:helpers="clr-namespace:VapourSynthPortable.Helpers"
-             Background="{StaticResource ContentBackground}">
+             Background="{StaticResource ContentBackground}"
+             AutomationProperties.Name="Settings Page"
+             AutomationProperties.HelpText="Application settings and preferences"
+             KeyboardNavigation.TabNavigation="Cycle"
+             KeyboardNavigation.DirectionalNavigation="Contained">
 
     <UserControl.Resources>
         <!-- Converters -->

@@ -1,12 +1,17 @@
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using VapourSynthPortable.Controls.Automation;
 
 namespace VapourSynthPortable.Controls;
 
 public partial class ScopesControl : UserControl
 {
+    protected override AutomationPeer OnCreateAutomationPeer()
+        => new ScopesControlAutomationPeer(this);
+
     private readonly Random _random = new();
     private ScopeMode _currentMode = ScopeMode.Waveform;
 

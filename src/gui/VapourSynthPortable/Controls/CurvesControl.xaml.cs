@@ -1,13 +1,18 @@
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using VapourSynthPortable.Controls.Automation;
 
 namespace VapourSynthPortable.Controls;
 
 public partial class CurvesControl : UserControl
 {
+    protected override AutomationPeer OnCreateAutomationPeer()
+        => new CurvesControlAutomationPeer(this);
+
     private CurveChannel _currentChannel = CurveChannel.RGB;
     private readonly Dictionary<CurveChannel, List<Point>> _curvePoints = new();
     private Point? _draggedPoint;

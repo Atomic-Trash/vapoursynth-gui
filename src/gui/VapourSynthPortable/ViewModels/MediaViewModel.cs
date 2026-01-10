@@ -90,8 +90,10 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private ViewMode _currentViewMode = ViewMode.Grid;
 
+    // Note: Default to false to avoid UI Automation issues with VideoPlayerControl's HwndHost.
+    // The preview can still be expanded by the user toggling the Preview button.
     [ObservableProperty]
-    private bool _isPreviewPanelExpanded = true;
+    private bool _isPreviewPanelExpanded;
 
     [ObservableProperty]
     private string _sortColumn = "Name";

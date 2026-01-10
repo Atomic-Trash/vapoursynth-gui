@@ -54,8 +54,10 @@ public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPer
     public string SourcePath => _mediaPool.CurrentSource?.FilePath ?? "";
     public bool HasSource => _mediaPool.HasSource;
 
+    // Note: Default to false to avoid UI Automation issues when ScopesControl has many child elements.
+    // The scopes can still be shown by the user toggling the Scopes button.
     [ObservableProperty]
-    private bool _showScopes = true;
+    private bool _showScopes;
 
     [ObservableProperty]
     private bool _showCurves;

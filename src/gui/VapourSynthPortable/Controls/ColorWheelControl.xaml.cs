@@ -1,13 +1,18 @@
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using VapourSynthPortable.Controls.Automation;
 
 namespace VapourSynthPortable.Controls;
 
 public partial class ColorWheelControl : UserControl
 {
+    protected override AutomationPeer OnCreateAutomationPeer()
+        => new ColorWheelControlAutomationPeer(this);
+
     private bool _isDragging;
     private const double WheelRadius = 60;
     private const double IndicatorRadius = 7;

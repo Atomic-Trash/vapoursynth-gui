@@ -1,15 +1,21 @@
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using VapourSynthPortable.Controls.Automation;
 using VapourSynthPortable.Services.LibMpv;
 
 namespace VapourSynthPortable.Controls;
 
 public partial class VideoPlayerControl : UserControl
 {
+    protected override AutomationPeer OnCreateAutomationPeer()
+        => new VideoPlayerControlAutomationPeer(this);
+
     private MpvPlayer? _player;
     private HwndHost? _videoHost;
     private IntPtr _hwnd;
@@ -38,7 +44,6 @@ public partial class VideoPlayerControl : UserControl
 
     private void UserControl_Loaded(object sender, RoutedEventArgs e)
     {
-        InitializePlayer();
         SetupKeyboardShortcuts();
 
         // Start update timer for position sync
@@ -48,6 +53,25 @@ public partial class VideoPlayerControl : UserControl
         };
         _updateTimer.Tick += UpdateTimer_Tick;
         _updateTimer.Start();
+
+        // Only initialize player when actually visible to avoid UI Automation issues
+        // with HwndHost when control is collapsed
+        if (IsVisible)
+        {
+            InitializePlayer();
+        }
+        else
+        {
+            IsVisibleChanged += OnVisibleChanged;
+        }
+    }
+
+    private void OnVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if ((bool)e.NewValue && _videoHost == null)
+        {
+            InitializePlayer();
+        }
     }
 
     private void UserControl_Unloaded(object sender, RoutedEventArgs e)
@@ -372,7 +396,8 @@ public partial class VideoPlayerControl : UserControl
 }
 
 /// <summary>
-/// HwndHost that creates a native window for mpv to render into
+/// HwndHost that creates a native window for mpv to render into.
+/// Includes custom AutomationPeer to prevent UI Automation tree traversal issues.
 /// </summary>
 internal class MpvVideoHost : HwndHost
 {
@@ -413,4 +438,38 @@ internal class MpvVideoHost : HwndHost
     {
         DestroyWindow(hwnd.Handle);
     }
+
+    /// <summary>
+    /// Returns a custom AutomationPeer that prevents UI Automation from
+    /// traversing into the native window, which can cause timeouts.
+    /// </summary>
+    protected override AutomationPeer OnCreateAutomationPeer()
+        => new MpvVideoHostAutomationPeer(this);
+}
+
+/// <summary>
+/// AutomationPeer for MpvVideoHost that prevents UI Automation tree traversal
+/// into the native window, which can cause timeouts and hangs.
+/// </summary>
+internal class MpvVideoHostAutomationPeer : FrameworkElementAutomationPeer
+{
+    public MpvVideoHostAutomationPeer(MpvVideoHost owner) : base(owner) { }
+
+    protected override string GetClassNameCore() => "MpvVideoHost";
+
+    protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Pane;
+
+    protected override string GetLocalizedControlTypeCore() => "Video Host";
+
+    protected override string GetNameCore() => "MPV Video Host";
+
+    protected override bool IsContentElementCore() => false;
+
+    protected override bool IsControlElementCore() => false;
+
+    /// <summary>
+    /// Returns an empty list to prevent UI Automation from traversing into
+    /// the native window, which can cause timeouts.
+    /// </summary>
+    protected override List<AutomationPeer> GetChildrenCore() => new();
 }
