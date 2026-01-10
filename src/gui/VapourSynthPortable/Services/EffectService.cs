@@ -203,17 +203,30 @@ public class EffectService
     /// <summary>
     /// Generates a complete VapourSynth script for a timeline
     /// </summary>
-    public string GenerateTimelineScript(Timeline timeline, string outputPath)
+    /// <param name="timeline">The timeline to generate script for</param>
+    /// <param name="outputPath">Optional output path for metadata comment</param>
+    public string GenerateTimelineScript(Timeline timeline, string? outputPath = null)
     {
         var lines = new List<string>
         {
             "import vapoursynth as vs",
             "core = vs.core",
-            "",
+            ""
+        };
+
+        // Add output path as metadata if provided
+        if (!string.IsNullOrEmpty(outputPath))
+        {
+            lines.Add($"# Output: {outputPath}");
+            lines.Add("");
+        }
+
+        lines.AddRange(new[]
+        {
             "# Load plugins (as needed)",
             "# core.std.LoadPlugin(...)",
             ""
-        };
+        });
 
         var clipVars = new Dictionary<int, string>();
         var clipIndex = 0;

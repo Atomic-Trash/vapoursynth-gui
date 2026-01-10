@@ -1223,9 +1223,10 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
     /// <summary>
     /// Generates a VapourSynth script for the current timeline
     /// </summary>
-    public string GenerateTimelineScript()
+    /// <param name="outputPath">Optional output path for script metadata</param>
+    public string GenerateTimelineScript(string? outputPath = null)
     {
-        return EffectService.GenerateTimelineScript(Timeline, "");
+        return EffectService.GenerateTimelineScript(Timeline, outputPath);
     }
 
     #region IProjectPersistable Implementation
