@@ -16,27 +16,40 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IProjectService _projectService;
     private readonly ISettingsService _settingsService;
     private readonly INavigationService _navigationService;
+    private readonly IDependencyStatusService _dependencyStatusService;
 
-    public MainWindowViewModel(IProjectService projectService, ISettingsService settingsService, INavigationService navigationService)
+    public MainWindowViewModel(
+        IProjectService projectService,
+        ISettingsService settingsService,
+        INavigationService navigationService,
+        IDependencyStatusService dependencyStatusService)
     {
         _projectService = projectService;
         _settingsService = settingsService;
         _navigationService = navigationService;
+        _dependencyStatusService = dependencyStatusService;
 
         // Subscribe to navigation changes
         _navigationService.PageChanged += OnPageChanged;
+
+        // Subscribe to dependency status changes
+        _dependencyStatusService.StatusChanged += OnDependencyStatusChanged;
 
         // Initialize with a new project
         _currentProject = _projectService.CreateNew();
         UpdateWindowTitle();
         LoadRecentProjects();
+
+        // Check dependencies asynchronously on startup
+        _ = CheckDependenciesOnStartupAsync();
     }
 
     // Parameterless constructor for XAML designer
     public MainWindowViewModel() : this(
         App.Services?.GetService(typeof(IProjectService)) as IProjectService ?? new ProjectService(),
         App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService(),
-        App.Services?.GetService(typeof(INavigationService)) as INavigationService ?? new NavigationService())
+        App.Services?.GetService(typeof(INavigationService)) as INavigationService ?? new NavigationService(),
+        App.Services?.GetService(typeof(IDependencyStatusService)) as IDependencyStatusService ?? new DependencyStatusService())
     {
     }
 
@@ -102,31 +115,112 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     /// The VapourSynth version string
     /// </summary>
     [ObservableProperty]
-    private string _vapourSynthVersion = "VapourSynth R70";
+    private string _vapourSynthVersion = "VapourSynth: Checking...";
 
     /// <summary>
     /// The Python version string
     /// </summary>
     [ObservableProperty]
-    private string _pythonVersion = "Python 3.12";
+    private string _pythonVersion = "Python: Checking...";
 
     /// <summary>
     /// The FFmpeg status string
     /// </summary>
     [ObservableProperty]
-    private string _ffmpegStatus = "FFmpeg Ready";
+    private string _ffmpegStatus = "FFmpeg: Checking...";
 
     /// <summary>
     /// Whether FFmpeg is available
     /// </summary>
     [ObservableProperty]
-    private bool _isFFmpegReady = true;
+    private bool _isFFmpegReady;
+
+    /// <summary>
+    /// Whether VapourSynth is available
+    /// </summary>
+    [ObservableProperty]
+    private bool _isVapourSynthReady;
+
+    /// <summary>
+    /// Whether Python is available
+    /// </summary>
+    [ObservableProperty]
+    private bool _isPythonReady;
 
     /// <summary>
     /// The application status message
     /// </summary>
     [ObservableProperty]
     private string _statusMessage = "Ready";
+
+    /// <summary>
+    /// Check dependencies on startup
+    /// </summary>
+    private async Task CheckDependenciesOnStartupAsync()
+    {
+        try
+        {
+            StatusMessage = "Checking dependencies...";
+            await _dependencyStatusService.CheckDependenciesAsync();
+        }
+        catch (Exception)
+        {
+            StatusMessage = "Error checking dependencies";
+        }
+    }
+
+    /// <summary>
+    /// Handle dependency status changes
+    /// </summary>
+    private void OnDependencyStatusChanged(object? sender, DependencyStatusReport report)
+    {
+        // Update VapourSynth status
+        if (report.VapourSynth.IsAvailable)
+        {
+            VapourSynthVersion = $"VapourSynth {report.VapourSynth.Version}";
+            IsVapourSynthReady = true;
+        }
+        else
+        {
+            VapourSynthVersion = "VapourSynth: Not Found";
+            IsVapourSynthReady = false;
+        }
+
+        // Update Python status
+        if (report.Python.IsAvailable)
+        {
+            PythonVersion = $"Python {report.Python.Version}";
+            IsPythonReady = true;
+        }
+        else
+        {
+            PythonVersion = "Python: Not Found";
+            IsPythonReady = false;
+        }
+
+        // Update FFmpeg status
+        if (report.FFmpeg.IsAvailable)
+        {
+            FfmpegStatus = $"FFmpeg {report.FFmpeg.Version}";
+            IsFFmpegReady = true;
+        }
+        else
+        {
+            FfmpegStatus = "FFmpeg: Not Found";
+            IsFFmpegReady = false;
+        }
+
+        // Update overall status
+        if (report.AllRequiredAvailable)
+        {
+            StatusMessage = "Ready";
+        }
+        else
+        {
+            var missing = report.GetMissingSummary();
+            StatusMessage = missing ?? "Some dependencies missing";
+        }
+    }
 
     #endregion
 
@@ -430,8 +524,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        // Unsubscribe from navigation events
+        // Unsubscribe from events
         _navigationService.PageChanged -= OnPageChanged;
+        _dependencyStatusService.StatusChanged -= OnDependencyStatusChanged;
 
         GC.SuppressFinalize(this);
     }
