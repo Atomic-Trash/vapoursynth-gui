@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Windows.Media;
+using Microsoft.Extensions.Logging;
 using VapourSynthPortable.Models;
 
 namespace VapourSynthPortable.Services;
@@ -16,6 +17,8 @@ public class ProjectService : IProjectService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
+    private static readonly ILogger<ProjectService> _logger = LoggingService.GetLogger<ProjectService>();
+
     /// <summary>
     /// Creates a new empty project
     /// </summary>
@@ -24,6 +27,7 @@ public class ProjectService : IProjectService
         return new Project
         {
             Name = "Untitled",
+            Version = ProjectVersion.Current,
             CreatedDate = DateTime.Now,
             ModifiedDate = DateTime.Now,
             Settings = new ProjectSettings(),
@@ -672,6 +676,262 @@ public class ProjectService : IProjectService
         {
             return json;
         }
+    }
+    /// <summary>
+    /// Attempts to relink missing media files by searching in specified directories
+    /// </summary>
+    public int RelinkMissingMedia(Project project, IEnumerable<string> searchPaths)
+    {
+        var relinkedCount = 0;
+        var searchPathsList = searchPaths.ToList();
+
+        // Build a map of filename to potential paths
+        var fileMap = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var searchPath in searchPathsList)
+        {
+            if (!Directory.Exists(searchPath))
+                continue;
+
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(searchPath, "*.*", SearchOption.AllDirectories))
+                {
+                    var fileName = Path.GetFileName(file);
+                    if (!fileMap.ContainsKey(fileName))
+                        fileMap[fileName] = [];
+                    fileMap[fileName].Add(file);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error searching directory {SearchPath}", searchPath);
+            }
+        }
+
+        // Relink media references
+        foreach (var reference in project.MediaReferences)
+        {
+            if (File.Exists(reference.FilePath))
+                continue;
+
+            var fileName = Path.GetFileName(reference.FilePath);
+            if (fileMap.TryGetValue(fileName, out var candidates))
+            {
+                // Prefer exact filename match, then any match
+                var newPath = candidates.FirstOrDefault(c =>
+                    Path.GetFileName(c).Equals(fileName, StringComparison.OrdinalIgnoreCase));
+
+                if (!string.IsNullOrEmpty(newPath))
+                {
+                    _logger.LogInformation("Relinked media: {OldPath} -> {NewPath}", reference.FilePath, newPath);
+                    reference.FilePath = newPath;
+                    relinkedCount++;
+                }
+            }
+        }
+
+        // Relink clip source paths
+        foreach (var track in project.TimelineData.Tracks)
+        {
+            foreach (var clip in track.Clips)
+            {
+                if (string.IsNullOrEmpty(clip.SourcePath) || File.Exists(clip.SourcePath))
+                    continue;
+
+                var fileName = Path.GetFileName(clip.SourcePath);
+                if (fileMap.TryGetValue(fileName, out var candidates))
+                {
+                    var newPath = candidates.FirstOrDefault(c =>
+                        Path.GetFileName(c).Equals(fileName, StringComparison.OrdinalIgnoreCase));
+
+                    if (!string.IsNullOrEmpty(newPath))
+                    {
+                        _logger.LogInformation("Relinked clip source: {OldPath} -> {NewPath}", clip.SourcePath, newPath);
+                        clip.SourcePath = newPath;
+                        relinkedCount++;
+                    }
+                }
+            }
+        }
+
+        return relinkedCount;
+    }
+
+    /// <summary>
+    /// Check if a project file is compatible with the current version
+    /// </summary>
+    public async Task<ProjectCompatibilityResult> CheckCompatibilityAsync(string filePath)
+    {
+        if (!File.Exists(filePath))
+        {
+            return new ProjectCompatibilityResult
+            {
+                IsCompatible = false,
+                Message = "Project file not found"
+            };
+        }
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(filePath);
+            using var doc = JsonDocument.Parse(json);
+
+            var versionString = "1.0"; // Default for old projects without version
+            if (doc.RootElement.TryGetProperty("version", out var versionElement))
+            {
+                versionString = versionElement.GetString() ?? "1.0";
+            }
+
+            if (!System.Version.TryParse(versionString, out var projectVersion))
+            {
+                // Try to parse as simple version like "1.0" or "1.1"
+                projectVersion = new System.Version(1, 0);
+            }
+
+            var migrationSteps = new List<string>();
+
+            // Check if too old
+            if (projectVersion < ProjectVersion.MinSupportedVersion)
+            {
+                return new ProjectCompatibilityResult
+                {
+                    IsCompatible = false,
+                    ProjectVersion = versionString,
+                    Message = $"Project version {versionString} is too old. Minimum supported version is {ProjectVersion.MinSupported}."
+                };
+            }
+
+            // Check if needs migration
+            if (projectVersion < ProjectVersion.CurrentVersion)
+            {
+                // Determine migration steps based on version
+                if (projectVersion < new System.Version(1, 1))
+                {
+                    migrationSteps.Add("Update version format to 1.1");
+                    migrationSteps.Add("Add keyframe easing properties to effects");
+                }
+
+                return new ProjectCompatibilityResult
+                {
+                    IsCompatible = true,
+                    NeedsMigration = true,
+                    ProjectVersion = versionString,
+                    Message = $"Project version {versionString} can be migrated to {ProjectVersion.Current}.",
+                    MigrationSteps = migrationSteps
+                };
+            }
+
+            // Check if newer than current (created by future version)
+            if (projectVersion > ProjectVersion.CurrentVersion)
+            {
+                return new ProjectCompatibilityResult
+                {
+                    IsCompatible = false,
+                    ProjectVersion = versionString,
+                    Message = $"Project was created with a newer version ({versionString}). Please update VapourSynth Studio."
+                };
+            }
+
+            return new ProjectCompatibilityResult
+            {
+                IsCompatible = true,
+                NeedsMigration = false,
+                ProjectVersion = versionString,
+                Message = "Project is compatible"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking project compatibility for {FilePath}", filePath);
+            return new ProjectCompatibilityResult
+            {
+                IsCompatible = false,
+                Message = $"Error reading project file: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Migrate a project to the current version format
+    /// </summary>
+    public bool MigrateProject(Project project)
+    {
+        if (string.IsNullOrEmpty(project.Version))
+            project.Version = "1.0";
+
+        if (!System.Version.TryParse(project.Version, out var currentVersion))
+            currentVersion = new System.Version(1, 0);
+
+        try
+        {
+            // Migrate from 1.0 to 1.1
+            if (currentVersion < new System.Version(1, 1))
+            {
+                _logger.LogInformation("Migrating project from {OldVersion} to 1.1", project.Version);
+
+                // Ensure all keyframe tracks have proper easing values
+                foreach (var track in project.TimelineData.Tracks)
+                {
+                    foreach (var clip in track.Clips)
+                    {
+                        foreach (var effect in clip.Effects)
+                        {
+                            foreach (var keyframeTrack in effect.KeyframeTracks)
+                            {
+                                foreach (var keyframe in keyframeTrack.Keyframes)
+                                {
+                                    // Set default bezier easing if not set
+                                    if (keyframe.EaseInX == 0 && keyframe.EaseInY == 0)
+                                    {
+                                        keyframe.EaseInX = 0.25;
+                                        keyframe.EaseInY = 0.25;
+                                    }
+                                    if (keyframe.EaseOutX == 0 && keyframe.EaseOutY == 0)
+                                    {
+                                        keyframe.EaseOutX = 0.75;
+                                        keyframe.EaseOutY = 0.75;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                currentVersion = new System.Version(1, 1);
+            }
+
+            // Future migrations would go here...
+
+            project.Version = ProjectVersion.Current;
+            project.MarkDirty();
+            _logger.LogInformation("Project migrated to version {NewVersion}", project.Version);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error migrating project");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Creates a backup of a project file before migration
+    /// </summary>
+    public string CreateBackup(string filePath)
+    {
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("Project file not found", filePath);
+
+        var dir = Path.GetDirectoryName(filePath) ?? "";
+        var name = Path.GetFileNameWithoutExtension(filePath);
+        var ext = Path.GetExtension(filePath);
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        var backupPath = Path.Combine(dir, $"{name}_backup_{timestamp}{ext}");
+
+        File.Copy(filePath, backupPath, overwrite: false);
+        _logger.LogInformation("Created project backup: {BackupPath}", backupPath);
+
+        return backupPath;
     }
 }
 
