@@ -217,17 +217,34 @@ public class ConverterTests
     {
         // Arrange
         var converter = new WipeLineMarginConverter();
+        var values = new object[] { 500.0, 0.5 }; // width=500, position=0.5
 
         // Act
-        var result = converter.Convert(0.5, typeof(Thickness), null!, CultureInfo.InvariantCulture);
+        var result = converter.Convert(values, typeof(Thickness), null!, CultureInfo.InvariantCulture);
 
         // Assert
         result.Should().BeOfType<Thickness>();
         var margin = (Thickness)result;
-        margin.Left.Should().Be(250); // 0.5 * 500 (default fallback width)
+        margin.Left.Should().Be(250); // 0.5 * 500
         margin.Top.Should().Be(0);
         margin.Right.Should().Be(0);
         margin.Bottom.Should().Be(0);
+    }
+
+    [Fact]
+    public void WipeLineMarginConverter_ReturnsZeroMargin_ForInvalidValues()
+    {
+        // Arrange
+        var converter = new WipeLineMarginConverter();
+        var values = new object[] { "invalid", 0.5 };
+
+        // Act
+        var result = converter.Convert(values, typeof(Thickness), null!, CultureInfo.InvariantCulture);
+
+        // Assert
+        result.Should().BeOfType<Thickness>();
+        var margin = (Thickness)result;
+        margin.Left.Should().Be(0);
     }
 
     #endregion

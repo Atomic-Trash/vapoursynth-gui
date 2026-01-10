@@ -4,16 +4,20 @@ namespace VapourSynthPortable.Tests.ViewModels;
 
 public class RestoreViewModelTests
 {
+    private static RestoreViewModel CreateViewModel(Mock<IMediaPoolService>? mockMediaPool = null)
+    {
+        mockMediaPool ??= new Mock<IMediaPoolService>();
+        var mockVsService = new Mock<IVapourSynthService>();
+        return new RestoreViewModel(mockMediaPool.Object, mockVsService.Object);
+    }
+
     #region Construction Tests
 
     [Fact]
-    public void Constructor_WithMediaPoolService_DoesNotThrow()
+    public void Constructor_WithServices_DoesNotThrow()
     {
-        // Arrange
-        var mockMediaPool = new Mock<IMediaPoolService>();
-
         // Act & Assert
-        var action = () => new RestoreViewModel(mockMediaPool.Object);
+        var action = () => CreateViewModel();
         action.Should().NotThrow();
     }
 
@@ -24,7 +28,7 @@ public class RestoreViewModelTests
         var mockMediaPool = new Mock<IMediaPoolService>();
 
         // Act
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
 
         // Assert
         viewModel.Presets.Should().NotBeNull();
@@ -38,7 +42,7 @@ public class RestoreViewModelTests
         var mockMediaPool = new Mock<IMediaPoolService>();
 
         // Act
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
 
         // Assert
         viewModel.Categories.Should().NotBeNull();
@@ -52,7 +56,7 @@ public class RestoreViewModelTests
         var mockMediaPool = new Mock<IMediaPoolService>();
 
         // Act
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
 
         // Assert
         viewModel.SelectedCategory.Should().Be("All");
@@ -67,7 +71,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         var initialCount = viewModel.FilteredPresets.Count;
 
         // Act
@@ -84,7 +88,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
 
         // Act
         viewModel.SearchQuery = "Real-ESRGAN";
@@ -102,7 +106,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         viewModel.SearchQuery = "xyz123"; // Filter first
         var filteredCount = viewModel.FilteredPresets.Count;
 
@@ -118,7 +122,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
 
         // Act
         viewModel.SearchQuery = "xyz_no_match_999";
@@ -136,7 +140,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
 
         // Act
         viewModel.SelectedCategory = "Denoise";
@@ -151,7 +155,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         viewModel.SelectedCategory = "Denoise"; // Filter first
 
         // Act
@@ -170,7 +174,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         var preset = viewModel.Presets.First();
         preset.IsFavorite = false;
 
@@ -186,7 +190,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         var preset = viewModel.Presets.First();
         preset.IsFavorite = true;
 
@@ -202,7 +206,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
 
         // Mark some presets as favorites
         viewModel.Presets[0].IsFavorite = true;
@@ -221,7 +225,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
 
         // Act & Assert
         var action = () => viewModel.ToggleFavoriteCommand.Execute(null);
@@ -237,7 +241,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         var job1 = new RestoreJob { Status = ProcessingStatus.Pending };
         var job2 = new RestoreJob { Status = ProcessingStatus.Pending };
         viewModel.JobQueue.Add(job1);
@@ -256,7 +260,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         var job = new RestoreJob { Status = ProcessingStatus.Pending };
         viewModel.JobQueue.Add(job);
 
@@ -272,7 +276,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         var job1 = new RestoreJob { Status = ProcessingStatus.Pending };
         var job2 = new RestoreJob { Status = ProcessingStatus.Pending };
         viewModel.JobQueue.Add(job1);
@@ -291,7 +295,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         var job = new RestoreJob { Status = ProcessingStatus.Pending };
         viewModel.JobQueue.Add(job);
 
@@ -307,7 +311,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         var job1 = new RestoreJob { Status = ProcessingStatus.Processing };
         var job2 = new RestoreJob { Status = ProcessingStatus.Pending };
         viewModel.JobQueue.Add(job1);
@@ -330,7 +334,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         viewModel.IsPaused = false;
 
         // Act
@@ -345,7 +349,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         viewModel.IsPaused = true;
 
         // Act
@@ -360,7 +364,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         viewModel.IsPaused = false;
 
         // Act
@@ -379,7 +383,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         viewModel.JobQueue.Add(new RestoreJob { Status = ProcessingStatus.Completed });
         viewModel.JobQueue.Add(new RestoreJob { Status = ProcessingStatus.Completed });
         viewModel.JobQueue.Add(new RestoreJob { Status = ProcessingStatus.Pending });
@@ -397,7 +401,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         viewModel.IsProcessing = true;
         viewModel.JobQueue.Add(new RestoreJob { Status = ProcessingStatus.Pending });
 
@@ -410,7 +414,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         viewModel.IsProcessing = false;
         viewModel.JobQueue.Add(new RestoreJob { Status = ProcessingStatus.Completed });
 
@@ -423,7 +427,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         viewModel.IsProcessing = false;
         viewModel.JobQueue.Add(new RestoreJob { Status = ProcessingStatus.Pending });
 
@@ -436,7 +440,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         viewModel.JobQueue.Add(new RestoreJob { Status = ProcessingStatus.Pending });
         viewModel.JobQueue.Add(new RestoreJob { Status = ProcessingStatus.Pending });
         viewModel.JobQueue.Add(new RestoreJob { Status = ProcessingStatus.Pending });
@@ -454,7 +458,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         viewModel.ShowOriginalInToggle = false;
 
         // Act
@@ -473,7 +477,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
         var param = new PresetParameter
         {
             Name = "test",
@@ -493,7 +497,7 @@ public class RestoreViewModelTests
     {
         // Arrange
         var mockMediaPool = new Mock<IMediaPoolService>();
-        var viewModel = new RestoreViewModel(mockMediaPool.Object);
+        var viewModel = CreateViewModel(mockMediaPool);
 
         // Act & Assert
         var action = () => viewModel.ResetParameterCommand.Execute(null);
