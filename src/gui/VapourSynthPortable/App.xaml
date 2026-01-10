@@ -5,7 +5,17 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
-            <!-- Converters -->
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Design System -->
+                <ResourceDictionary Source="Styles/DesignTokens.xaml"/>
+                <ResourceDictionary Source="Styles/Buttons.xaml"/>
+                <ResourceDictionary Source="Styles/FormControls.xaml"/>
+                <ResourceDictionary Source="Styles/Cards.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- ═══════════════════════════════════════════════════════════════════════════
+                 CONVERTERS
+                 ═══════════════════════════════════════════════════════════════════════════ -->
             <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
             <helpers:CountToVisibilityConverter x:Key="CountToVis"/>
             <helpers:StringToVisibilityConverter x:Key="StringToVis"/>
@@ -39,36 +49,21 @@
             <helpers:BoolToPauseLabelConverter x:Key="BoolToPauseLabelConverter"/>
             <helpers:BoolToToggleLabelConverter x:Key="BoolToToggleLabelConverter"/>
             <helpers:BoolToToggleColorConverter x:Key="BoolToToggleColorConverter"/>
+            <helpers:StringToDoubleConverter x:Key="StringToDoubleConverter"/>
+            <helpers:StringToBooleanConverter x:Key="StringToBooleanConverter"/>
+            <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
 
-            <!-- Inter Font Family -->
+            <!-- ═══════════════════════════════════════════════════════════════════════════
+                 FONTS
+                 ═══════════════════════════════════════════════════════════════════════════ -->
             <FontFamily x:Key="InterRegular">pack://application:,,,/Assets/Fonts/#Inter</FontFamily>
             <FontFamily x:Key="InterMedium">pack://application:,,,/Assets/Fonts/#Inter Medium</FontFamily>
             <FontFamily x:Key="InterSemiBold">pack://application:,,,/Assets/Fonts/#Inter SemiBold</FontFamily>
             <FontFamily x:Key="InterBold">pack://application:,,,/Assets/Fonts/#Inter Bold</FontFamily>
 
-            <!-- Color Palette -->
-            <Color x:Key="PrimaryColor">#6366F1</Color>
-            <Color x:Key="PrimaryDarkColor">#4F46E5</Color>
-            <Color x:Key="SecondaryColor">#10B981</Color>
-            <Color x:Key="BackgroundColor">#1F2937</Color>
-            <Color x:Key="SurfaceColor">#374151</Color>
-            <Color x:Key="TextColor">#F9FAFB</Color>
-            <Color x:Key="TextMutedColor">#9CA3AF</Color>
-            <Color x:Key="ErrorColor">#EF4444</Color>
-            <Color x:Key="WarningColor">#F59E0B</Color>
-
-            <!-- Brushes -->
-            <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
-            <SolidColorBrush x:Key="PrimaryDarkBrush" Color="{StaticResource PrimaryDarkColor}"/>
-            <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}"/>
-            <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}"/>
-            <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
-            <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}"/>
-            <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}"/>
-            <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
-            <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
-
-            <!-- Global Font Styles -->
+            <!-- ═══════════════════════════════════════════════════════════════════════════
+                 GLOBAL FONT STYLES (Applied to all instances of these controls)
+                 ═══════════════════════════════════════════════════════════════════════════ -->
             <Style TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{StaticResource InterRegular}"/>
             </Style>
@@ -103,78 +98,22 @@
                 <Setter Property="FontFamily" Value="{StaticResource InterRegular}"/>
             </Style>
 
-            <!-- Button Style -->
-            <Style x:Key="PrimaryButton" TargetType="Button">
-                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
-                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-                <Setter Property="FontFamily" Value="{StaticResource InterSemiBold}"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Padding" Value="16,8"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="border" Background="{TemplateBinding Background}"
-                                    BorderBrush="Transparent" BorderThickness="2"
-                                    CornerRadius="6"
-                                    Padding="{TemplateBinding Padding}">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="{StaticResource PrimaryDarkBrush}"/>
-                                </Trigger>
-                                <Trigger Property="IsEnabled" Value="False">
-                                    <Setter Property="Opacity" Value="0.5"/>
-                                </Trigger>
-                                <Trigger Property="IsFocused" Value="True">
-                                    <Setter TargetName="border" Property="BorderBrush" Value="#FFF"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
+            <!-- ═══════════════════════════════════════════════════════════════════════════
+                 LEGACY STYLES (For backwards compatibility during migration)
+                 TODO: Remove these after all pages are updated to use new design tokens
+                 ═══════════════════════════════════════════════════════════════════════════ -->
 
-            <!-- Secondary Button Style -->
-            <Style x:Key="SecondaryButton" TargetType="Button">
-                <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
-                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-                <Setter Property="FontFamily" Value="{StaticResource InterMedium}"/>
-                <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="BorderBrush" Value="{StaticResource TextMutedBrush}"/>
-                <Setter Property="Padding" Value="16,8"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="border" Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="6"
-                                    Padding="{TemplateBinding Padding}">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#4A4A4A"/>
-                                </Trigger>
-                                <Trigger Property="IsFocused" Value="True">
-                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
-                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
+            <!-- Legacy color aliases (map old names to new tokens) -->
+            <SolidColorBrush x:Key="PrimaryDarkBrush" Color="{StaticResource PrimaryHoverColor}"/>
+            <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource ContentBackgroundColor}"/>
+            <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource ElevatedBackgroundColor}"/>
+            <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextPrimaryColor}"/>
+            <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}"/>
 
             <!-- Track Toggle Button Style (for timeline M/S/L buttons) -->
             <Style x:Key="TrackToggleButton" TargetType="ToggleButton">
-                <Setter Property="Background" Value="#333"/>
-                <Setter Property="Foreground" Value="#888"/>
+                <Setter Property="Background" Value="{StaticResource CardBackground}"/>
+                <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                 <Setter Property="Template">
@@ -182,26 +121,30 @@
                         <ControlTemplate TargetType="ToggleButton">
                             <Border x:Name="border" Background="{TemplateBinding Background}"
                                     BorderBrush="Transparent" BorderThickness="1"
-                                    CornerRadius="2" Padding="2">
+                                    CornerRadius="{StaticResource RadiusXS}" Padding="2">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#C75050"/>
-                                    <Setter Property="Foreground" Value="#FFF"/>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource ErrorBrush}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#444"/>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource ElevatedBackground}"/>
                                 </Trigger>
                                 <Trigger Property="IsFocused" Value="True">
-                                    <Setter TargetName="border" Property="BorderBrush" Value="#6366F1"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
                                 </Trigger>
                                 <MultiTrigger>
                                     <MultiTrigger.Conditions>
                                         <Condition Property="IsMouseOver" Value="True"/>
                                         <Condition Property="IsChecked" Value="True"/>
                                     </MultiTrigger.Conditions>
-                                    <Setter TargetName="border" Property="Background" Value="#D06060"/>
+                                    <Setter TargetName="border" Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="#D06060"/>
+                                        </Setter.Value>
+                                    </Setter>
                                 </MultiTrigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -211,32 +154,32 @@
 
             <!-- Preset Card Style (for RestorePage presets list) -->
             <Style x:Key="PresetCardStyle" TargetType="Border">
-                <Setter Property="Background" Value="#2A2A2A"/>
-                <Setter Property="BorderBrush" Value="#3A3A3A"/>
+                <Setter Property="Background" Value="{StaticResource PanelBackground}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
                 <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="CornerRadius" Value="6"/>
-                <Setter Property="Padding" Value="12,10"/>
+                <Setter Property="CornerRadius" Value="{StaticResource RadiusM}"/>
+                <Setter Property="Padding" Value="{StaticResource PaddingM}"/>
                 <Setter Property="Margin" Value="4,2"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="#333333"/>
-                        <Setter Property="BorderBrush" Value="#4A4A4A"/>
+                        <Setter Property="Background" Value="{StaticResource CardBackground}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource TextDisabled}"/>
                     </Trigger>
                 </Style.Triggers>
             </Style>
 
             <!-- Queue Card Style -->
             <Style x:Key="QueueCardStyle" TargetType="Border">
-                <Setter Property="Background" Value="#2A2A2A"/>
-                <Setter Property="BorderBrush" Value="#3A3A3A"/>
+                <Setter Property="Background" Value="{StaticResource PanelBackground}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
                 <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="CornerRadius" Value="6"/>
-                <Setter Property="Padding" Value="8"/>
+                <Setter Property="CornerRadius" Value="{StaticResource RadiusM}"/>
+                <Setter Property="Padding" Value="{StaticResource PaddingS}"/>
                 <Setter Property="Margin" Value="4,2"/>
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="#333333"/>
+                        <Setter Property="Background" Value="{StaticResource CardBackground}"/>
                     </Trigger>
                 </Style.Triggers>
             </Style>
@@ -244,12 +187,12 @@
             <!-- Category Pill Button Style (for RestorePage tabs) -->
             <Style x:Key="CategoryPillButton" TargetType="RadioButton">
                 <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Foreground" Value="#888"/>
+                <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="Padding" Value="12,6"/>
                 <Setter Property="Margin" Value="2,0"/>
                 <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}"/>
                 <Setter Property="FontFamily" Value="{StaticResource InterMedium}"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                 <Setter Property="Template">
@@ -257,27 +200,27 @@
                         <ControlTemplate TargetType="RadioButton">
                             <Border x:Name="border" Background="{TemplateBinding Background}"
                                     BorderBrush="Transparent" BorderThickness="1"
-                                    CornerRadius="12"
+                                    CornerRadius="{StaticResource RadiusXL}"
                                     Padding="{TemplateBinding Padding}">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#0E639C"/>
-                                    <Setter Property="Foreground" Value="#FFF"/>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource SelectionBrush}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#3A3A3A"/>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource ElevatedBackground}"/>
                                 </Trigger>
                                 <Trigger Property="IsFocused" Value="True">
-                                    <Setter TargetName="border" Property="BorderBrush" Value="#6366F1"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
                                 </Trigger>
                                 <MultiTrigger>
                                     <MultiTrigger.Conditions>
                                         <Condition Property="IsMouseOver" Value="True"/>
                                         <Condition Property="IsChecked" Value="True"/>
                                     </MultiTrigger.Conditions>
-                                    <Setter TargetName="border" Property="Background" Value="#1177BB"/>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource SelectionHoverBrush}"/>
                                 </MultiTrigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -288,9 +231,9 @@
             <!-- Icon Button Style (minimal, transparent) -->
             <Style x:Key="IconButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Foreground" Value="#888"/>
+                <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Padding" Value="4"/>
+                <Setter Property="Padding" Value="{StaticResource PaddingXS}"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                 <Setter Property="Template">
@@ -298,69 +241,24 @@
                         <ControlTemplate TargetType="Button">
                             <Border x:Name="border" Background="{TemplateBinding Background}"
                                     BorderBrush="Transparent" BorderThickness="1"
-                                    CornerRadius="3"
+                                    CornerRadius="{StaticResource RadiusXS}"
                                     Padding="{TemplateBinding Padding}">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#3A3A3A"/>
-                                    <Setter Property="Foreground" Value="#CCC"/>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource ElevatedBackground}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#4A4A4A"/>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource CardBackground}"/>
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Opacity" Value="0.4"/>
                                 </Trigger>
                                 <Trigger Property="IsFocused" Value="True">
-                                    <Setter TargetName="border" Property="BorderBrush" Value="#6366F1"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
                                 </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <!-- Toggle Button Style -->
-            <Style x:Key="ToggleButtonStyle" TargetType="ToggleButton">
-                <Setter Property="Background" Value="#3A3A3A"/>
-                <Setter Property="Foreground" Value="#AAA"/>
-                <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="BorderBrush" Value="#555"/>
-                <Setter Property="Padding" Value="10,6"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ToggleButton">
-                            <Border x:Name="border" Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="4"
-                                    Padding="{TemplateBinding Padding}">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsChecked" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#0E639C"/>
-                                    <Setter TargetName="border" Property="BorderBrush" Value="#1177BB"/>
-                                    <Setter Property="Foreground" Value="#FFF"/>
-                                </Trigger>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#4A4A4A"/>
-                                </Trigger>
-                                <Trigger Property="IsFocused" Value="True">
-                                    <Setter TargetName="border" Property="BorderBrush" Value="#6366F1"/>
-                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
-                                </Trigger>
-                                <MultiTrigger>
-                                    <MultiTrigger.Conditions>
-                                        <Condition Property="IsMouseOver" Value="True"/>
-                                        <Condition Property="IsChecked" Value="True"/>
-                                    </MultiTrigger.Conditions>
-                                    <Setter TargetName="border" Property="Background" Value="#1177BB"/>
-                                </MultiTrigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>

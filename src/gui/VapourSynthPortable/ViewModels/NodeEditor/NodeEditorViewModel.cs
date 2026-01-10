@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
@@ -15,11 +16,13 @@ public partial class NodeEditorViewModel : ObservableObject
 {
     private readonly ScriptGeneratorService _scriptGenerator;
     private readonly UndoService _undoService;
+    private readonly ILivePreviewService _livePreviewService;
 
     public NodeEditorViewModel()
     {
         _scriptGenerator = new ScriptGeneratorService();
         _undoService = new UndoService(maxHistorySize: 50);
+        _livePreviewService = new LivePreviewService();
         _pendingConnection = new PendingConnectionViewModel(this);
 
         // Available node types for the palette
@@ -35,6 +38,21 @@ public partial class NodeEditorViewModel : ObservableObject
             OnPropertyChanged(nameof(CanUndo));
             OnPropertyChanged(nameof(CanRedo));
         };
+
+        // Subscribe to live preview events
+        _livePreviewService.PreviewStarted += (s, e) =>
+        {
+            IsPreviewGenerating = true;
+        };
+
+        _livePreviewService.PreviewCompleted += (s, frame) =>
+        {
+            IsPreviewGenerating = false;
+            if (frame != null)
+            {
+                PreviewFrame = frame;
+            }
+        };
     }
 
     public bool CanUndo => _undoService.CanUndo;
@@ -44,14 +62,246 @@ public partial class NodeEditorViewModel : ObservableObject
     public ObservableCollection<ConnectionViewModel> Connections { get; } = new();
     public ObservableCollection<NodePaletteItem> AvailableNodes { get; }
 
+    // Zoom and Pan
+    [ObservableProperty]
+    private double _zoomLevel = 1.0;
+
+    [ObservableProperty]
+    private Point _viewportOffset;
+
+    // Palette Search
+    [ObservableProperty]
+    private string _nodeSearchText = "";
+
+    partial void OnNodeSearchTextChanged(string value)
+    {
+        // Search is handled in XAML via CollectionViewSource
+    }
+
+    [RelayCommand]
+    private void ZoomIn()
+    {
+        ZoomLevel = Math.Min(2.0, ZoomLevel + 0.1);
+    }
+
+    [RelayCommand]
+    private void ZoomOut()
+    {
+        ZoomLevel = Math.Max(0.25, ZoomLevel - 0.1);
+    }
+
+    [RelayCommand]
+    private void ResetZoom()
+    {
+        ZoomLevel = 1.0;
+    }
+
+    [RelayCommand]
+    private void FitToView()
+    {
+        // Calculate bounding box of all nodes
+        if (Nodes.Count == 0) return;
+
+        var minX = Nodes.Min(n => n.Location.X);
+        var minY = Nodes.Min(n => n.Location.Y);
+        var maxX = Nodes.Max(n => n.Location.X) + 200; // Approximate node width
+        var maxY = Nodes.Max(n => n.Location.Y) + 150; // Approximate node height
+
+        // Center the view (ViewportOffset will need to be bound to Nodify's ViewportLocation)
+        var centerX = (minX + maxX) / 2;
+        var centerY = (minY + maxY) / 2;
+        ViewportOffset = new Point(-centerX + 400, -centerY + 300); // Offset to center
+
+        // Calculate zoom to fit
+        var width = maxX - minX + 100;
+        var height = maxY - minY + 100;
+        var zoomX = 800.0 / width;  // Approximate canvas width
+        var zoomY = 600.0 / height; // Approximate canvas height
+        ZoomLevel = Math.Clamp(Math.Min(zoomX, zoomY), 0.25, 2.0);
+
+        StatusMessage = "View fitted to content";
+    }
+
     [ObservableProperty]
     private NodeViewModel? _selectedNode;
+
+    partial void OnSelectedNodeChanged(NodeViewModel? value)
+    {
+        OnPropertyChanged(nameof(IsSourceNodeSelected));
+        OnPropertyChanged(nameof(IsFilterNodeSelected));
+        OnPropertyChanged(nameof(IsOutputNodeSelected));
+        OnPropertyChanged(nameof(FilterParameters));
+        OnPropertyChanged(nameof(SourceFilePath));
+        OnPropertyChanged(nameof(SourcePlugin));
+        OnPropertyChanged(nameof(OutputIndex));
+    }
+
+    // Properties Panel support
+    public bool IsSourceNodeSelected => SelectedNode is SourceNodeViewModel;
+    public bool IsFilterNodeSelected => SelectedNode is FilterNodeViewModel;
+    public bool IsOutputNodeSelected => SelectedNode is OutputNodeViewModel;
+
+    public ObservableCollection<NodeParameter>? FilterParameters =>
+        (SelectedNode as FilterNodeViewModel)?.Parameters;
+
+    public string SourceFilePath
+    {
+        get => (SelectedNode as SourceNodeViewModel)?.FilePath ?? "";
+        set
+        {
+            if (SelectedNode is SourceNodeViewModel source)
+                source.FilePath = value;
+        }
+    }
+
+    public string SourcePlugin
+    {
+        get => (SelectedNode as SourceNodeViewModel)?.SourcePlugin ?? "ffms2";
+        set
+        {
+            if (SelectedNode is SourceNodeViewModel source)
+                source.SourcePlugin = value;
+        }
+    }
+
+    public int OutputIndex
+    {
+        get => (SelectedNode as OutputNodeViewModel)?.OutputIndex ?? 0;
+        set
+        {
+            if (SelectedNode is OutputNodeViewModel output)
+                output.OutputIndex = value;
+        }
+    }
+
+    [RelayCommand]
+    private void ResetParameter(NodeParameter? parameter)
+    {
+        parameter?.ResetToDefault();
+    }
+
+    [RelayCommand]
+    private void ResetAllParameters()
+    {
+        if (SelectedNode is FilterNodeViewModel filterNode)
+        {
+            foreach (var param in filterNode.Parameters)
+            {
+                param.ResetToDefault();
+            }
+            StatusMessage = "Parameters reset to defaults";
+        }
+    }
 
     [ObservableProperty]
     private string _generatedScript = "";
 
     [ObservableProperty]
     private string _statusMessage = "Ready";
+
+    // Live Preview Properties
+    [ObservableProperty]
+    private BitmapSource? _previewFrame;
+
+    [ObservableProperty]
+    private bool _isPreviewGenerating;
+
+    [ObservableProperty]
+    private int _previewFrameNumber;
+
+    [ObservableProperty]
+    private bool _autoPreviewEnabled = true;
+
+    public bool IsPreviewAvailable => _livePreviewService.IsAvailable;
+
+    partial void OnPreviewFrameNumberChanged(int value)
+    {
+        if (AutoPreviewEnabled)
+        {
+            RequestLivePreview();
+        }
+    }
+
+    [RelayCommand]
+    private void RequestLivePreview()
+    {
+        if (!_livePreviewService.IsAvailable)
+        {
+            StatusMessage = "Live preview unavailable - VapourSynth not found";
+            return;
+        }
+
+        // Generate script from current nodes
+        try
+        {
+            var models = Nodes.Select(n => n.Model).ToList();
+            var connections = Connections.Select(c => c.Model).ToList();
+            var script = _scriptGenerator.Generate(models, connections);
+
+            if (string.IsNullOrEmpty(script))
+            {
+                StatusMessage = "Cannot preview - no valid node graph";
+                return;
+            }
+
+            _livePreviewService.RequestPreview(script, PreviewFrameNumber);
+            StatusMessage = "Generating preview...";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Preview error: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleAutoPreview()
+    {
+        AutoPreviewEnabled = !AutoPreviewEnabled;
+        StatusMessage = AutoPreviewEnabled ? "Auto preview enabled" : "Auto preview disabled";
+    }
+
+    // Node position tracking for undo
+    private Dictionary<NodeViewModel, Point>? _dragStartPositions;
+
+    [RelayCommand]
+    private void StartNodeDrag()
+    {
+        // Capture positions of all selected nodes before drag
+        _dragStartPositions = Nodes
+            .Where(n => n.IsSelected)
+            .ToDictionary(n => n, n => n.Location);
+    }
+
+    [RelayCommand]
+    private void EndNodeDrag()
+    {
+        if (_dragStartPositions == null) return;
+
+        // Collect all position changes
+        var changes = new List<(object Node, Point OldPosition, Point NewPosition)>();
+        foreach (var (node, oldPos) in _dragStartPositions)
+        {
+            if (node.Location != oldPos)
+            {
+                changes.Add((node, oldPos, node.Location));
+            }
+        }
+
+        // Record the move
+        if (changes.Count > 0)
+        {
+            if (changes.Count == 1)
+            {
+                _undoService.RecordNodeMove(changes[0].Node, changes[0].OldPosition, changes[0].NewPosition, $"Move {(changes[0].Node as NodeViewModel)?.Title ?? "node"}");
+            }
+            else
+            {
+                _undoService.RecordMultiNodeMove(changes, $"Move {changes.Count} nodes");
+            }
+        }
+
+        _dragStartPositions = null;
+    }
 
     // Pending connection for Nodify
     [ObservableProperty]

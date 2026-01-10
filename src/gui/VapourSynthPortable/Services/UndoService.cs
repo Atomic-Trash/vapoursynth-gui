@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
 
@@ -593,6 +594,76 @@ public class StateSnapshotAction<T> : IUndoAction where T : class
 
 #endregion
 
+/// <summary>
+/// Action for tracking node position changes
+/// </summary>
+public class NodePositionChangeAction : IUndoAction
+{
+    private readonly object _node;
+    private readonly Point _oldPosition;
+    private readonly Point _newPosition;
+
+    public string Description { get; }
+
+    public NodePositionChangeAction(string description, object node, Point oldPosition, Point newPosition)
+    {
+        Description = description;
+        _node = node;
+        _oldPosition = oldPosition;
+        _newPosition = newPosition;
+    }
+
+    public void Undo()
+    {
+        SetLocation(_oldPosition);
+    }
+
+    public void Redo()
+    {
+        SetLocation(_newPosition);
+    }
+
+    private void SetLocation(Point location)
+    {
+        var property = _node.GetType().GetProperty("Location");
+        property?.SetValue(_node, location);
+    }
+}
+
+/// <summary>
+/// Action for tracking multiple node positions (for multi-node drag)
+/// </summary>
+public class MultiNodePositionChangeAction : IUndoAction
+{
+    private readonly List<(object Node, Point OldPosition, Point NewPosition)> _changes;
+
+    public string Description { get; }
+
+    public MultiNodePositionChangeAction(string description, List<(object Node, Point OldPosition, Point NewPosition)> changes)
+    {
+        Description = description;
+        _changes = changes;
+    }
+
+    public void Undo()
+    {
+        foreach (var (node, oldPos, _) in _changes)
+        {
+            var property = node.GetType().GetProperty("Location");
+            property?.SetValue(node, oldPos);
+        }
+    }
+
+    public void Redo()
+    {
+        foreach (var (node, _, newPos) in _changes)
+        {
+            var property = node.GetType().GetProperty("Location");
+            property?.SetValue(node, newPos);
+        }
+    }
+}
+
 #region Extension Methods
 
 /// <summary>
@@ -618,6 +689,28 @@ public static class UndoServiceExtensions
         var desc = description ?? $"Remove {typeof(T).Name}";
         var index = collection.IndexOf(item);
         service.RecordAction(new CollectionUndoAction<T>(desc, collection, item, index, isAdd: false));
+    }
+
+    /// <summary>
+    /// Record a node position change
+    /// </summary>
+    public static void RecordNodeMove(this UndoService service, object node, Point oldPosition, Point newPosition, string? description = null)
+    {
+        if (oldPosition == newPosition) return;
+
+        var desc = description ?? "Move node";
+        service.RecordAction(new NodePositionChangeAction(desc, node, oldPosition, newPosition));
+    }
+
+    /// <summary>
+    /// Record multiple node position changes (for multi-select drag)
+    /// </summary>
+    public static void RecordMultiNodeMove(this UndoService service, List<(object Node, Point OldPosition, Point NewPosition)> changes, string? description = null)
+    {
+        if (changes.Count == 0) return;
+
+        var desc = description ?? $"Move {changes.Count} nodes";
+        service.RecordAction(new MultiNodePositionChangeAction(desc, changes));
     }
 }
 

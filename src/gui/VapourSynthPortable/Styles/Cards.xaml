@@ -1,0 +1,207 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VapourSynth Studio - Card Component Styles
+         Reusable card and panel components
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         PANEL CARD - Standard content panel with border
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="PanelCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource PanelBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusM}"/>
+        <Setter Property="Padding" Value="{StaticResource PaddingM}"/>
+    </Style>
+
+    <!-- Elevated variant -->
+    <Style x:Key="ElevatedCard" TargetType="Border" BasedOn="{StaticResource PanelCard}">
+        <Setter Property="Background" Value="{StaticResource ElevatedBackground}"/>
+        <Setter Property="Effect" Value="{StaticResource ShadowS}"/>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         MEDIA CARD - For video/image thumbnails
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="MediaCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource PanelBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusM}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource CardBackground}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource TextDisabled}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Selected media card -->
+    <Style x:Key="MediaCardSelected" TargetType="Border" BasedOn="{StaticResource MediaCard}">
+        <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+        <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         PRESET CARD - For restore/effect presets
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="PresetCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource PanelBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusM}"/>
+        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="Margin" Value="4,2"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource CardBackground}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource TextDisabled}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         QUEUE CARD - For processing queue items
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="QueueCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource PanelBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusM}"/>
+        <Setter Property="Padding" Value="{StaticResource PaddingS}"/>
+        <Setter Property="Margin" Value="4,2"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource CardBackground}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Queue card with status colors -->
+    <Style x:Key="QueueCardProcessing" TargetType="Border" BasedOn="{StaticResource QueueCard}">
+        <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+        <Setter Property="Background" Value="{StaticResource PrimaryMutedBrush}"/>
+    </Style>
+
+    <Style x:Key="QueueCardComplete" TargetType="Border" BasedOn="{StaticResource QueueCard}">
+        <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}"/>
+        <Setter Property="Background" Value="{StaticResource SuccessBackgroundBrush}"/>
+    </Style>
+
+    <Style x:Key="QueueCardError" TargetType="Border" BasedOn="{StaticResource QueueCard}">
+        <Setter Property="BorderBrush" Value="{StaticResource ErrorBrush}"/>
+        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}"/>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         NODE CARD - For node editor palette items
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="NodeCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource ElevatedBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusS}"/>
+        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="Margin" Value="2"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource CardBackground}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         SECTION PANEL - Collapsible section container
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="SectionPanel" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SurfaceBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="Padding" Value="{StaticResource PaddingM}"/>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         INFO CARD - For notifications and messages
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="InfoCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource InfoBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource InfoBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusS}"/>
+        <Setter Property="Padding" Value="{StaticResource PaddingM}"/>
+    </Style>
+
+    <Style x:Key="SuccessCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SuccessBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusS}"/>
+        <Setter Property="Padding" Value="{StaticResource PaddingM}"/>
+    </Style>
+
+    <Style x:Key="WarningCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusS}"/>
+        <Setter Property="Padding" Value="{StaticResource PaddingM}"/>
+    </Style>
+
+    <Style x:Key="ErrorCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource ErrorBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusS}"/>
+        <Setter Property="Padding" Value="{StaticResource PaddingM}"/>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         TOOLBAR CARD - For toolbar containers
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="ToolbarCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource ElevatedBackground}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusS}"/>
+        <Setter Property="Padding" Value="4"/>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         DROPDOWN CARD - For dropdown menus and popups
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="DropdownCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource ElevatedBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusS}"/>
+        <Setter Property="Effect" Value="{StaticResource ShadowM}"/>
+        <Setter Property="Padding" Value="{StaticResource PaddingXS}"/>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         EMPTY STATE CARD - For empty list placeholders
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="EmptyStateCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SurfaceBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtle}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusM}"/>
+        <Setter Property="Padding" Value="{StaticResource PaddingXL}"/>
+    </Style>
+
+</ResourceDictionary>

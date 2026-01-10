@@ -48,12 +48,18 @@ public class StringToVisibilityConverter : IValueConverter
 
 /// <summary>
 /// Converts null to Visible, non-null to Collapsed (for placeholder states)
+/// Supports "Invert" parameter to swap behavior
 /// </summary>
 public class NullToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        return value == null ? Visibility.Visible : Visibility.Collapsed;
+        bool invert = parameter is string s && s.Equals("Invert", StringComparison.OrdinalIgnoreCase);
+        bool isNull = value == null;
+
+        if (invert)
+            return isNull ? Visibility.Collapsed : Visibility.Visible;
+        return isNull ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -679,5 +685,54 @@ public class BoolToToggleColorConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts string to double for slider binding
+/// </summary>
+public class StringToDoubleConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string str && double.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out double result))
+        {
+            return result;
+        }
+        return 0.0;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is double d)
+        {
+            return d.ToString(CultureInfo.InvariantCulture);
+        }
+        return "0";
+    }
+}
+
+/// <summary>
+/// Converts string "True"/"False" to bool for checkbox binding
+/// </summary>
+public class StringToBooleanConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string str)
+        {
+            return str.Equals("True", StringComparison.OrdinalIgnoreCase) ||
+                   str.Equals("1", StringComparison.Ordinal);
+        }
+        return false;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool b)
+        {
+            return b ? "True" : "False";
+        }
+        return "False";
     }
 }

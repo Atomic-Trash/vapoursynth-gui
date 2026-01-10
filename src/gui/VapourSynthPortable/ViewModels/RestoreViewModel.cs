@@ -809,6 +809,26 @@ video_in = core.lsmas.LWLibavSource(r'{job.SourcePath.Replace("'", "\\'")}')
         IsSimpleMode = !IsSimpleMode;
     }
 
+    [RelayCommand]
+    private void MoveUp(RestoreJob job)
+    {
+        var index = JobQueue.IndexOf(job);
+        if (index > 0 && job.Status == ProcessingStatus.Pending)
+        {
+            JobQueue.Move(index, index - 1);
+        }
+    }
+
+    [RelayCommand]
+    private void MoveDown(RestoreJob job)
+    {
+        var index = JobQueue.IndexOf(job);
+        if (index < JobQueue.Count - 1 && job.Status == ProcessingStatus.Pending)
+        {
+            JobQueue.Move(index, index + 1);
+        }
+    }
+
     #region IProjectPersistable Implementation
 
     /// <summary>

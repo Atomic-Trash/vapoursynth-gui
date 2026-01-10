@@ -17,6 +17,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header Bar -->
@@ -76,12 +77,14 @@
                                  IsChecked="{Binding IsSimpleMode}"
                                  ToolTip="Use preset-based restoration"
                                  Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,12,0"
+                                 AutomationProperties.AutomationId="SimpleModeButton"
                                  AutomationProperties.Name="Simple Mode"
                                  AutomationProperties.HelpText="Use preset-based restoration with quick actions"/>
                     <RadioButton Content="Advanced" GroupName="RestoreMode"
                                  IsChecked="{Binding IsSimpleMode, Converter={StaticResource InverseBool}}"
                                  ToolTip="Use node-based editor for custom scripts"
                                  Foreground="#CCC" VerticalAlignment="Center"
+                                 AutomationProperties.AutomationId="AdvancedModeButton"
                                  AutomationProperties.Name="Advanced Mode"
                                  AutomationProperties.HelpText="Use node-based editor for custom VapourSynth scripts"/>
                 </StackPanel>
@@ -125,6 +128,7 @@
                                          Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
                                          Background="#252526" Foreground="#CCC" BorderBrush="#3A3A3A"
                                          Padding="28,6,8,6" FontSize="11"
+                                         AutomationProperties.AutomationId="PresetSearchBox"
                                          AutomationProperties.Name="Search Presets"
                                          AutomationProperties.HelpText="Type to filter presets by name or description">
                                     <TextBox.Resources>
@@ -245,6 +249,7 @@
                              SelectedItem="{Binding SelectedPreset}"
                              Background="Transparent" BorderThickness="0"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             AutomationProperties.AutomationId="PresetsList"
                              AutomationProperties.Name="Restoration Presets List"
                              AutomationProperties.HelpText="Select a preset to apply to your video"
                              KeyboardNavigation.TabNavigation="Once">
@@ -333,7 +338,8 @@
             <!-- Center: Preview & Settings -->
             <Grid Grid.Column="1" Margin="5,10">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="3*" MinHeight="150"/>
+                    <RowDefinition Height="Auto" MaxHeight="250"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
@@ -506,10 +512,15 @@
                                 </Border>
                             </Grid>
 
-                            <!-- Selected Preset Info & Parameters -->
-                            <Border Grid.Row="2" Background="#2A2A2A" Padding="15"
-                                    Visibility="{Binding SelectedPreset, Converter={StaticResource NullToVis}, ConverterParameter=Invert}">
-                                <Grid>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- Selected Preset Info & Parameters (moved outside Preview for visibility) -->
+                <Border Grid.Row="1" Background="#2A2A2A" CornerRadius="8" Margin="0,0,0,10"
+                        Visibility="{Binding SelectedPreset, Converter={StaticResource NullToVis}, ConverterParameter=Invert}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="15">
+                        <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
@@ -534,16 +545,19 @@
                                                     ToolTip="Generate a quick preview with this preset (2-5 seconds)"
                                                     Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
                                                     IsEnabled="{Binding CanGeneratePreview}"
+                                                    AutomationProperties.AutomationId="PreviewButton"
                                                     AutomationProperties.Name="Generate Preview"
                                                     AutomationProperties.HelpText="Generate a quick preview frame with this preset"/>
                                             <Button Content="Process Now" Command="{Binding ProcessNowCommand}"
                                                     ToolTip="Process immediately with selected preset"
                                                     Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
+                                                    AutomationProperties.AutomationId="ProcessNowButton"
                                                     AutomationProperties.Name="Process Now"
                                                     AutomationProperties.HelpText="Start processing the video immediately with this preset"/>
                                             <Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"
                                                     ToolTip="Add to processing queue for batch processing"
                                                     Style="{StaticResource SecondaryButton}"
+                                                    AutomationProperties.AutomationId="AddToQueueButton"
                                                     AutomationProperties.Name="Add to Queue"
                                                     AutomationProperties.HelpText="Add this job to the processing queue for batch processing"/>
                                         </StackPanel>
@@ -654,14 +668,12 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
-                                </Grid>
-                            </Border>
                         </Grid>
-                    </Grid>
+                    </ScrollViewer>
                 </Border>
 
                 <!-- Output Settings -->
-                <Border Grid.Row="1" Background="#252526" Padding="15" CornerRadius="8"
+                <Border Grid.Row="2" Background="#252526" Padding="15" CornerRadius="8"
                         AutomationProperties.Name="Output Settings">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -735,6 +747,7 @@
                     <ListBox Grid.Row="1" ItemsSource="{Binding JobQueue}"
                              Background="Transparent" BorderThickness="0"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             AutomationProperties.AutomationId="JobQueueList"
                              AutomationProperties.Name="Job Queue List"
                              KeyboardNavigation.TabNavigation="Once">
                         <ListBox.ItemContainerStyle>
@@ -870,6 +883,7 @@
                                     ToolTip="Start processing all queued jobs"
                                     Style="{StaticResource PrimaryButton}" Margin="0,0,6,0"
                                     IsEnabled="{Binding CanStartProcessing}"
+                                    AutomationProperties.AutomationId="ProcessQueueButton"
                                     AutomationProperties.Name="Start Processing Queue"
                                     AutomationProperties.HelpText="Begin processing all jobs in the queue">
                                 <StackPanel Orientation="Horizontal">
@@ -881,6 +895,7 @@
                                     ToolTip="Cancel current processing"
                                     Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"
                                     IsEnabled="{Binding IsProcessing}"
+                                    AutomationProperties.AutomationId="CancelProcessingButton"
                                     AutomationProperties.Name="Cancel Processing"
                                     AutomationProperties.HelpText="Stop the current processing job">
                                 <StackPanel Orientation="Horizontal">
@@ -891,6 +906,7 @@
                             <Button Command="{Binding ClearQueueCommand}"
                                     ToolTip="Remove completed jobs from queue"
                                     Style="{StaticResource SecondaryButton}"
+                                    AutomationProperties.AutomationId="ClearQueueButton"
                                     AutomationProperties.Name="Clear Completed Jobs"
                                     AutomationProperties.HelpText="Remove all completed jobs from the queue">
                                 <StackPanel Orientation="Horizontal">
@@ -909,8 +925,7 @@
                               Visibility="{Binding IsSimpleMode, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
 
         <!-- Status Bar -->
-        <Border Grid.Row="1" VerticalAlignment="Bottom"
-                Background="#2D2D30" Height="24" Margin="10,0,10,10">
+        <Border Grid.Row="2" Background="#2D2D30" Height="28" Padding="0,2">
             <Grid Margin="10,0">
                 <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="10"
                            VerticalAlignment="Center"/>

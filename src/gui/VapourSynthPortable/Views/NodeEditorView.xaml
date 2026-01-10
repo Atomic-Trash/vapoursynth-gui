@@ -150,15 +150,18 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="300"/>
+            <ColumnDefinition Width="220" MinWidth="180" MaxWidth="350"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="*" MinWidth="400"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="300" MinWidth="250" MaxWidth="500"/>
         </Grid.ColumnDefinitions>
 
         <!-- Left Panel: Node Palette -->
-        <Border Grid.Column="0" Background="#252526" Margin="0,0,10,0" CornerRadius="8">
+        <Border Grid.Column="0" Background="#252526" CornerRadius="8">
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
@@ -168,7 +171,19 @@
                            Foreground="#F1F1F1"
                            Margin="15,15,15,10"/>
 
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <!-- Search Box -->
+                <Grid Grid.Row="1" Margin="10,0,10,10">
+                    <TextBox x:Name="NodeSearchBox"
+                             Text="{Binding NodeSearchText, UpdateSourceTrigger=PropertyChanged}"
+                             Background="#1E1E1E" Foreground="#CCC"
+                             BorderThickness="1" BorderBrush="#3E3E42"
+                             Padding="8,6" FontSize="11"/>
+                    <TextBlock Text="Search nodes..." Foreground="#666" FontSize="11"
+                               IsHitTestVisible="False" Margin="10,7,0,0"
+                               Visibility="{Binding NodeSearchText, Converter={StaticResource NullOrEmptyToVisibilityConverter}}"/>
+                </Grid>
+
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10">
                         <!-- Source Nodes -->
                         <TextBlock Text="SOURCES" FontSize="10" FontWeight="Bold"
@@ -327,15 +342,25 @@
             </Grid>
         </Border>
 
+        <!-- GridSplitter between Palette and Canvas -->
+        <GridSplitter Grid.Column="1" Width="5"
+                      HorizontalAlignment="Stretch"
+                      Background="Transparent"
+                      Cursor="SizeWE"/>
+
         <!-- Center: Node Canvas -->
-        <Border Grid.Column="1" Background="#1E1E1E" CornerRadius="8">
-            <nodify:NodifyEditor ItemsSource="{Binding Nodes}"
-                                 Connections="{Binding Connections}"
-                                 SelectedItem="{Binding SelectedNode}"
-                                 ConnectionCompletedCommand="{Binding ConnectionCompletedCommand}"
-                                 DisconnectConnectorCommand="{Binding ConnectionCompletedCommand}"
-                                 Background="#1E1E1E"
-                                 GridCellSize="20">
+        <Border Grid.Column="2" Background="#1E1E1E" CornerRadius="8">
+            <Grid>
+                <nodify:NodifyEditor ItemsSource="{Binding Nodes}"
+                                     Connections="{Binding Connections}"
+                                     SelectedItem="{Binding SelectedNode}"
+                                     ConnectionCompletedCommand="{Binding ConnectionCompletedCommand}"
+                                     DisconnectConnectorCommand="{Binding ConnectionCompletedCommand}"
+                                     Background="#1E1E1E"
+                                     GridCellSize="20"
+                                     ViewportZoom="{Binding ZoomLevel, Mode=TwoWay}"
+                                     MinViewportZoom="0.25"
+                                     MaxViewportZoom="2.0">
                 <nodify:NodifyEditor.ItemContainerStyle>
                     <Style TargetType="{x:Type nodify:ItemContainer}">
                         <Setter Property="Location" Value="{Binding Location, Mode=TwoWay}"/>
@@ -357,12 +382,48 @@
                                                   StrokeDashArray="2 1"/>
                     </DataTemplate>
                 </nodify:NodifyEditor.PendingConnectionTemplate>
-            </nodify:NodifyEditor>
+                </nodify:NodifyEditor>
+
+                <!-- Zoom Controls Overlay -->
+                <Border Background="#80252526" CornerRadius="4"
+                        HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                        Margin="12" Padding="4">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="-" Command="{Binding ZoomOutCommand}"
+                                Width="28" Height="28" FontSize="16" FontWeight="Bold"
+                                Background="#3E3E42" Foreground="#CCC" BorderThickness="0"
+                                ToolTip="Zoom Out"/>
+                        <TextBlock Text="{Binding ZoomLevel, StringFormat={}{0:P0}}"
+                                   Foreground="#CCC" FontSize="11"
+                                   VerticalAlignment="Center" Margin="8,0"
+                                   MinWidth="45" TextAlignment="Center"/>
+                        <Button Content="+" Command="{Binding ZoomInCommand}"
+                                Width="28" Height="28" FontSize="16" FontWeight="Bold"
+                                Background="#3E3E42" Foreground="#CCC" BorderThickness="0"
+                                ToolTip="Zoom In"/>
+                        <Rectangle Width="1" Fill="#555" Margin="8,4"/>
+                        <Button Content="1:1" Command="{Binding ResetZoomCommand}"
+                                Padding="8,4" FontSize="10"
+                                Background="#3E3E42" Foreground="#CCC" BorderThickness="0"
+                                ToolTip="Reset Zoom"/>
+                        <Button Content="Fit" Command="{Binding FitToViewCommand}"
+                                Padding="8,4" FontSize="10" Margin="4,0,0,0"
+                                Background="#3E3E42" Foreground="#CCC" BorderThickness="0"
+                                ToolTip="Fit to View"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Border>
 
-        <!-- Right Panel: Script & Preview Tabs -->
-        <Border Grid.Column="2" Background="#252526" Margin="10,0,0,0" CornerRadius="8">
-            <TabControl Background="Transparent" BorderThickness="0">
+        <!-- GridSplitter between Canvas and Properties -->
+        <GridSplitter Grid.Column="3" Width="5"
+                      HorizontalAlignment="Stretch"
+                      Background="Transparent"
+                      Cursor="SizeWE"/>
+
+        <!-- Right Panel: Properties, Script & Preview Tabs -->
+        <Border Grid.Column="4" Background="#252526" CornerRadius="8">
+            <TabControl Background="Transparent" BorderThickness="0" SelectedIndex="0">
                 <TabControl.Resources>
                     <Style TargetType="TabItem">
                         <Setter Property="Background" Value="#252526"/>
@@ -394,6 +455,11 @@
                         </Setter>
                     </Style>
                 </TabControl.Resources>
+
+                <!-- Properties Tab -->
+                <TabItem Header="Properties">
+                    <views:NodePropertiesPanel DataContext="{Binding}"/>
+                </TabItem>
 
                 <!-- Script Tab -->
                 <TabItem Header="Script">
@@ -430,7 +496,71 @@
 
                 <!-- Preview Tab -->
                 <TabItem Header="Preview">
-                    <views:PreviewView x:Name="PreviewPanel"/>
+                    <Grid Background="#1E1E1E">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Preview Image -->
+                        <Border Grid.Row="0" Background="#0A0A0A" Margin="8">
+                            <Grid>
+                                <!-- Preview Frame -->
+                                <Image Source="{Binding PreviewFrame}"
+                                       Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+
+                                <!-- Loading Indicator -->
+                                <Border Background="#80000000" CornerRadius="4"
+                                        Visibility="{Binding IsPreviewGenerating, Converter={StaticResource BoolToVisibilityConverter}}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        Padding="16,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Generating..." Foreground="#FFF" FontSize="12"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- No Preview Message -->
+                                <TextBlock Text="Click Refresh or connect nodes to generate preview"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="#666" FontSize="11"
+                                           Visibility="{Binding PreviewFrame, Converter={StaticResource NullToVisibilityConverter}}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Frame Slider -->
+                        <Grid Grid.Row="1" Margin="8,0,8,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="50"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Frame:" Foreground="#999" FontSize="11"
+                                       VerticalAlignment="Center"/>
+                            <Slider Grid.Column="1" Minimum="0" Maximum="1000"
+                                    Value="{Binding PreviewFrameNumber}"
+                                    TickFrequency="1" IsSnapToTickEnabled="True"
+                                    Margin="8,0"/>
+                            <TextBox Grid.Column="2" Text="{Binding PreviewFrameNumber, UpdateSourceTrigger=PropertyChanged}"
+                                     Background="#1E1E1E" Foreground="#CCC"
+                                     BorderThickness="1" BorderBrush="#3E3E42"
+                                     Padding="4" FontSize="11"
+                                     HorizontalContentAlignment="Center"/>
+                        </Grid>
+
+                        <!-- Preview Controls -->
+                        <StackPanel Grid.Row="2" Orientation="Horizontal"
+                                    HorizontalAlignment="Center" Margin="8,0,8,8">
+                            <Button Content="Refresh" Command="{Binding RequestLivePreviewCommand}"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Padding="12,6" Margin="0,0,8,0"/>
+                            <ToggleButton Content="{Binding AutoPreviewEnabled, Converter={StaticResource BoolToToggleLabelConverter}}"
+                                          IsChecked="{Binding AutoPreviewEnabled}"
+                                          Style="{StaticResource ToggleButtonStyle}"
+                                          Padding="12,6"/>
+                        </StackPanel>
+                    </Grid>
                 </TabItem>
             </TabControl>
         </Border>

@@ -96,6 +96,40 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     #endregion
 
+    #region Version Information
+
+    /// <summary>
+    /// The VapourSynth version string
+    /// </summary>
+    [ObservableProperty]
+    private string _vapourSynthVersion = "VapourSynth R70";
+
+    /// <summary>
+    /// The Python version string
+    /// </summary>
+    [ObservableProperty]
+    private string _pythonVersion = "Python 3.12";
+
+    /// <summary>
+    /// The FFmpeg status string
+    /// </summary>
+    [ObservableProperty]
+    private string _ffmpegStatus = "FFmpeg Ready";
+
+    /// <summary>
+    /// Whether FFmpeg is available
+    /// </summary>
+    [ObservableProperty]
+    private bool _isFFmpegReady = true;
+
+    /// <summary>
+    /// The application status message
+    /// </summary>
+    [ObservableProperty]
+    private string _statusMessage = "Ready";
+
+    #endregion
+
     #region Recent Projects
 
     [ObservableProperty]

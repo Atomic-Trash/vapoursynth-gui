@@ -6,30 +6,33 @@
         Title="{Binding WindowTitle}"
         Height="800" Width="1400"
         MinHeight="700" MinWidth="1100"
-        Background="#1E1E1E"
+        Background="{StaticResource ContentBackground}"
         WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
-        <!-- Page Navigation Button Style -->
+        <!-- Page Navigation Button Style (uses design tokens) -->
         <Style x:Key="NavButton" TargetType="RadioButton">
-            <Setter Property="Foreground" Value="#A0A0A0"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="FontSize" Value="{StaticResource FontSizeBodyLarge}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="20,12"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="border" Background="Transparent" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="border" Background="Transparent"
+                                CornerRadius="{StaticResource RadiusS}"
+                                Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#CCC"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource PanelBackground}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Foreground" Value="#FFF"/>
-                                <Setter TargetName="border" Property="Background" Value="#3C3C3C"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource ElevatedBackground}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -48,7 +51,7 @@
         </Grid.RowDefinitions>
 
         <!-- Navigation Bar -->
-        <Border Grid.Row="0" Background="#2D2D2D">
+        <Border Grid.Row="0" Background="{StaticResource ElevatedBackground}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -58,28 +61,28 @@
 
                 <!-- App Title & File Menu -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="15,0">
-                    <TextBlock Text="VS" FontSize="18" FontWeight="Bold" Foreground="#0078D4"
+                    <TextBlock Text="VS" FontSize="18" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"
                                VerticalAlignment="Center"/>
-                    <TextBlock Text="Studio" FontSize="18" FontWeight="Light" Foreground="#FFF"
+                    <TextBlock Text="Studio" FontSize="18" FontWeight="Light" Foreground="{StaticResource TextPrimary}"
                                VerticalAlignment="Center" Margin="2,0,20,0"/>
 
                     <!-- File Menu -->
                     <Menu Background="Transparent" VerticalAlignment="Center">
-                        <MenuItem Header="_File" Foreground="#AAA" FontSize="12">
+                        <MenuItem Header="_File" Foreground="{StaticResource TextSecondary}" FontSize="12">
                             <MenuItem Header="_New Project" Click="NewProject_Click" InputGestureText="Ctrl+N">
                                 <MenuItem.Icon>
-                                    <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" Foreground="#AAA"/>
+                                    <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource TextSecondary}"/>
                                 </MenuItem.Icon>
                             </MenuItem>
                             <MenuItem Header="_Open Project..." Click="OpenProject_Click" InputGestureText="Ctrl+O">
                                 <MenuItem.Icon>
-                                    <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" Foreground="#AAA"/>
+                                    <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource TextSecondary}"/>
                                 </MenuItem.Icon>
                             </MenuItem>
                             <Separator/>
                             <MenuItem Header="_Save" Click="SaveProject_Click" InputGestureText="Ctrl+S">
                                 <MenuItem.Icon>
-                                    <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" Foreground="#AAA"/>
+                                    <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource TextSecondary}"/>
                                 </MenuItem.Icon>
                             </MenuItem>
                             <MenuItem Header="Save _As..." Click="SaveProjectAs_Click" InputGestureText="Ctrl+Shift+S"/>
@@ -92,21 +95,27 @@
                 </StackPanel>
 
                 <!-- Page Navigation -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center"
+                            AutomationProperties.AutomationId="NavigationPanel">
                     <RadioButton x:Name="NavMedia" Content="Media" Style="{StaticResource NavButton}"
                                  GroupName="PageNav" Checked="NavButton_Checked"
+                                 AutomationProperties.AutomationId="MediaNavButton"
                                  ToolTip="Import and manage media files"/>
                     <RadioButton x:Name="NavEdit" Content="Edit" Style="{StaticResource NavButton}"
                                  GroupName="PageNav" Checked="NavButton_Checked"
+                                 AutomationProperties.AutomationId="EditNavButton"
                                  ToolTip="Timeline editing and clip arrangement"/>
                     <RadioButton x:Name="NavRestore" Content="Restore" Style="{StaticResource NavButton}"
                                  GroupName="PageNav" IsChecked="True" Checked="NavButton_Checked"
+                                 AutomationProperties.AutomationId="RestoreNavButton"
                                  ToolTip="AI-powered video restoration and enhancement"/>
                     <RadioButton x:Name="NavColor" Content="Color" Style="{StaticResource NavButton}"
                                  GroupName="PageNav" Checked="NavButton_Checked"
+                                 AutomationProperties.AutomationId="ColorNavButton"
                                  ToolTip="Color grading and correction tools"/>
                     <RadioButton x:Name="NavExport" Content="Export" Style="{StaticResource NavButton}"
                                  GroupName="PageNav" Checked="NavButton_Checked"
+                                 AutomationProperties.AutomationId="ExportNavButton"
                                  ToolTip="Render and export final video"/>
                 </StackPanel>
 
@@ -114,6 +123,7 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="15,8">
                     <RadioButton x:Name="NavSettings" Content="Settings" Style="{StaticResource NavButton}"
                                  GroupName="PageNav" Checked="NavButton_Checked"
+                                 AutomationProperties.AutomationId="SettingsNavButton"
                                  ToolTip="Application settings and preferences"/>
                 </StackPanel>
             </Grid>
@@ -136,32 +146,38 @@
 
         <!-- Log Panel Splitter -->
         <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch"
-                      Background="#333" Cursor="SizeNS"/>
+                      Background="{StaticResource BorderBrush}" Cursor="SizeNS"/>
 
         <!-- Log Viewer Panel -->
         <controls:LogViewerControl x:Name="LogViewer" Grid.Row="3"/>
 
         <!-- Status Bar -->
-        <Border Grid.Row="4" Background="#252526" Padding="15,8">
+        <Border Grid.Row="4" Background="{StaticResource SurfaceBackground}" Padding="15,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Text="Ready" Foreground="#AAA" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding StatusMessage, FallbackValue='Ready'}"
+                           Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <ToggleButton x:Name="LogPanelToggle" Content="Output"
                                   IsChecked="True" Click="LogPanelToggle_Click"
                                   Padding="8,2" Margin="0,0,15,0"
-                                  Background="#3C3C3C" Foreground="#AAA" BorderBrush="#3C3C3C"
+                                  Background="{StaticResource ElevatedBackground}"
+                                  Foreground="{StaticResource TextSecondary}"
+                                  BorderBrush="{StaticResource BorderBrush}"
                                   ToolTip="Toggle output log panel visibility"/>
-                    <TextBlock Text="VapourSynth R68" Foreground="#AAA" Margin="0,0,15,0"
+                    <TextBlock Text="{Binding VapourSynthVersion, FallbackValue='VapourSynth R70'}"
+                               Foreground="{StaticResource TextSecondary}" Margin="0,0,15,0"
                                VerticalAlignment="Center" ToolTip="VapourSynth video processing framework version"/>
-                    <TextBlock Text="Python 3.12" Foreground="#AAA" Margin="0,0,15,0"
+                    <TextBlock Text="{Binding PythonVersion, FallbackValue='Python 3.12'}"
+                               Foreground="{StaticResource TextSecondary}" Margin="0,0,15,0"
                                VerticalAlignment="Center" ToolTip="Embedded Python interpreter version"/>
-                    <TextBlock Text="FFmpeg Ready" Foreground="#4EC9B0"
+                    <TextBlock Text="{Binding FFmpegStatus, FallbackValue='FFmpeg Ready'}"
+                               Foreground="{StaticResource SuccessBrush}"
                                VerticalAlignment="Center" ToolTip="FFmpeg video encoding backend status"/>
                 </StackPanel>
             </Grid>

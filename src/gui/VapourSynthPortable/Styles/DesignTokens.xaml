@@ -1,0 +1,246 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VapourSynth Studio - Design Tokens
+         Unified design system for consistent UI/UX across all pages
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         COLOR PALETTE - Backgrounds
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Base backgrounds (darkest to lightest) -->
+    <Color x:Key="ContentBackgroundColor">#1E1E1E</Color>
+    <Color x:Key="SurfaceBackgroundColor">#252526</Color>
+    <Color x:Key="PanelBackgroundColor">#2A2A2A</Color>
+    <Color x:Key="ElevatedBackgroundColor">#2D2D30</Color>
+    <Color x:Key="CardBackgroundColor">#333333</Color>
+
+    <!-- Border colors -->
+    <Color x:Key="BorderColor">#3E3E42</Color>
+    <Color x:Key="BorderSubtleColor">#333333</Color>
+    <Color x:Key="BorderFocusColor">#6366F1</Color>
+
+    <!-- Brush versions for easy binding -->
+    <SolidColorBrush x:Key="ContentBackground" Color="{StaticResource ContentBackgroundColor}"/>
+    <SolidColorBrush x:Key="SurfaceBackground" Color="{StaticResource SurfaceBackgroundColor}"/>
+    <SolidColorBrush x:Key="PanelBackground" Color="{StaticResource PanelBackgroundColor}"/>
+    <SolidColorBrush x:Key="ElevatedBackground" Color="{StaticResource ElevatedBackgroundColor}"/>
+    <SolidColorBrush x:Key="CardBackground" Color="{StaticResource CardBackgroundColor}"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+    <SolidColorBrush x:Key="BorderSubtle" Color="{StaticResource BorderSubtleColor}"/>
+    <SolidColorBrush x:Key="BorderFocus" Color="{StaticResource BorderFocusColor}"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         COLOR PALETTE - Accent Colors (UNIFIED)
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Primary accent (Indigo) -->
+    <Color x:Key="PrimaryColor">#6366F1</Color>
+    <Color x:Key="PrimaryHoverColor">#4F46E5</Color>
+    <Color x:Key="PrimaryPressedColor">#4338CA</Color>
+    <Color x:Key="PrimaryMutedColor">#312E81</Color>
+
+    <!-- Selection (ONE unified blue) -->
+    <Color x:Key="SelectionColor">#0E639C</Color>
+    <Color x:Key="SelectionHoverColor">#1177BB</Color>
+
+    <!-- Status colors -->
+    <Color x:Key="SuccessColor">#10B981</Color>
+    <Color x:Key="SuccessBackgroundColor">#064E3B</Color>
+    <Color x:Key="WarningColor">#F59E0B</Color>
+    <Color x:Key="WarningBackgroundColor">#78350F</Color>
+    <Color x:Key="ErrorColor">#EF4444</Color>
+    <Color x:Key="ErrorBackgroundColor">#7F1D1D</Color>
+    <Color x:Key="InfoColor">#3B82F6</Color>
+    <Color x:Key="InfoBackgroundColor">#1E3A5F</Color>
+
+    <!-- Brush versions -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{StaticResource PrimaryHoverColor}"/>
+    <SolidColorBrush x:Key="PrimaryPressedBrush" Color="{StaticResource PrimaryPressedColor}"/>
+    <SolidColorBrush x:Key="PrimaryMutedBrush" Color="{StaticResource PrimaryMutedColor}"/>
+    <SolidColorBrush x:Key="SelectionBrush" Color="{StaticResource SelectionColor}"/>
+    <SolidColorBrush x:Key="SelectionHoverBrush" Color="{StaticResource SelectionHoverColor}"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+    <SolidColorBrush x:Key="SuccessBackgroundBrush" Color="{StaticResource SuccessBackgroundColor}"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
+    <SolidColorBrush x:Key="WarningBackgroundBrush" Color="{StaticResource WarningBackgroundColor}"/>
+    <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
+    <SolidColorBrush x:Key="ErrorBackgroundBrush" Color="{StaticResource ErrorBackgroundColor}"/>
+    <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}"/>
+    <SolidColorBrush x:Key="InfoBackgroundBrush" Color="{StaticResource InfoBackgroundColor}"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         COLOR PALETTE - Text Colors
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Color x:Key="TextPrimaryColor">#F9FAFB</Color>
+    <Color x:Key="TextSecondaryColor">#9CA3AF</Color>
+    <Color x:Key="TextMutedColor">#6B7280</Color>
+    <Color x:Key="TextDisabledColor">#4B5563</Color>
+    <Color x:Key="TextInverseColor">#1F2937</Color>
+
+    <!-- Brush versions -->
+    <SolidColorBrush x:Key="TextPrimary" Color="{StaticResource TextPrimaryColor}"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="{StaticResource TextSecondaryColor}"/>
+    <SolidColorBrush x:Key="TextMuted" Color="{StaticResource TextMutedColor}"/>
+    <SolidColorBrush x:Key="TextDisabled" Color="{StaticResource TextDisabledColor}"/>
+    <SolidColorBrush x:Key="TextInverse" Color="{StaticResource TextInverseColor}"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         SPACING SYSTEM (8px base unit)
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <system:Double x:Key="SpacingXS">4</system:Double>
+    <system:Double x:Key="SpacingS">8</system:Double>
+    <system:Double x:Key="SpacingM">12</system:Double>
+    <system:Double x:Key="SpacingL">16</system:Double>
+    <system:Double x:Key="SpacingXL">24</system:Double>
+    <system:Double x:Key="SpacingXXL">32</system:Double>
+
+    <!-- Common margin presets -->
+    <Thickness x:Key="MarginXS">4</Thickness>
+    <Thickness x:Key="MarginS">8</Thickness>
+    <Thickness x:Key="MarginM">12</Thickness>
+    <Thickness x:Key="MarginL">16</Thickness>
+    <Thickness x:Key="MarginXL">24</Thickness>
+    <Thickness x:Key="MarginXXL">32</Thickness>
+
+    <!-- Directional margins -->
+    <Thickness x:Key="MarginBottomS">0,0,0,8</Thickness>
+    <Thickness x:Key="MarginBottomM">0,0,0,12</Thickness>
+    <Thickness x:Key="MarginBottomL">0,0,0,16</Thickness>
+    <Thickness x:Key="MarginTopS">0,8,0,0</Thickness>
+    <Thickness x:Key="MarginTopM">0,12,0,0</Thickness>
+    <Thickness x:Key="MarginTopL">0,16,0,0</Thickness>
+    <Thickness x:Key="MarginHorizontalS">8,0</Thickness>
+    <Thickness x:Key="MarginHorizontalM">12,0</Thickness>
+    <Thickness x:Key="MarginVerticalS">0,8</Thickness>
+    <Thickness x:Key="MarginVerticalM">0,12</Thickness>
+
+    <!-- Padding presets -->
+    <Thickness x:Key="PaddingXS">4</Thickness>
+    <Thickness x:Key="PaddingS">8</Thickness>
+    <Thickness x:Key="PaddingM">12</Thickness>
+    <Thickness x:Key="PaddingL">16</Thickness>
+    <Thickness x:Key="PaddingXL">24</Thickness>
+
+    <!-- Button-specific padding -->
+    <Thickness x:Key="ButtonPaddingS">8,4</Thickness>
+    <Thickness x:Key="ButtonPaddingM">12,8</Thickness>
+    <Thickness x:Key="ButtonPaddingL">16,10</Thickness>
+
+    <!-- Input padding -->
+    <Thickness x:Key="InputPadding">8,6</Thickness>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         TYPOGRAPHY SYSTEM
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Font sizes -->
+    <system:Double x:Key="FontSizeCaption">10</system:Double>
+    <system:Double x:Key="FontSizeSmall">11</system:Double>
+    <system:Double x:Key="FontSizeBody">12</system:Double>
+    <system:Double x:Key="FontSizeBodyLarge">14</system:Double>
+    <system:Double x:Key="FontSizeHeading">16</system:Double>
+    <system:Double x:Key="FontSizeTitle">20</system:Double>
+    <system:Double x:Key="FontSizeDisplay">24</system:Double>
+
+    <!-- Font weights -->
+    <FontWeight x:Key="FontWeightNormal">Normal</FontWeight>
+    <FontWeight x:Key="FontWeightMedium">Medium</FontWeight>
+    <FontWeight x:Key="FontWeightSemiBold">SemiBold</FontWeight>
+    <FontWeight x:Key="FontWeightBold">Bold</FontWeight>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         BORDER & CORNER RADII
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <CornerRadius x:Key="RadiusXS">2</CornerRadius>
+    <CornerRadius x:Key="RadiusS">4</CornerRadius>
+    <CornerRadius x:Key="RadiusM">6</CornerRadius>
+    <CornerRadius x:Key="RadiusL">8</CornerRadius>
+    <CornerRadius x:Key="RadiusXL">12</CornerRadius>
+    <CornerRadius x:Key="RadiusRound">9999</CornerRadius>
+
+    <system:Double x:Key="BorderThicknessValue">1</system:Double>
+    <Thickness x:Key="BorderThickness">1</Thickness>
+    <Thickness x:Key="BorderThickness2">2</Thickness>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         ELEVATION / SHADOWS
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <DropShadowEffect x:Key="ShadowS" BlurRadius="4" ShadowDepth="2" Opacity="0.3" Color="Black"/>
+    <DropShadowEffect x:Key="ShadowM" BlurRadius="8" ShadowDepth="4" Opacity="0.35" Color="Black"/>
+    <DropShadowEffect x:Key="ShadowL" BlurRadius="16" ShadowDepth="8" Opacity="0.4" Color="Black"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         ANIMATION DURATIONS
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <Duration x:Key="DurationFast">0:0:0.1</Duration>
+    <Duration x:Key="DurationNormal">0:0:0.2</Duration>
+    <Duration x:Key="DurationSlow">0:0:0.3</Duration>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         TEXT STYLES
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Caption text (smallest) -->
+    <Style x:Key="CaptionText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+    </Style>
+
+    <!-- Small text -->
+    <Style x:Key="SmallText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+    </Style>
+
+    <!-- Body text (default) -->
+    <Style x:Key="BodyText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+    </Style>
+
+    <!-- Body text large -->
+    <Style x:Key="BodyTextLarge" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBodyLarge}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+    </Style>
+
+    <!-- Heading text -->
+    <Style x:Key="HeadingText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeHeading}"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeightSemiBold}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+    </Style>
+
+    <!-- Title text -->
+    <Style x:Key="TitleText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeTitle}"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeightSemiBold}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+    </Style>
+
+    <!-- Section header (uppercase label) -->
+    <Style x:Key="SectionHeader" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeightBold}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+        <Setter Property="Margin" Value="{StaticResource MarginBottomM}"/>
+    </Style>
+
+    <!-- Label text -->
+    <Style x:Key="LabelText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeightSemiBold}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+    </Style>
+
+</ResourceDictionary>
