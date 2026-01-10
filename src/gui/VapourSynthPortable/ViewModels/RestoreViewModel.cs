@@ -464,26 +464,6 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
         System.Diagnostics.Debug.WriteLine($"[VapourSynth] {message}");
     }
 
-    [RelayCommand]
-    private async Task LoadSourceAsync()
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Load Source Video",
-            Filter = "Video Files|*.mp4;*.mkv;*.avi;*.mov;*.webm;*.m2ts;*.ts|All Files|*.*"
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            var item = await _mediaPool.ImportMediaAsync(dialog.FileName);
-            if (item != null)
-            {
-                _mediaPool.SetCurrentSource(item);
-                // OnCurrentSourceChanged will handle the rest
-            }
-        }
-    }
-
     private async Task LoadSourceInfo(string path)
     {
         try

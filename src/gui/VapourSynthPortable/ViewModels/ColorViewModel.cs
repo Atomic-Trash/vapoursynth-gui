@@ -311,26 +311,6 @@ public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPer
     }
 
     [RelayCommand]
-    private async Task LoadSourceAsync()
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Load Video for Color Grading",
-            Filter = "Video Files|*.mp4;*.mkv;*.avi;*.mov;*.webm|All Files|*.*"
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            var item = await _mediaPool.ImportMediaAsync(dialog.FileName);
-            if (item != null)
-            {
-                _mediaPool.SetCurrentSource(item);
-                StatusText = $"Loaded: {item.Name}";
-            }
-        }
-    }
-
-    [RelayCommand]
     private void LoadLut()
     {
         var dialog = new OpenFileDialog

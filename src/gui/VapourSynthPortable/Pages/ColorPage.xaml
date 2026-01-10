@@ -31,9 +31,7 @@
         <Border Grid.Row="0" Grid.ColumnSpan="3" Background="#333" Padding="10,8">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                    <Button Content="Load Source" Command="{Binding LoadSourceAsyncCommand}"
-                            Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
-                    <Button Content="Import" Command="{Binding ImportGradeCommand}"
+                    <Button Content="Import Grade" Command="{Binding ImportGradeCommand}"
                             Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
                     <Button Content="Export" Command="{Binding ExportGradeCommand}"
                             Style="{StaticResource SecondaryButton}" Margin="0,0,20,0"/>
@@ -284,12 +282,12 @@
                                 Visibility="{Binding HasSource, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                         <TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets" FontSize="48"
                                    Foreground="#444" HorizontalAlignment="Center"/>
-                        <TextBlock Text="No clip loaded" FontSize="14" Foreground="#9E9E9E"
+                        <TextBlock Text="No media selected" FontSize="14" Foreground="#9E9E9E"
                                    HorizontalAlignment="Center" Margin="0,12,0,4"/>
-                        <TextBlock Text="Load a source video to begin color grading" FontSize="11"
+                        <TextBlock Text="Go to the Media page to import and select" FontSize="11"
                                    Foreground="#9E9E9E" HorizontalAlignment="Center"/>
-                        <Button Content="Load Source Video" Command="{Binding LoadSourceCommand}"
-                                Style="{StaticResource SecondaryButton}" Margin="0,20,0,0"/>
+                        <TextBlock Text="a video for color grading" FontSize="11"
+                                   Foreground="#9E9E9E" HorizontalAlignment="Center"/>
                     </StackPanel>
 
                     <!-- Compare mode overlay -->

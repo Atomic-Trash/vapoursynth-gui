@@ -250,27 +250,6 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
     /// </summary>
     public FrameCacheStats GetFrameCacheStats() => _frameCache.GetStats();
 
-    [RelayCommand]
-    private async Task ImportMedia()
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Import Media",
-            Filter = "Video Files|*.mp4;*.mkv;*.avi;*.mov;*.webm;*.mxf;*.m2ts|" +
-                     "Audio Files|*.mp3;*.wav;*.aac;*.flac;*.ogg|" +
-                     "Image Files|*.jpg;*.jpeg;*.png;*.bmp;*.tiff|" +
-                     "All Files|*.*",
-            Multiselect = true
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            // Import via the shared service
-            await _mediaPoolService.ImportMediaAsync(dialog.FileNames);
-            StatusText = $"Imported {dialog.FileNames.Length} file(s)";
-        }
-    }
-
     partial void OnSelectedMediaItemChanged(MediaItem? value)
     {
         if (value != null)
