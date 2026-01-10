@@ -13,6 +13,17 @@ public class VapourSynthService : IVapourSynthService
 {
     private static readonly ILogger<VapourSynthService> _logger = LoggingService.GetLogger<VapourSynthService>();
 
+    // Cached compiled regex patterns for VSPipe output parsing
+    private static readonly Regex WidthRegex = new(@"Width:\s*(\d+)", RegexOptions.Compiled);
+    private static readonly Regex HeightRegex = new(@"Height:\s*(\d+)", RegexOptions.Compiled);
+    private static readonly Regex FramesRegex = new(@"Frames:\s*(\d+)", RegexOptions.Compiled);
+    private static readonly Regex FpsRegex = new(@"FPS:\s*(\d+)/(\d+)", RegexOptions.Compiled);
+    private static readonly Regex SimpleFpsRegex = new(@"FPS:\s*([\d.]+)", RegexOptions.Compiled);
+    private static readonly Regex FormatRegex = new(@"Format Name:\s*(\w+)", RegexOptions.Compiled);
+    private static readonly Regex ColorFamilyRegex = new(@"Color Family:\s*(\w+)", RegexOptions.Compiled);
+    private static readonly Regex BitsRegex = new(@"Bits:\s*(\d+)", RegexOptions.Compiled);
+    private static readonly Regex FrameProgressRegex = new(@"Frame:\s*(\d+)\s*/\s*(\d+)", RegexOptions.Compiled);
+
     private readonly string _projectRoot;
     private readonly string _vspipePath;
     private readonly string _pythonPath;
@@ -274,7 +285,6 @@ public class VapourSynthService : IVapourSynthService
         _ffmpegProcess = new Process { StartInfo = ffmpegStartInfo };
 
         var errorOutput = new StringBuilder();
-        var frameRegex = new Regex(@"Frame:\s*(\d+)\s*/\s*(\d+)", RegexOptions.Compiled);
         var currentFrame = 0;
         var stopwatch = Stopwatch.StartNew();
 
@@ -286,7 +296,7 @@ public class VapourSynthService : IVapourSynthService
                 if (e.Data == null) return;
 
                 // VSPipe outputs progress like "Frame: 100/1000"
-                var match = frameRegex.Match(e.Data);
+                var match = FrameProgressRegex.Match(e.Data);
                 if (match.Success)
                 {
                     currentFrame = int.Parse(match.Groups[1].Value);
@@ -483,16 +493,16 @@ public class VapourSynthService : IVapourSynthService
     {
         var info = new VapourSynthScriptInfo();
 
-        var widthMatch = Regex.Match(output, @"Width:\s*(\d+)");
+        var widthMatch = WidthRegex.Match(output);
         if (widthMatch.Success) info.Width = int.Parse(widthMatch.Groups[1].Value);
 
-        var heightMatch = Regex.Match(output, @"Height:\s*(\d+)");
+        var heightMatch = HeightRegex.Match(output);
         if (heightMatch.Success) info.Height = int.Parse(heightMatch.Groups[1].Value);
 
-        var framesMatch = Regex.Match(output, @"Frames:\s*(\d+)");
+        var framesMatch = FramesRegex.Match(output);
         if (framesMatch.Success) info.FrameCount = int.Parse(framesMatch.Groups[1].Value);
 
-        var fpsMatch = Regex.Match(output, @"FPS:\s*(\d+)/(\d+)");
+        var fpsMatch = FpsRegex.Match(output);
         if (fpsMatch.Success)
         {
             var num = double.Parse(fpsMatch.Groups[1].Value);
@@ -503,17 +513,17 @@ public class VapourSynthService : IVapourSynthService
         }
         else
         {
-            var simpleFpsMatch = Regex.Match(output, @"FPS:\s*([\d.]+)");
+            var simpleFpsMatch = SimpleFpsRegex.Match(output);
             if (simpleFpsMatch.Success) info.Fps = double.Parse(simpleFpsMatch.Groups[1].Value);
         }
 
-        var formatMatch = Regex.Match(output, @"Format Name:\s*(\w+)");
+        var formatMatch = FormatRegex.Match(output);
         if (formatMatch.Success) info.Format = formatMatch.Groups[1].Value;
 
-        var colorMatch = Regex.Match(output, @"Color Family:\s*(\w+)");
+        var colorMatch = ColorFamilyRegex.Match(output);
         if (colorMatch.Success) info.ColorFamily = colorMatch.Groups[1].Value;
 
-        var bitsMatch = Regex.Match(output, @"Bits:\s*(\d+)");
+        var bitsMatch = BitsRegex.Match(output);
         if (bitsMatch.Success) info.BitsPerSample = int.Parse(bitsMatch.Groups[1].Value);
 
         _logger.LogDebug("Parsed script info: {Width}x{Height}, {FrameCount} frames, {Fps:F3} fps, {Format}",

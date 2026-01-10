@@ -19,6 +19,14 @@ public class UpdateService
     private static readonly HttpClient _httpClient = new();
     private const string GitHubApiBase = "https://api.github.com";
 
+    // Cached compiled regex patterns
+    private static readonly Regex GitHubRepoRegex = new(@"github\.com/([^/]+)/([^/]+)", RegexOptions.Compiled);
+    private static readonly Regex VersionPrefixRegex = new(@"^[vVrR]", RegexOptions.Compiled);
+    private static readonly Regex NonNumericRegex = new(@"[^0-9.]", RegexOptions.Compiled);
+    private static readonly Regex X64Regex = new(@"x64|win64|64bit|amd64", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex ArchiveRegex = new(@"\.zip$|\.7z$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex X86Regex = new(@"x86|win32|32bit", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     static UpdateService()
     {
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "VapourSynth-Portable-GUI");
@@ -80,7 +88,7 @@ public class UpdateService
 
     private (string Owner, string Repo)? ExtractGitHubRepo(string url)
     {
-        var match = Regex.Match(url, @"github\.com/([^/]+)/([^/]+)");
+        var match = GitHubRepoRegex.Match(url);
         if (match.Success)
             return (match.Groups[1].Value, match.Groups[2].Value);
         return null;
@@ -116,8 +124,8 @@ public class UpdateService
     private string CompareVersions(string current, string latest)
     {
         // Normalize versions (remove common prefixes like 'v', 'r', 'R')
-        var currentNorm = Regex.Replace(current, @"^[vVrR]", "");
-        var latestNorm = Regex.Replace(latest, @"^[vVrR]", "");
+        var currentNorm = VersionPrefixRegex.Replace(current, "");
+        var latestNorm = VersionPrefixRegex.Replace(latest, "");
 
         if (currentNorm == latestNorm)
             return "current";
@@ -125,8 +133,8 @@ public class UpdateService
         // Try numeric comparison
         try
         {
-            var currentNum = double.Parse(Regex.Replace(currentNorm, @"[^0-9.]", ""));
-            var latestNum = double.Parse(Regex.Replace(latestNorm, @"[^0-9.]", ""));
+            var currentNum = double.Parse(NonNumericRegex.Replace(currentNorm, ""));
+            var latestNum = double.Parse(NonNumericRegex.Replace(latestNorm, ""));
 
             if (latestNum > currentNum)
                 return "outdated";
@@ -145,17 +153,17 @@ public class UpdateService
     {
         // Look for x64/win64 assets
         var compatible = assets.FirstOrDefault(a =>
-            Regex.IsMatch(a.Name, @"x64|win64|64bit|amd64", RegexOptions.IgnoreCase) &&
-            Regex.IsMatch(a.Name, @"\.zip$|\.7z$", RegexOptions.IgnoreCase) &&
-            !Regex.IsMatch(a.Name, @"x86|win32|32bit", RegexOptions.IgnoreCase));
+            X64Regex.IsMatch(a.Name) &&
+            ArchiveRegex.IsMatch(a.Name) &&
+            !X86Regex.IsMatch(a.Name));
 
         if (compatible != null)
             return compatible.Url;
 
         // Fallback: any zip/7z that's not clearly 32-bit
         var fallback = assets.FirstOrDefault(a =>
-            Regex.IsMatch(a.Name, @"\.zip$|\.7z$", RegexOptions.IgnoreCase) &&
-            !Regex.IsMatch(a.Name, @"x86|win32|32bit", RegexOptions.IgnoreCase));
+            ArchiveRegex.IsMatch(a.Name) &&
+            !X86Regex.IsMatch(a.Name));
 
         return fallback?.Url;
     }

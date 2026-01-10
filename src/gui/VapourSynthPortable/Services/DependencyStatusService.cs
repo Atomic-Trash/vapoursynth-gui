@@ -13,6 +13,12 @@ public class DependencyStatusService : IDependencyStatusService
 {
     private static readonly ILogger<DependencyStatusService> _logger = LoggingService.GetLogger<DependencyStatusService>();
 
+    // Cached compiled regex patterns for version parsing
+    private static readonly Regex VSVersionRegex = new(@"R(\d+)", RegexOptions.Compiled);
+    private static readonly Regex VSAltVersionRegex = new(@"VapourSynth\s+(\S+)", RegexOptions.Compiled);
+    private static readonly Regex FFmpegVersionRegex = new(@"ffmpeg version (\S+)", RegexOptions.Compiled);
+    private static readonly Regex PythonVersionRegex = new(@"Python (\S+)", RegexOptions.Compiled);
+
     private readonly string _projectRoot;
     private readonly string _distPath;
     private DependencyStatusReport _currentStatus;
@@ -154,14 +160,15 @@ public class DependencyStatusService : IDependencyStatusService
             await WaitForProcessAsync(process, cancellationToken, TimeSpan.FromSeconds(10));
 
             // Parse version from output like "VapourSynth Video Processing Library R68"
-            var versionMatch = Regex.Match(output + error, @"R(\d+)");
+            var combinedOutput = output + error;
+            var versionMatch = VSVersionRegex.Match(combinedOutput);
             if (versionMatch.Success)
             {
                 return $"R{versionMatch.Groups[1].Value}";
             }
 
             // Try alternate pattern
-            var altMatch = Regex.Match(output + error, @"VapourSynth\s+(\S+)");
+            var altMatch = VSAltVersionRegex.Match(combinedOutput);
             if (altMatch.Success)
             {
                 return altMatch.Groups[1].Value;
@@ -254,7 +261,7 @@ public class DependencyStatusService : IDependencyStatusService
             await WaitForProcessAsync(process, cancellationToken, TimeSpan.FromSeconds(10));
 
             // Parse version from "ffmpeg version 6.1.1 ..."
-            var versionMatch = Regex.Match(output, @"ffmpeg version (\S+)");
+            var versionMatch = FFmpegVersionRegex.Match(output);
             if (versionMatch.Success)
             {
                 return versionMatch.Groups[1].Value;
@@ -319,7 +326,7 @@ public class DependencyStatusService : IDependencyStatusService
             await WaitForProcessAsync(process, cancellationToken, TimeSpan.FromSeconds(10));
 
             // Parse version from "Python 3.12.1"
-            var versionMatch = Regex.Match(output + error, @"Python (\S+)");
+            var versionMatch = PythonVersionRegex.Match(output + error);
             if (versionMatch.Success)
             {
                 return versionMatch.Groups[1].Value;

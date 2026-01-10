@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 
 namespace VapourSynthPortable.Services;
@@ -11,6 +12,9 @@ namespace VapourSynthPortable.Services;
 public class AudioWaveformService : IDisposable
 {
     private static readonly ILogger<AudioWaveformService> _logger = LoggingService.GetLogger<AudioWaveformService>();
+
+    // Cached compiled regex for duration parsing
+    private static readonly Regex DurationRegex = new(@"Duration:\s*(\d+):(\d+):(\d+)\.(\d+)", RegexOptions.Compiled);
 
     private readonly string _ffmpegPath;
     private readonly ConcurrentDictionary<string, WaveformData> _cache = new();
@@ -222,8 +226,7 @@ public class AudioWaveformService : IDisposable
             }
 
             // Parse duration from stderr (format: Duration: HH:MM:SS.ms)
-            var durationMatch = System.Text.RegularExpressions.Regex.Match(
-                stderr, @"Duration:\s*(\d+):(\d+):(\d+)\.(\d+)");
+            var durationMatch = DurationRegex.Match(stderr);
 
             if (durationMatch.Success)
             {
