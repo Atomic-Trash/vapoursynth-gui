@@ -41,4 +41,49 @@ public interface IPluginService
     /// Save plugins to configuration
     /// </summary>
     void SavePlugins(List<Plugin> plugins);
+
+    /// <summary>
+    /// Get the installed version of a plugin (from DLL file info)
+    /// </summary>
+    string? GetInstalledVersion(Plugin plugin);
+
+    /// <summary>
+    /// Check if a plugin has an update available
+    /// </summary>
+    bool HasUpdate(Plugin plugin);
+
+    /// <summary>
+    /// Install a plugin from its configured URL
+    /// </summary>
+    /// <param name="plugin">The plugin to install</param>
+    /// <param name="progress">Progress reporter (0-100)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task<Result<bool>> InstallPluginAsync(Plugin plugin, IProgress<int>? progress = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Uninstall a plugin by removing its files
+    /// </summary>
+    /// <param name="plugin">The plugin to uninstall</param>
+    Result<bool> UninstallPlugin(Plugin plugin);
+
+    /// <summary>
+    /// Get list of installed Python packages with versions
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task<List<InstalledPythonPackage>> GetInstalledPythonPackagesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Invalidates the plugin cache
+    /// </summary>
+    void InvalidateCache();
+}
+
+/// <summary>
+/// Represents an installed Python package with version info
+/// </summary>
+public class InstalledPythonPackage
+{
+    public string Name { get; init; } = "";
+    public string Version { get; init; } = "";
+    public string Location { get; init; } = "";
 }
