@@ -16,7 +16,7 @@ public partial class MediaViewModel : ObservableObject, IDisposable
 {
     private static readonly ILogger<MediaViewModel> _logger = LoggingService.GetLogger<MediaViewModel>();
     private readonly IMediaPoolService _mediaPool;
-    private readonly SettingsService _settingsService;
+    private readonly ISettingsService _settingsService;
     private readonly UndoService _undoService;
     private bool _disposed;
 
@@ -108,11 +108,11 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     // Media pool is now shared across all pages via IMediaPoolService
     private IEnumerable<MediaItem> AllItems => _mediaPool.MediaPool;
 
-    public MediaViewModel(IMediaPoolService mediaPool, SettingsService? settingsService = null, UndoService? undoService = null)
+    public MediaViewModel(IMediaPoolService mediaPool, ISettingsService settingsService, UndoService undoService)
     {
         _mediaPool = mediaPool;
-        _settingsService = settingsService ?? new SettingsService();
-        _undoService = undoService ?? new UndoService();
+        _settingsService = settingsService;
+        _undoService = undoService;
         _mediaPool.MediaPoolChanged += OnMediaPoolChanged;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
 
@@ -121,8 +121,10 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     }
 
     // Parameterless constructor for XAML design-time support
-    public MediaViewModel() : this(App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService
-        ?? new MediaPoolService(), new SettingsService(), App.Services?.GetService(typeof(UndoService)) as UndoService)
+    public MediaViewModel() : this(
+        App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(),
+        App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService(),
+        App.Services?.GetService(typeof(UndoService)) as UndoService ?? new UndoService())
     {
     }
 

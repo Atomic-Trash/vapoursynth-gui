@@ -328,7 +328,7 @@
 
                 <!-- LUT Intensity Slider (when LUT is applied) -->
                 <Border Grid.Row="1" Background="#2A2A2A" Padding="15,10"
-                        Visibility="{Binding CurrentGrade.LutPath, Converter={StaticResource StringToVisibilityConverter}}">
+                        Visibility="{Binding CurrentGrade.LutPath, Converter={StaticResource StringToVis}}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="80"/>

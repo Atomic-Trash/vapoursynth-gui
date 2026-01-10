@@ -4,7 +4,7 @@ using VapourSynthPortable.Models;
 
 namespace VapourSynthPortable.Services;
 
-public class SettingsService
+public class SettingsService : ISettingsService
 {
     private readonly string _settingsPath;
     private readonly string _projectRoot;

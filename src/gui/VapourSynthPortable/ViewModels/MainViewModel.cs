@@ -14,16 +14,18 @@ namespace VapourSynthPortable.ViewModels;
 
 public partial class MainViewModel : ObservableObject, IDisposable
 {
-    private readonly BuildService _buildService;
-    private readonly PluginService _pluginService;
+    private readonly IBuildService _buildService;
+    private readonly IPluginService _pluginService;
+    private readonly ISettingsService _settingsService;
     private CancellationTokenSource? _buildCts;
     private readonly List<(PluginViewModel vm, PropertyChangedEventHandler handler)> _pluginHandlers = [];
     private bool _disposed;
 
-    public MainViewModel()
+    public MainViewModel(IBuildService buildService, IPluginService pluginService, ISettingsService settingsService)
     {
-        _buildService = new BuildService();
-        _pluginService = new PluginService();
+        _buildService = buildService;
+        _pluginService = pluginService;
+        _settingsService = settingsService;
 
         PluginSets = new ObservableCollection<string> { "minimal", "standard", "full" };
         Plugins = new ObservableCollection<PluginViewModel>();
@@ -34,6 +36,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
         LoadTemplates();
 
         StatusMessage = "Ready to build";
+    }
+
+    // Parameterless constructor for XAML designer
+    public MainViewModel() : this(
+        App.Services?.GetService(typeof(IBuildService)) as IBuildService ?? new BuildService(),
+        App.Services?.GetService(typeof(IPluginService)) as IPluginService ?? new PluginService(),
+        App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService())
+    {
     }
 
     // Build Configuration Properties
@@ -443,8 +453,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         settingsWindow.ShowDialog();
 
         // Reload settings after dialog closes
-        var settingsService = new SettingsService();
-        var settings = settingsService.Load();
+        var settings = _settingsService.Load();
         SelectedPluginSet = settings.DefaultPluginSet;
         StatusMessage = "Settings saved";
     }

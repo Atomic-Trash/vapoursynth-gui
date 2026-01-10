@@ -9,7 +9,7 @@ namespace VapourSynthPortable.Services;
 /// <summary>
 /// Service for executing VapourSynth scripts and piping output to FFmpeg
 /// </summary>
-public class VapourSynthService
+public class VapourSynthService : IVapourSynthService
 {
     private static readonly ILogger<VapourSynthService> _logger = LoggingService.GetLogger<VapourSynthService>();
 

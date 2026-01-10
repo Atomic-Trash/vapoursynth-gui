@@ -16,6 +16,9 @@ public partial class App : Application
         // Initialize logging first
         LoggingService.Initialize();
 
+        // Initialize crash reporter (after logging)
+        CrashReporter.Initialize();
+
         // Setup global exception handlers
         SetupExceptionHandling();
 
@@ -27,6 +30,9 @@ public partial class App : Application
 
         var logger = LoggingService.GetLogger<App>();
         logger.LogInformation("Application started");
+
+        // Cleanup old crash reports (keep last 10)
+        CrashReporter.CleanupOldReports(10);
 
         base.OnStartup(e);
     }
@@ -57,14 +63,14 @@ public partial class App : Application
         var logger = LoggingService.GetLogger<App>();
         logger.LogError(e.Exception, "Unhandled UI thread exception");
 
+        // Create crash report
+        var crashReportPath = CrashReporter.CreateCrashReport(e.Exception, "DispatcherUnhandled", isTerminating: false);
+
         // Don't crash for non-fatal exceptions
         e.Handled = true;
 
-        MessageBox.Show(
-            $"An error occurred: {e.Exception.Message}\n\nCheck logs for details.",
-            "Error",
-            MessageBoxButton.OK,
-            MessageBoxImage.Error);
+        // Show user-friendly dialog with crash report path
+        CrashReporter.ShowCrashDialog(e.Exception, crashReportPath);
     }
 
     private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
@@ -73,6 +79,9 @@ public partial class App : Application
         if (e.ExceptionObject is Exception ex)
         {
             logger.LogCritical(ex, "Unhandled exception (IsTerminating: {IsTerminating})", e.IsTerminating);
+
+            // Create crash report for fatal exceptions
+            CrashReporter.CreateCrashReport(ex, "AppDomain.UnhandledException", e.IsTerminating);
         }
         else
         {
@@ -84,6 +93,9 @@ public partial class App : Application
     {
         var logger = LoggingService.GetLogger<App>();
         logger.LogError(e.Exception, "Unobserved task exception");
+
+        // Create crash report for task exceptions
+        CrashReporter.CreateCrashReport(e.Exception, "TaskScheduler.UnobservedTaskException", isTerminating: false);
 
         // Prevent app crash
         e.SetObserved();
@@ -97,9 +109,12 @@ public partial class App : Application
 
         // Core services - singletons shared across all pages
         services.AddSingleton<IMediaPoolService, MediaPoolService>();
+        services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IProjectService, ProjectService>();
+        services.AddSingleton<IPluginService, PluginService>();
+        services.AddSingleton<IBuildService, BuildService>();
+        services.AddSingleton<IVapourSynthService, VapourSynthService>();
         services.AddSingleton<ThumbnailService>();
-        services.AddSingleton<SettingsService>();
-        services.AddSingleton<ProjectService>();
         services.AddSingleton<UndoService>();
 
         // ViewModels - transient (new instance per request)
@@ -109,6 +124,8 @@ public partial class App : Application
         services.AddTransient<RestoreViewModel>();
         services.AddTransient<ExportViewModel>();
         services.AddTransient<MainViewModel>();
+        services.AddTransient<SettingsViewModel>();
+        services.AddTransient<MainWindowViewModel>();
     }
 
     /// <summary>

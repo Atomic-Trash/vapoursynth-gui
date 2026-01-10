@@ -8,7 +8,7 @@ namespace VapourSynthPortable.Services;
 /// <summary>
 /// Service for managing project save/load operations
 /// </summary>
-public class ProjectService
+public class ProjectService : IProjectService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

@@ -9,7 +9,6 @@
             <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
             <helpers:CountToVisibilityConverter x:Key="CountToVis"/>
             <helpers:StringToVisibilityConverter x:Key="StringToVis"/>
-            <helpers:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
             <helpers:NullToVisibilityConverter x:Key="NullToVis"/>
             <helpers:BoolToBorderBrushConverter x:Key="BoolToBorderBrush"/>
             <helpers:InverseBoolConverter x:Key="InverseBool"/>
@@ -26,6 +25,20 @@
             <helpers:SortDirectionToArrowConverter x:Key="SortDirectionToArrowConverter"/>
             <helpers:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter"/>
             <helpers:StringToVisibilityMatchConverter x:Key="StringToVisibilityMatchConverter"/>
+            <helpers:BoolToFavoriteIconConverter x:Key="BoolToFavoriteIconConverter"/>
+            <helpers:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVisibilityConverter"/>
+            <helpers:CountToVisibilityInverseConverter x:Key="CountToVisInverse"/>
+            <helpers:TimeSpanToVisibilityConverter x:Key="TimeSpanToVisibilityConverter"/>
+            <helpers:WipeRectConverter x:Key="WipeRectConverter"/>
+            <helpers:WipeLineMarginConverter x:Key="WipeLineMarginConverter"/>
+            <helpers:StatusToBackgroundConverter x:Key="StatusToBackgroundConverter"/>
+            <helpers:StatusToForegroundConverter x:Key="StatusToForegroundConverter"/>
+            <helpers:BoolToPauseIconConverter x:Key="BoolToPauseIconConverter"/>
+            <helpers:BoolToPauseColorConverter x:Key="BoolToPauseColorConverter"/>
+            <helpers:BoolToPauseTooltipConverter x:Key="BoolToPauseTooltipConverter"/>
+            <helpers:BoolToPauseLabelConverter x:Key="BoolToPauseLabelConverter"/>
+            <helpers:BoolToToggleLabelConverter x:Key="BoolToToggleLabelConverter"/>
+            <helpers:BoolToToggleColorConverter x:Key="BoolToToggleColorConverter"/>
 
             <!-- Inter Font Family -->
             <FontFamily x:Key="InterRegular">pack://application:,,,/Assets/Fonts/#Inter</FontFamily>
@@ -266,6 +279,43 @@
                                     </MultiTrigger.Conditions>
                                     <Setter TargetName="border" Property="Background" Value="#1177BB"/>
                                 </MultiTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Icon Button Style (minimal, transparent) -->
+            <Style x:Key="IconButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="#888"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="4"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" Background="{TemplateBinding Background}"
+                                    BorderBrush="Transparent" BorderThickness="1"
+                                    CornerRadius="3"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#3A3A3A"/>
+                                    <Setter Property="Foreground" Value="#CCC"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#4A4A4A"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.4"/>
+                                </Trigger>
+                                <Trigger Property="IsFocused" Value="True">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#6366F1"/>
+                                </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>

@@ -35,12 +35,32 @@ param(
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
+# Find project root (where plugins.json is located)
+$projectRoot = $PSScriptRoot
+for ($i = 0; $i -lt 5; $i++) {
+    if (Test-Path (Join-Path $projectRoot "plugins.json")) { break }
+    $projectRoot = Split-Path -Parent $projectRoot
+}
+
+# Load versions from shared config
+$versionsFile = Join-Path $projectRoot "config\versions.json"
+if (Test-Path $versionsFile) {
+    $versions = Get-Content $versionsFile | ConvertFrom-Json
+    $pythonVersion = $versions.python.version
+    $vapourSynthVersion = $versions.vapoursynth.version
+} else {
+    # Fallback to hardcoded versions if config not found
+    Write-Warning "versions.json not found at $versionsFile, using defaults"
+    $pythonVersion = "3.12.4"
+    $vapourSynthVersion = "R68"
+}
+
 $script:Config = @{
-    PythonVersion = "3.12.4"
-    VapourSynthVersion = "R68"
-    RootDir = $PSScriptRoot
-    BuildDir = Join-Path $PSScriptRoot "build"
-    DistDir = Join-Path $PSScriptRoot "dist"
+    PythonVersion = $pythonVersion
+    VapourSynthVersion = $vapourSynthVersion
+    RootDir = $projectRoot
+    BuildDir = Join-Path $projectRoot "build"
+    DistDir = Join-Path $projectRoot "dist"
     PythonUrl = "https://www.python.org/ftp/python/{0}/python-{0}-embed-amd64.zip"
     VapourSynthUrl = "https://github.com/vapoursynth/vapoursynth/releases/download/{0}/VapourSynth64-Portable-{0}.zip"
 }

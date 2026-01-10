@@ -1,0 +1,12 @@
+{
+  "$schema": "./versions-schema.json",
+  "description": "Shared version configuration for VapourSynth Portable build system",
+  "python": {
+    "version": "3.12.4",
+    "url": "https://www.python.org/ftp/python/{version}/python-{version}-embed-amd64.zip"
+  },
+  "vapoursynth": {
+    "version": "R68",
+    "url": "https://github.com/vapoursynth/vapoursynth/releases/download/{version}/VapourSynth64-Portable-{version}.zip"
+  }
+}

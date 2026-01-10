@@ -70,8 +70,8 @@
       "name": "bm3dcuda",
       "description": "CUDA-accelerated BM3D denoising",
       "set": "full",
-      "url": "https://github.com/WolframRhodworst/VapourSynth-BM3DCUDA/releases/latest/download/VapourSynth-BM3DCUDA.zip",
-      "version": "latest",
+      "url": "https://github.com/WolframRhodium/VapourSynth-BM3DCUDA/releases/download/R2.16/VapourSynth-BM3DCUDA_x64.zip",
+      "version": "R2.16",
       "files": ["libbm3dcuda.dll"],
       "dependencies": ["CUDA Runtime"]
     },

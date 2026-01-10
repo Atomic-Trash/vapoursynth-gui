@@ -5,16 +5,13 @@ using System.Windows.Input;
 using Microsoft.Win32;
 using VapourSynthPortable.Models;
 using VapourSynthPortable.Services;
+using VapourSynthPortable.ViewModels;
 
 namespace VapourSynthPortable;
 
-// Note: Window state management is handled by loading/saving AppSettings
-
 public partial class MainWindow : Window
 {
-    private readonly ProjectService _projectService = new();
-    private readonly SettingsService _settingsService = new();
-    private Project _currentProject;
+    private readonly MainWindowViewModel _viewModel;
 
     /// <summary>
     /// Gets all ViewModels that implement IProjectPersistable from the pages
@@ -29,58 +26,130 @@ public partial class MainWindow : Window
             yield return restoreVm;
     }
 
-    /// <summary>
-    /// Exports current state from all pages to the project
-    /// </summary>
-    private void ExportStateToProject()
-    {
-        foreach (var vm in GetPersistableViewModels())
-        {
-            vm.ExportToProject(_currentProject);
-        }
-        _currentProject.MarkDirty();
-    }
-
-    /// <summary>
-    /// Imports state from the project to all pages
-    /// </summary>
-    private void ImportStateFromProject()
-    {
-        foreach (var vm in GetPersistableViewModels())
-        {
-            vm.ImportFromProject(_currentProject);
-        }
-    }
-
     public MainWindow()
     {
         InitializeComponent();
 
+        // Get ViewModel from DI
+        _viewModel = App.Services?.GetService(typeof(MainWindowViewModel)) as MainWindowViewModel
+            ?? new MainWindowViewModel();
+        DataContext = _viewModel;
+
+        // Wire up ViewModel events
+        _viewModel.SaveChangesRequested += OnSaveChangesRequested;
+        _viewModel.OpenFileDialogRequested += OnOpenFileDialogRequested;
+        _viewModel.SaveFileDialogRequested += OnSaveFileDialogRequested;
+        _viewModel.ImportStateRequested += OnImportStateRequested;
+        _viewModel.ExportStateRequested += OnExportStateRequested;
+
         // Restore window state from settings
         RestoreWindowState();
 
-        // Create a new project on startup
-        _currentProject = _projectService.CreateNew();
-        UpdateTitle();
-        LoadRecentProjects();
+        // Load recent projects into menu
+        RefreshRecentProjectsMenu();
+        _viewModel.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(MainWindowViewModel.RecentProjects))
+                RefreshRecentProjectsMenu();
+        };
 
         // Register toast notification with service
         ToastService.Instance.SetToastControl(ToastNotification);
 
         // Setup keyboard shortcuts
-        CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => NewProject_Click(s, e)));
-        CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenProject_Click(s, e)));
-        CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => SaveProject_Click(s, e)));
+        SetupCommandBindings();
+    }
+
+    #region ViewModel Event Handlers
+
+    private async Task<bool> OnSaveChangesRequested()
+    {
+        var result = MessageBox.Show(
+            "Do you want to save changes to the current project?",
+            "Save Changes",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Cancel)
+            return false;
+
+        if (result == MessageBoxResult.Yes)
+        {
+            await _viewModel.SaveProjectAsync();
+        }
+
+        return true;
+    }
+
+    private string? OnOpenFileDialogRequested()
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Open Project",
+            Filter = Project.FileFilter,
+            DefaultExt = Project.FileExtension
+        };
+
+        return dialog.ShowDialog() == true ? dialog.FileName : null;
+    }
+
+    private string? OnSaveFileDialogRequested(string defaultName)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save Project As",
+            Filter = Project.FileFilter,
+            DefaultExt = Project.FileExtension,
+            FileName = defaultName
+        };
+
+        return dialog.ShowDialog() == true ? dialog.FileName : null;
+    }
+
+    private void OnImportStateRequested(Project project)
+    {
+        foreach (var vm in GetPersistableViewModels())
+        {
+            vm.ImportFromProject(project);
+        }
+    }
+
+    private void OnExportStateRequested(Project project)
+    {
+        foreach (var vm in GetPersistableViewModels())
+        {
+            vm.ExportToProject(project);
+        }
+        project.MarkDirty();
+    }
+
+    #endregion
+
+    #region Command Bindings
+
+    private void SetupCommandBindings()
+    {
+        CommandBindings.Add(new CommandBinding(ApplicationCommands.New,
+            async (s, e) => await _viewModel.NewProjectCommand.ExecuteAsync(null)));
+        CommandBindings.Add(new CommandBinding(ApplicationCommands.Open,
+            async (s, e) => await _viewModel.OpenProjectCommand.ExecuteAsync(null)));
+        CommandBindings.Add(new CommandBinding(ApplicationCommands.Save,
+            async (s, e) => await _viewModel.SaveProjectCommand.ExecuteAsync(null)));
 
         // Ctrl+Shift+S for Save As
         var saveAsCommand = new RoutedCommand();
         saveAsCommand.InputGestures.Add(new KeyGesture(Key.S, ModifierKeys.Control | ModifierKeys.Shift));
-        CommandBindings.Add(new CommandBinding(saveAsCommand, (s, e) => SaveProjectAs_Click(s, e)));
+        CommandBindings.Add(new CommandBinding(saveAsCommand,
+            async (s, e) => await _viewModel.SaveProjectAsCommand.ExecuteAsync(null)));
     }
+
+    #endregion
+
+    #region Window State Management
 
     private void RestoreWindowState()
     {
-        var settings = _settingsService.Load();
+        var settings = _viewModel.LoadSettings();
 
         // Restore window size
         if (settings.WindowWidth > 0 && settings.WindowHeight > 0)
@@ -92,7 +161,6 @@ public partial class MainWindow : Window
         // Restore window position (only if valid coordinates)
         if (settings.WindowLeft >= 0 && settings.WindowTop >= 0)
         {
-            // Ensure window is visible on screen
             var screenWidth = SystemParameters.VirtualScreenWidth;
             var screenHeight = SystemParameters.VirtualScreenHeight;
 
@@ -110,17 +178,13 @@ public partial class MainWindow : Window
         }
 
         // Restore log panel visibility
-        if (!settings.ShowLogPanel)
-        {
-            LogPanelRow.Height = new GridLength(0);
-            LogViewer.Visibility = Visibility.Collapsed;
-            LogPanelToggle.IsChecked = false;
-        }
+        _viewModel.IsLogPanelVisible = settings.ShowLogPanel;
+        UpdateLogPanelVisibility();
     }
 
     private void SaveWindowState()
     {
-        var settings = _settingsService.Load();
+        var settings = _viewModel.LoadSettings();
 
         // Save window state (only if not minimized)
         if (WindowState != WindowState.Minimized)
@@ -138,28 +202,21 @@ public partial class MainWindow : Window
         }
 
         // Save log panel visibility
-        settings.ShowLogPanel = LogPanelToggle.IsChecked == true;
+        settings.ShowLogPanel = _viewModel.IsLogPanelVisible;
 
         // Save active page
-        settings.LastActivePage = GetActivePageName();
+        settings.LastActivePage = _viewModel.CurrentPage;
 
-        _settingsService.Save(settings);
+        _viewModel.SaveSettings(settings);
     }
 
-    private string GetActivePageName()
-    {
-        if (NavMedia?.IsChecked == true) return "Media";
-        if (NavEdit?.IsChecked == true) return "Edit";
-        if (NavRestore?.IsChecked == true) return "Restore";
-        if (NavColor?.IsChecked == true) return "Color";
-        if (NavExport?.IsChecked == true) return "Export";
-        if (NavSettings?.IsChecked == true) return "Settings";
-        return "Restore"; // Default
-    }
+    #endregion
+
+    #region Navigation
 
     private void NavButton_Checked(object sender, RoutedEventArgs e)
     {
-        // Hide all pages (null checks for designer support)
+        // Hide all pages
         PageMedia?.SetValue(VisibilityProperty, Visibility.Collapsed);
         PageEdit?.SetValue(VisibilityProperty, Visibility.Collapsed);
         PageRestore?.SetValue(VisibilityProperty, Visibility.Collapsed);
@@ -167,48 +224,61 @@ public partial class MainWindow : Window
         PageExport?.SetValue(VisibilityProperty, Visibility.Collapsed);
         PageSettings?.SetValue(VisibilityProperty, Visibility.Collapsed);
 
-        // Show selected page
+        // Show selected page and update ViewModel
         if (sender == NavMedia && PageMedia != null)
+        {
             PageMedia.Visibility = Visibility.Visible;
+            _viewModel.NavigateTo("Media");
+        }
         else if (sender == NavEdit && PageEdit != null)
+        {
             PageEdit.Visibility = Visibility.Visible;
+            _viewModel.NavigateTo("Edit");
+        }
         else if (sender == NavRestore && PageRestore != null)
+        {
             PageRestore.Visibility = Visibility.Visible;
+            _viewModel.NavigateTo("Restore");
+        }
         else if (sender == NavColor && PageColor != null)
+        {
             PageColor.Visibility = Visibility.Visible;
+            _viewModel.NavigateTo("Color");
+        }
         else if (sender == NavExport && PageExport != null)
+        {
             PageExport.Visibility = Visibility.Visible;
+            _viewModel.NavigateTo("Export");
+        }
         else if (sender == NavSettings && PageSettings != null)
+        {
             PageSettings.Visibility = Visibility.Visible;
+            _viewModel.NavigateTo("Settings");
+        }
     }
 
-    private void UpdateTitle()
-    {
-        Title = $"VapourSynth Studio - {_currentProject.DisplayName}";
-    }
+    #endregion
 
-    private void LoadRecentProjects()
-    {
-        var recentProjects = _projectService.GetRecentProjects();
+    #region Recent Projects Menu
 
-        if (recentProjects.Count > 0)
+    private void RefreshRecentProjectsMenu()
+    {
+        RecentProjectsMenu.Items.Clear();
+
+        if (_viewModel.HasRecentProjects)
         {
             RecentProjectsMenu.IsEnabled = true;
-            RecentProjectsMenu.Items.Clear();
 
-            foreach (var path in recentProjects)
+            foreach (var recent in _viewModel.RecentProjects)
             {
-                if (File.Exists(path))
+                var menuItem = new MenuItem
                 {
-                    var menuItem = new MenuItem
-                    {
-                        Header = Path.GetFileNameWithoutExtension(path),
-                        ToolTip = path,
-                        Tag = path
-                    };
-                    menuItem.Click += RecentProject_Click;
-                    RecentProjectsMenu.Items.Add(menuItem);
-                }
+                    Header = recent.DisplayName,
+                    ToolTip = recent.FilePath,
+                    Tag = recent.FilePath
+                };
+                menuItem.Click += RecentProject_Click;
+                RecentProjectsMenu.Items.Add(menuItem);
             }
         }
         else
@@ -221,161 +291,32 @@ public partial class MainWindow : Window
     {
         if (sender is MenuItem menuItem && menuItem.Tag is string path)
         {
-            await LoadProjectAsync(path);
+            await _viewModel.OpenRecentProjectAsync(path);
         }
     }
 
+    #endregion
+
+    #region Menu Event Handlers
+
     private async void NewProject_Click(object sender, RoutedEventArgs e)
     {
-        if (_currentProject.IsDirty)
-        {
-            var result = MessageBox.Show(
-                "Do you want to save changes to the current project?",
-                "Save Changes",
-                MessageBoxButton.YesNoCancel,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Cancel)
-                return;
-
-            if (result == MessageBoxResult.Yes)
-            {
-                await SaveProjectAsync();
-            }
-        }
-
-        _currentProject = _projectService.CreateNew();
-        UpdateTitle();
+        await _viewModel.NewProjectCommand.ExecuteAsync(null);
     }
 
     private async void OpenProject_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Open Project",
-            Filter = Project.FileFilter,
-            DefaultExt = Project.FileExtension
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            if (_currentProject.IsDirty)
-            {
-                var result = MessageBox.Show(
-                    "Do you want to save changes to the current project?",
-                    "Save Changes",
-                    MessageBoxButton.YesNoCancel,
-                    MessageBoxImage.Question);
-
-                if (result == MessageBoxResult.Cancel)
-                    return;
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    await SaveProjectAsync();
-                }
-            }
-
-            await LoadProjectAsync(dialog.FileName);
-        }
-    }
-
-    private async Task LoadProjectAsync(string path)
-    {
-        try
-        {
-            var project = await _projectService.LoadAsync(path);
-            if (project != null)
-            {
-                _currentProject = project;
-                _projectService.AddToRecentProjects(path);
-                LoadRecentProjects();
-                UpdateTitle();
-
-                // Apply loaded project data to all pages
-                ImportStateFromProject();
-
-                ToastService.Instance.ShowSuccess($"Project loaded: {Path.GetFileName(path)}");
-            }
-            else
-            {
-                MessageBox.Show("Failed to load project file.", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Error loading project: {ex.Message}", "Error",
-                MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        await _viewModel.OpenProjectCommand.ExecuteAsync(null);
     }
 
     private async void SaveProject_Click(object sender, RoutedEventArgs e)
     {
-        await SaveProjectAsync();
-    }
-
-    private async Task SaveProjectAsync()
-    {
-        if (string.IsNullOrEmpty(_currentProject.FilePath))
-        {
-            await SaveProjectAsAsync();
-        }
-        else
-        {
-            try
-            {
-                // Export current state from all pages
-                ExportStateToProject();
-
-                await _projectService.SaveAsync(_currentProject, _currentProject.FilePath);
-                UpdateTitle();
-                ToastService.Instance.ShowSuccess("Project saved");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error saving project: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
+        await _viewModel.SaveProjectCommand.ExecuteAsync(null);
     }
 
     private async void SaveProjectAs_Click(object sender, RoutedEventArgs e)
     {
-        await SaveProjectAsAsync();
-    }
-
-    private async Task SaveProjectAsAsync()
-    {
-        var dialog = new SaveFileDialog
-        {
-            Title = "Save Project As",
-            Filter = Project.FileFilter,
-            DefaultExt = Project.FileExtension,
-            FileName = _currentProject.Name
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            try
-            {
-                _currentProject.Name = Path.GetFileNameWithoutExtension(dialog.FileName);
-
-                // Export current state from all pages
-                ExportStateToProject();
-
-                await _projectService.SaveAsync(_currentProject, dialog.FileName);
-                _projectService.AddToRecentProjects(dialog.FileName);
-                LoadRecentProjects();
-                UpdateTitle();
-                ToastService.Instance.ShowSuccess($"Project saved: {_currentProject.Name}");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error saving project: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
+        await _viewModel.SaveProjectAsCommand.ExecuteAsync(null);
     }
 
     private void Exit_Click(object sender, RoutedEventArgs e)
@@ -383,9 +324,19 @@ public partial class MainWindow : Window
         Close();
     }
 
+    #endregion
+
+    #region Log Panel
+
     private void LogPanelToggle_Click(object sender, RoutedEventArgs e)
     {
-        if (LogPanelToggle.IsChecked == true)
+        _viewModel.IsLogPanelVisible = LogPanelToggle.IsChecked == true;
+        UpdateLogPanelVisibility();
+    }
+
+    private void UpdateLogPanelVisibility()
+    {
+        if (_viewModel.IsLogPanelVisible)
         {
             LogPanelRow.Height = new GridLength(180);
             LogViewer.Visibility = Visibility.Visible;
@@ -395,11 +346,21 @@ public partial class MainWindow : Window
             LogPanelRow.Height = new GridLength(0);
             LogViewer.Visibility = Visibility.Collapsed;
         }
+
+        // Sync toggle button state
+        if (LogPanelToggle != null)
+        {
+            LogPanelToggle.IsChecked = _viewModel.IsLogPanelVisible;
+        }
     }
+
+    #endregion
+
+    #region Window Closing
 
     protected override async void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        if (_currentProject.IsDirty)
+        if (_viewModel.HasUnsavedChanges)
         {
             var result = MessageBox.Show(
                 "Do you want to save changes before closing?",
@@ -415,7 +376,7 @@ public partial class MainWindow : Window
 
             if (result == MessageBoxResult.Yes)
             {
-                await SaveProjectAsync();
+                await _viewModel.SaveProjectAsync();
             }
         }
 
@@ -424,4 +385,6 @@ public partial class MainWindow : Window
 
         base.OnClosing(e);
     }
+
+    #endregion
 }

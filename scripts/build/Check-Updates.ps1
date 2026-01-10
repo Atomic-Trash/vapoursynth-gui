@@ -46,14 +46,34 @@ if (-not $Plugins -and -not $Core) {
     $All = $true
 }
 
+# Find project root (where plugins.json is located)
+$projectRoot = $PSScriptRoot
+for ($i = 0; $i -lt 5; $i++) {
+    if (Test-Path (Join-Path $projectRoot "plugins.json")) { break }
+    $projectRoot = Split-Path -Parent $projectRoot
+}
+
+# Load versions from shared config
+$versionsFile = Join-Path $projectRoot "config\versions.json"
+if (Test-Path $versionsFile) {
+    $versions = Get-Content $versionsFile | ConvertFrom-Json
+    $currentPythonVersion = $versions.python.version
+    $currentVSVersion = $versions.vapoursynth.version
+} else {
+    # Fallback to hardcoded versions if config not found
+    Write-Warning "versions.json not found at $versionsFile, using defaults"
+    $currentPythonVersion = "3.12.4"
+    $currentVSVersion = "R68"
+}
+
 # Configuration
 $script:Config = @{
-    ConfigFile = Join-Path $PSScriptRoot "plugins.json"
-    CacheFile = Join-Path $PSScriptRoot "build\update-cache.json"
+    ConfigFile = Join-Path $projectRoot "plugins.json"
+    CacheFile = Join-Path $projectRoot "build\update-cache.json"
     CacheTTLMinutes = 60
     GitHubApiBase = "https://api.github.com"
-    CurrentPythonVersion = "3.12.4"
-    CurrentVSVersion = "R68"
+    CurrentPythonVersion = $currentPythonVersion
+    CurrentVSVersion = $currentVSVersion
 }
 
 # Cache management

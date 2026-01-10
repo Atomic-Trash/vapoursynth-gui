@@ -4,7 +4,7 @@ using VapourSynthPortable.Models;
 
 namespace VapourSynthPortable.Services;
 
-public class PluginService
+public class PluginService : IPluginService
 {
     private readonly string _configPath;
     private readonly string _enabledPluginsPath;

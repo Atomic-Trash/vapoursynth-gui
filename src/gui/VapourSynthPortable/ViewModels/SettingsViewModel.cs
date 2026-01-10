@@ -8,18 +8,14 @@ namespace VapourSynthPortable.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
-    private readonly SettingsService _settingsService;
-    private readonly VapourSynthService _vsService;
+    private readonly ISettingsService _settingsService;
+    private readonly IVapourSynthService _vsService;
     private readonly Action? _closeAction;
 
-    public SettingsViewModel() : this(null)
+    public SettingsViewModel(ISettingsService settingsService, IVapourSynthService vsService, Action? closeAction = null)
     {
-    }
-
-    public SettingsViewModel(Action? closeAction)
-    {
-        _settingsService = new SettingsService();
-        _vsService = new VapourSynthService();
+        _settingsService = settingsService;
+        _vsService = vsService;
         _closeAction = closeAction;
 
         PluginSets = new ObservableCollection<string> { "minimal", "standard", "full" };
@@ -32,6 +28,13 @@ public partial class SettingsViewModel : ObservableObject
         LoadSettings();
         UpdateCacheInfo();
         _ = LoadPluginsAsync();
+    }
+
+    // Parameterless constructor for XAML designer
+    public SettingsViewModel() : this(
+        App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService(),
+        App.Services?.GetService(typeof(IVapourSynthService)) as IVapourSynthService ?? new VapourSynthService())
+    {
     }
 
     #region Build Settings

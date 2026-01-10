@@ -5,7 +5,7 @@ using VapourSynthPortable.Models;
 
 namespace VapourSynthPortable.Services;
 
-public class BuildService
+public class BuildService : IBuildService
 {
     private readonly string _scriptPath;
 

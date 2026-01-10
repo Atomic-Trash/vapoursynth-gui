@@ -14,7 +14,7 @@ namespace VapourSynthPortable.ViewModels;
 public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectPersistable
 {
     private readonly IMediaPoolService _mediaPool;
-    private readonly VapourSynthService _vapourSynthService;
+    private readonly IVapourSynthService _vapourSynthService;
     private readonly QuickPreviewService _quickPreviewService;
     private bool _disposed;
 
@@ -35,6 +35,17 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
 
     [ObservableProperty]
     private RestorePreset? _selectedPreset;
+
+    [ObservableProperty]
+    private string _searchQuery = "";
+
+    // Toggle comparison state
+    [ObservableProperty]
+    private bool _showOriginalInToggle;
+
+    // Queue pause state
+    [ObservableProperty]
+    private bool _isPaused;
 
     // Source is now managed by MediaPoolService
     public string SourcePath => _mediaPool.CurrentSource?.FilePath ?? "";
@@ -88,6 +99,10 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
 
     public bool HasPreview => OriginalFrame != null || ProcessedFrame != null;
     public bool CanGeneratePreview => HasSource && SelectedPreset != null && !IsGeneratingPreview;
+    public bool CanStartProcessing => !IsProcessing && JobQueue.Any(j => j.Status == ProcessingStatus.Pending);
+    public int CompletedJobCount => JobQueue.Count(j => j.Status == ProcessingStatus.Completed);
+    public int PendingJobCount => JobQueue.Count(j => j.Status == ProcessingStatus.Pending);
+    public TimeSpan EstimatedTotalTime => TimeSpan.FromMinutes(PendingJobCount * 5); // Rough estimate
 
     // Source media info
     [ObservableProperty]
@@ -112,13 +127,13 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     private readonly string _vapourSynthPath;
     private readonly string _pythonPath;
 
-    public RestoreViewModel(IMediaPoolService mediaPool)
+    public RestoreViewModel(IMediaPoolService mediaPool, IVapourSynthService vapourSynthService)
     {
         _mediaPool = mediaPool;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
 
         // Initialize VapourSynth service
-        _vapourSynthService = new VapourSynthService();
+        _vapourSynthService = vapourSynthService;
         _vapourSynthService.ProgressChanged += OnVapourSynthProgressChanged;
         _vapourSynthService.LogMessage += OnVapourSynthLogMessage;
 
@@ -136,8 +151,9 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     }
 
     // Parameterless constructor for XAML design-time support
-    public RestoreViewModel() : this(App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService
-        ?? new MediaPoolService())
+    public RestoreViewModel() : this(
+        App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(),
+        App.Services?.GetService(typeof(IVapourSynthService)) as IVapourSynthService ?? new VapourSynthService())
     {
     }
 
@@ -206,10 +222,71 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
         FilterPresets();
     }
 
+    partial void OnSearchQueryChanged(string value)
+    {
+        FilterPresets();
+    }
+
     [RelayCommand]
     private void SelectCategory(string category)
     {
         SelectedCategory = category;
+    }
+
+    [RelayCommand]
+    private void ToggleShowOriginal()
+    {
+        ShowOriginalInToggle = !ShowOriginalInToggle;
+    }
+
+    [RelayCommand]
+    private void ToggleFavorite(RestorePreset? preset)
+    {
+        if (preset == null) return;
+        preset.IsFavorite = !preset.IsFavorite;
+
+        // If we're viewing favorites and unfavorited, refresh the list
+        if (SelectedCategory == "Favorites")
+        {
+            FilterPresets();
+        }
+
+        // TODO: Persist favorites to settings
+    }
+
+    [RelayCommand]
+    private void ResetParameter(PresetParameter? param)
+    {
+        param?.ResetToDefault();
+    }
+
+    [RelayCommand]
+    private void TogglePause()
+    {
+        IsPaused = !IsPaused;
+        StatusText = IsPaused ? "Queue paused" : "Queue resumed";
+    }
+
+    [RelayCommand]
+    private void MoveJobUp(RestoreJob? job)
+    {
+        if (job == null) return;
+        var index = JobQueue.IndexOf(job);
+        if (index > 0 && job.Status == ProcessingStatus.Pending)
+        {
+            JobQueue.Move(index, index - 1);
+        }
+    }
+
+    [RelayCommand]
+    private void MoveJobDown(RestoreJob? job)
+    {
+        if (job == null) return;
+        var index = JobQueue.IndexOf(job);
+        if (index < JobQueue.Count - 1 && job.Status == ProcessingStatus.Pending)
+        {
+            JobQueue.Move(index, index + 1);
+        }
     }
 
     partial void OnSelectedPresetChanged(RestorePreset? value)
@@ -307,9 +384,26 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     {
         FilteredPresets.Clear();
 
-        var filtered = SelectedCategory == "All"
-            ? Presets
-            : Presets.Where(p => p.Category == SelectedCategory);
+        IEnumerable<RestorePreset> filtered = Presets;
+
+        // Filter by category
+        if (SelectedCategory == "Favorites")
+        {
+            filtered = filtered.Where(p => p.IsFavorite);
+        }
+        else if (SelectedCategory != "All")
+        {
+            filtered = filtered.Where(p => p.Category == SelectedCategory);
+        }
+
+        // Filter by search query
+        if (!string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            var query = SearchQuery.ToLowerInvariant();
+            filtered = filtered.Where(p =>
+                p.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+        }
 
         foreach (var preset in filtered)
         {
@@ -543,7 +637,22 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
             if (_cancellationTokenSource?.IsCancellationRequested == true)
                 break;
 
+            // Wait while paused
+            while (IsPaused && !_cancellationTokenSource?.IsCancellationRequested == true)
+            {
+                await Task.Delay(100);
+            }
+
+            if (_cancellationTokenSource?.IsCancellationRequested == true)
+                break;
+
             await ProcessJob(job);
+
+            // Update queue summary properties
+            OnPropertyChanged(nameof(CompletedJobCount));
+            OnPropertyChanged(nameof(PendingJobCount));
+            OnPropertyChanged(nameof(CanStartProcessing));
+            OnPropertyChanged(nameof(EstimatedTotalTime));
         }
     }
 

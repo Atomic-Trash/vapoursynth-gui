@@ -3,7 +3,9 @@ $ErrorActionPreference = 'Stop'
 
 $mpvUrl = 'https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20241215/mpv-x86_64-20241215-git-fa927c3.7z'
 $downloadPath = "$env:TEMP\mpv.7z"
-$extractPath = 'C:\Users\jeffr\Documents\Visual Studio Code Projects\VapourSynth GUI\dist\mpv'
+# Get project root (two levels up from scripts/util/)
+$projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$extractPath = Join-Path $projectRoot 'dist\mpv'
 
 Write-Host 'Downloading mpv from GitHub...'
 Invoke-WebRequest -Uri $mpvUrl -OutFile $downloadPath
