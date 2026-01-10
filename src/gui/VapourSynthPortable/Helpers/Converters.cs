@@ -399,3 +399,288 @@ public class StringToVisibilityMatchConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+/// <summary>
+/// Converts bool (IsFavorite) to star icon (filled or outline)
+/// </summary>
+public class BoolToFavoriteIconConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is bool isFavorite && isFavorite ? "\uE735" : "\uE734"; // Filled star / outline star
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Shows Visible when string is null or empty, Collapsed otherwise (for placeholders)
+/// </summary>
+public class NullOrEmptyToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string str)
+        {
+            return string.IsNullOrEmpty(str) ? Visibility.Visible : Visibility.Collapsed;
+        }
+        return value == null ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts count to visibility inverse (Visible when count > 0, Collapsed when 0)
+/// </summary>
+public class CountToVisibilityInverseConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is int count)
+        {
+            return count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        return Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts TimeSpan to Visibility (Visible if > 0, Collapsed otherwise)
+/// </summary>
+public class TimeSpanToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is TimeSpan ts)
+        {
+            return ts.TotalSeconds > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        return Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// MultiValueConverter for wipe mode rectangle clipping
+/// </summary>
+public class WipeRectConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length >= 3 &&
+            values[0] is double width &&
+            values[1] is double height &&
+            values[2] is double position)
+        {
+            // Wipe from left to right: show processed frame from left edge to wipe position
+            var wipeX = width * position;
+            return new Rect(0, 0, wipeX, height);
+        }
+        return new Rect(0, 0, 0, 0);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts wipe position to margin for wipe line indicator
+/// </summary>
+public class WipeLineMarginConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is double position && parameter is FrameworkElement container)
+        {
+            var x = container.ActualWidth * position;
+            return new Thickness(x, 0, 0, 0);
+        }
+        if (value is double pos)
+        {
+            // Fallback: assume reasonable width
+            return new Thickness(pos * 500, 0, 0, 0);
+        }
+        return new Thickness(0);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts ProcessingStatus to background color
+/// </summary>
+public class StatusToBackgroundConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is VapourSynthPortable.Models.ProcessingStatus status)
+        {
+            return status switch
+            {
+                VapourSynthPortable.Models.ProcessingStatus.Pending => new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33)),
+                VapourSynthPortable.Models.ProcessingStatus.Processing => new SolidColorBrush(Color.FromRgb(0x1A, 0x3A, 0x5C)),
+                VapourSynthPortable.Models.ProcessingStatus.Completed => new SolidColorBrush(Color.FromRgb(0x1A, 0x3D, 0x2A)),
+                VapourSynthPortable.Models.ProcessingStatus.Failed => new SolidColorBrush(Color.FromRgb(0x4A, 0x1A, 0x1A)),
+                VapourSynthPortable.Models.ProcessingStatus.Cancelled => new SolidColorBrush(Color.FromRgb(0x3D, 0x3D, 0x1A)),
+                _ => new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33))
+            };
+        }
+        return new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33));
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts ProcessingStatus to foreground color
+/// </summary>
+public class StatusToForegroundConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is VapourSynthPortable.Models.ProcessingStatus status)
+        {
+            return status switch
+            {
+                VapourSynthPortable.Models.ProcessingStatus.Pending => new SolidColorBrush(Color.FromRgb(0xAA, 0xAA, 0xAA)),
+                VapourSynthPortable.Models.ProcessingStatus.Processing => new SolidColorBrush(Color.FromRgb(0x6A, 0xB0, 0xFF)),
+                VapourSynthPortable.Models.ProcessingStatus.Completed => new SolidColorBrush(Color.FromRgb(0x4A, 0xDE, 0x80)),
+                VapourSynthPortable.Models.ProcessingStatus.Failed => new SolidColorBrush(Color.FromRgb(0xE7, 0x48, 0x56)),
+                VapourSynthPortable.Models.ProcessingStatus.Cancelled => new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B)),
+                _ => new SolidColorBrush(Color.FromRgb(0xAA, 0xAA, 0xAA))
+            };
+        }
+        return new SolidColorBrush(Color.FromRgb(0xAA, 0xAA, 0xAA));
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts bool (IsPaused) to pause/play icon
+/// </summary>
+public class BoolToPauseIconConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is bool isPaused && isPaused ? "\uE768" : "\uE769"; // Play / Pause
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts bool (IsPaused) to color
+/// </summary>
+public class BoolToPauseColorConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is bool isPaused && isPaused
+            ? new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B)) // Amber when paused
+            : new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)); // Gray when running
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts bool (IsPaused) to tooltip text
+/// </summary>
+public class BoolToPauseTooltipConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is bool isPaused && isPaused ? "Resume processing" : "Pause processing";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts bool (IsPaused) to accessibility label
+/// </summary>
+public class BoolToPauseLabelConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is bool isPaused && isPaused ? "Resume Queue" : "Pause Queue";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts bool (ShowOriginalInToggle) to label text
+/// </summary>
+public class BoolToToggleLabelConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is bool showOriginal && showOriginal
+            ? "ORIGINAL (click to toggle)"
+            : "PROCESSED (click to toggle)";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts bool (ShowOriginalInToggle) to color
+/// </summary>
+public class BoolToToggleColorConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is bool showOriginal && showOriginal
+            ? new SolidColorBrush(Color.FromRgb(0x9E, 0x9E, 0x9E)) // Gray for original
+            : new SolidColorBrush(Color.FromRgb(0x4A, 0xDE, 0x80)); // Green for processed
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}

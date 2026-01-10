@@ -124,6 +124,9 @@ public partial class RestorePreset : ObservableObject
     [ObservableProperty]
     private List<PresetParameter> _parameters = [];
 
+    [ObservableProperty]
+    private bool _isFavorite;
+
     public bool HasParameters => Parameters.Count > 0;
 
     public string GenerateScript()

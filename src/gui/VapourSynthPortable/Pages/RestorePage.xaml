@@ -7,7 +7,11 @@
              d:DataContext="{d:DesignInstance Type=vm:RestoreViewModel}"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d">
+             mc:Ignorable="d"
+             AutomationProperties.Name="Restore Page"
+             AutomationProperties.HelpText="AI-powered video restoration with preset-based workflows"
+             KeyboardNavigation.TabNavigation="Cycle"
+             KeyboardNavigation.DirectionalNavigation="Contained">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -28,7 +32,9 @@
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <Button Content="Load Source" Command="{Binding LoadSourceAsyncCommand}"
                             ToolTip="Select a video file to restore"
-                            Style="{StaticResource SecondaryButton}" Margin="0,0,15,0"/>
+                            Style="{StaticResource SecondaryButton}" Margin="0,0,15,0"
+                            AutomationProperties.Name="Load Source Video"
+                            AutomationProperties.HelpText="Select a video file to apply restoration presets"/>
 
                     <TextBlock Text="{Binding SourcePath}" Foreground="#DDD" FontSize="11"
                                VerticalAlignment="Center" MaxWidth="300" TextTrimming="CharacterEllipsis"
@@ -71,11 +77,15 @@
                     <RadioButton Content="Simple" GroupName="RestoreMode"
                                  IsChecked="{Binding IsSimpleMode}"
                                  ToolTip="Use preset-based restoration"
-                                 Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                 Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,12,0"
+                                 AutomationProperties.Name="Simple Mode"
+                                 AutomationProperties.HelpText="Use preset-based restoration with quick actions"/>
                     <RadioButton Content="Advanced" GroupName="RestoreMode"
                                  IsChecked="{Binding IsSimpleMode, Converter={StaticResource InverseBool}}"
                                  ToolTip="Use node-based editor for custom scripts"
-                                 Foreground="#CCC" VerticalAlignment="Center"/>
+                                 Foreground="#CCC" VerticalAlignment="Center"
+                                 AutomationProperties.Name="Advanced Mode"
+                                 AutomationProperties.HelpText="Use node-based editor for custom VapourSynth scripts"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -98,50 +108,137 @@
                     </Grid.RowDefinitions>
 
                     <Border Grid.Row="0" Background="#2D2D2D" Padding="12,10" CornerRadius="8,8,0,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE773;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                       Foreground="#0E639C" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBlock Text="Restoration Presets" FontSize="13" FontWeight="SemiBold"
-                                       Foreground="#F1F1F1" VerticalAlignment="Center"/>
-                        </StackPanel>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Orientation="Horizontal">
+                                <TextBlock Text="&#xE773;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                           Foreground="#0E639C" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="Restoration Presets" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="#F1F1F1" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <!-- Search Box -->
+                            <Grid Grid.Row="1" Margin="0,10,0,0">
+                                <TextBox x:Name="SearchBox"
+                                         Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#252526" Foreground="#CCC" BorderBrush="#3A3A3A"
+                                         Padding="28,6,8,6" FontSize="11"
+                                         AutomationProperties.Name="Search Presets"
+                                         AutomationProperties.HelpText="Type to filter presets by name or description">
+                                    <TextBox.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="4"/>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                                <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                           Foreground="#888" VerticalAlignment="Center" Margin="8,0,0,0"
+                                           IsHitTestVisible="False"/>
+                                <TextBlock Text="Search presets..." FontSize="11" Foreground="#666"
+                                           VerticalAlignment="Center" Margin="28,0,0,0"
+                                           IsHitTestVisible="False"
+                                           Visibility="{Binding SearchQuery, Converter={StaticResource NullOrEmptyToVisibilityConverter}}"/>
+                            </Grid>
+                        </Grid>
                     </Border>
 
-                    <!-- Category Tabs -->
+                    <!-- Category Tabs with Icons -->
                     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto"
-                                  VerticalScrollBarVisibility="Disabled" Margin="8,0,8,8">
+                                  VerticalScrollBarVisibility="Disabled" Margin="8,8,8,8"
+                                  AutomationProperties.Name="Preset Categories">
                         <StackPanel Orientation="Horizontal">
-                            <RadioButton Content="All" GroupName="CategoryTabs"
+                            <RadioButton GroupName="CategoryTabs"
                                          Style="{StaticResource CategoryPillButton}"
                                          IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=All}"
-                                         Command="{Binding SelectCategoryCommand}" CommandParameter="All"/>
-                            <RadioButton Content="Denoising" GroupName="CategoryTabs"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="All"
+                                         AutomationProperties.Name="All Categories"
+                                         ToolTip="Show all presets">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8FD;" FontFamily="Segoe MDL2 Assets" FontSize="10" Margin="0,0,4,0"/>
+                                    <TextBlock Text="All"/>
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton GroupName="CategoryTabs"
                                          Style="{StaticResource CategoryPillButton}"
-                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Denoising}"
-                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Denoising"/>
-                            <RadioButton Content="Upscaling" GroupName="CategoryTabs"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Favorites}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Favorites"
+                                         AutomationProperties.Name="Favorite Presets"
+                                         ToolTip="Show your favorite presets">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE735;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#F59E0B" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Favorites"/>
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton GroupName="CategoryTabs"
                                          Style="{StaticResource CategoryPillButton}"
-                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Upscaling}"
-                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Upscaling"/>
-                            <RadioButton Content="Deinterlacing" GroupName="CategoryTabs"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Denoise}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Denoise"
+                                         AutomationProperties.Name="Denoise Presets"
+                                         ToolTip="Noise reduction presets">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE9F5;" FontFamily="Segoe MDL2 Assets" FontSize="10" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Denoise"/>
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton GroupName="CategoryTabs"
                                          Style="{StaticResource CategoryPillButton}"
-                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Deinterlacing}"
-                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Deinterlacing"/>
-                            <RadioButton Content="Restoration" GroupName="CategoryTabs"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Upscale}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Upscale"
+                                         AutomationProperties.Name="Upscale Presets"
+                                         ToolTip="Resolution upscaling presets">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8B3;" FontFamily="Segoe MDL2 Assets" FontSize="10" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Upscale"/>
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton GroupName="CategoryTabs"
                                          Style="{StaticResource CategoryPillButton}"
-                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Restoration}"
-                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Restoration"/>
-                            <RadioButton Content="Enhancement" GroupName="CategoryTabs"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Deinterlace}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Deinterlace"
+                                         AutomationProperties.Name="Deinterlace Presets"
+                                         ToolTip="Deinterlacing and IVTC presets">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8A9;" FontFamily="Segoe MDL2 Assets" FontSize="10" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Deinterlace"/>
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton GroupName="CategoryTabs"
                                          Style="{StaticResource CategoryPillButton}"
-                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Enhancement}"
-                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Enhancement"/>
-                            <RadioButton Content="Film" GroupName="CategoryTabs"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Interpolate}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Interpolate"
+                                         AutomationProperties.Name="Interpolation Presets"
+                                         ToolTip="Frame interpolation presets">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE916;" FontFamily="Segoe MDL2 Assets" FontSize="10" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Interpolate"/>
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton GroupName="CategoryTabs"
                                          Style="{StaticResource CategoryPillButton}"
-                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Film}"
-                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Film"/>
-                            <RadioButton Content="Utility" GroupName="CategoryTabs"
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Face}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Face"
+                                         AutomationProperties.Name="Face Restoration Presets"
+                                         ToolTip="Face enhancement and restoration">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="10" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Face"/>
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton GroupName="CategoryTabs"
                                          Style="{StaticResource CategoryPillButton}"
-                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Utility}"
-                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Utility"/>
+                                         IsChecked="{Binding SelectedCategory, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Color}"
+                                         Command="{Binding SelectCategoryCommand}" CommandParameter="Color"
+                                         AutomationProperties.Name="Colorization Presets"
+                                         ToolTip="Colorization and color correction">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE790;" FontFamily="Segoe MDL2 Assets" FontSize="10" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Color"/>
+                                </StackPanel>
+                            </RadioButton>
                         </StackPanel>
                     </ScrollViewer>
 
@@ -149,9 +246,14 @@
                     <ListBox Grid.Row="2" ItemsSource="{Binding FilteredPresets}"
                              SelectedItem="{Binding SelectedPreset}"
                              Background="Transparent" BorderThickness="0"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             AutomationProperties.Name="Restoration Presets List"
+                             AutomationProperties.HelpText="Select a preset to apply to your video"
+                             KeyboardNavigation.TabNavigation="Once">
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
+                                <Setter Property="AutomationProperties.Name" Value="{Binding Name}"/>
+                                <Setter Property="AutomationProperties.HelpText" Value="{Binding Description}"/>
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="ListBoxItem">
@@ -187,7 +289,7 @@
 
                                     <!-- Icon with glow effect when selected -->
                                     <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8"
-                                            Background="#252526" Margin="0,0,12,0">
+                                            Background="#252526" Margin="0,0,10,0">
                                         <TextBlock Text="{Binding Icon}"
                                                    FontFamily="Segoe MDL2 Assets" FontSize="16"
                                                    Foreground="#0E639C"
@@ -198,11 +300,23 @@
                                         <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontSize="12"
                                                    FontWeight="Medium"/>
                                         <TextBlock Text="{Binding Description}" Foreground="#808080"
-                                                   FontSize="10" TextWrapping="Wrap" MaxWidth="140"
+                                                   FontSize="10" TextWrapping="Wrap" MaxWidth="120"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <!-- Favorite Toggle -->
+                                        <Button Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource IconButtonStyle}"
+                                                Width="24" Height="24" Padding="0" Margin="0,0,4,0"
+                                                AutomationProperties.Name="Toggle Favorite"
+                                                AutomationProperties.HelpText="Add or remove this preset from favorites"
+                                                ToolTip="Toggle favorite">
+                                            <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                                       Text="{Binding IsFavorite, Converter={StaticResource BoolToFavoriteIconConverter}}"
+                                                       Foreground="{Binding IsFavorite, Converter={StaticResource BoolToFavoriteColorConverter}}"/>
+                                        </Button>
                                         <!-- GPU Badge -->
                                         <Border Background="#1A3D2A" CornerRadius="3"
                                                 Padding="5,2" VerticalAlignment="Center"
@@ -254,22 +368,29 @@
 
                             <!-- Comparison Mode Toolbar -->
                             <Border Grid.Row="0" Background="#2A2A2A" Padding="8,4"
-                                    Visibility="{Binding ShowComparison, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    Visibility="{Binding ShowComparison, Converter={StaticResource BoolToVisibilityConverter}}"
+                                    AutomationProperties.Name="Comparison Tools">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                     <TextBlock Text="Compare:" Foreground="#9E9E9E" FontSize="10"
                                                VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <RadioButton Content="Side by Side" GroupName="CompareMode"
                                                  Style="{StaticResource CategoryPillButton}"
                                                  IsChecked="{Binding ComparisonMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=SideBySide}"
-                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="{x:Static vm:ComparisonMode.SideBySide}"/>
+                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="{x:Static vm:ComparisonMode.SideBySide}"
+                                                 AutomationProperties.Name="Side by Side Comparison"
+                                                 AutomationProperties.HelpText="Show original and processed frames side by side"/>
                                     <RadioButton Content="Wipe" GroupName="CompareMode"
                                                  Style="{StaticResource CategoryPillButton}"
                                                  IsChecked="{Binding ComparisonMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=Wipe}"
-                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="{x:Static vm:ComparisonMode.Wipe}"/>
+                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="{x:Static vm:ComparisonMode.Wipe}"
+                                                 AutomationProperties.Name="Wipe Comparison"
+                                                 AutomationProperties.HelpText="Drag to reveal original frame underneath processed"/>
                                     <RadioButton Content="Toggle" GroupName="CompareMode"
                                                  Style="{StaticResource CategoryPillButton}"
                                                  IsChecked="{Binding ComparisonMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=Toggle}"
-                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="{x:Static vm:ComparisonMode.Toggle}"/>
+                                                 Command="{Binding SetComparisonModeCommand}" CommandParameter="{x:Static vm:ComparisonMode.Toggle}"
+                                                 AutomationProperties.Name="Toggle Comparison"
+                                                 AutomationProperties.HelpText="Click to switch between original and processed"/>
                                 </StackPanel>
                             </Border>
 
@@ -301,22 +422,57 @@
                                         </Grid>
                                     </Grid>
 
-                                    <!-- Wipe Mode (simplified - shows processed) -->
-                                    <Grid Visibility="{Binding ComparisonMode, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Wipe}">
+                                    <!-- Wipe Mode (horizontal reveal) -->
+                                    <Grid Visibility="{Binding ComparisonMode, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Wipe}"
+                                          x:Name="WipeContainer">
                                         <Image Source="{Binding OriginalFrame}" Stretch="Uniform"/>
-                                        <Image Source="{Binding ProcessedFrame}" Stretch="Uniform"
-                                               Opacity="{Binding WipePosition}"/>
+                                        <Image Source="{Binding ProcessedFrame}" Stretch="Uniform">
+                                            <Image.Clip>
+                                                <RectangleGeometry x:Name="WipeClip">
+                                                    <RectangleGeometry.Rect>
+                                                        <MultiBinding Converter="{StaticResource WipeRectConverter}">
+                                                            <Binding Path="ActualWidth" ElementName="WipeContainer"/>
+                                                            <Binding Path="ActualHeight" ElementName="WipeContainer"/>
+                                                            <Binding Path="WipePosition"/>
+                                                        </MultiBinding>
+                                                    </RectangleGeometry.Rect>
+                                                </RectangleGeometry>
+                                            </Image.Clip>
+                                        </Image>
+                                        <!-- Wipe line indicator -->
+                                        <Border Width="2" Background="#0E639C" HorizontalAlignment="Left"
+                                                Margin="{Binding WipePosition, Converter={StaticResource WipeLineMarginConverter}, ConverterParameter={x:Reference WipeContainer}}"/>
+                                        <Grid VerticalAlignment="Bottom" Margin="20,0,20,20">
+                                            <TextBlock Text="ORIGINAL" Foreground="#9E9E9E" FontSize="9" FontWeight="Bold"
+                                                       HorizontalAlignment="Left"/>
+                                            <TextBlock Text="PROCESSED" Foreground="#4ADE80" FontSize="9" FontWeight="Bold"
+                                                       HorizontalAlignment="Right"/>
+                                        </Grid>
                                         <Slider Value="{Binding WipePosition}" Minimum="0" Maximum="1"
-                                                VerticalAlignment="Bottom" Margin="20,0,20,20"
-                                                Background="Transparent"/>
+                                                VerticalAlignment="Bottom" Margin="20,0,20,40"
+                                                Background="Transparent"
+                                                AutomationProperties.Name="Wipe Position"
+                                                AutomationProperties.HelpText="Drag to adjust wipe position between original and processed"/>
                                     </Grid>
 
                                     <!-- Toggle Mode -->
                                     <Grid Visibility="{Binding ComparisonMode, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Toggle}"
-                                          MouseLeftButtonDown="ComparisonPanel_MouseLeftButtonDown">
-                                        <Image x:Name="ToggleImage" Source="{Binding ProcessedFrame}" Stretch="Uniform"/>
-                                        <TextBlock x:Name="ToggleLabel" Text="PROCESSED (click to toggle)" Foreground="#4ADE80" FontSize="9" FontWeight="Bold"
+                                          Cursor="Hand">
+                                        <Grid.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding ToggleShowOriginalCommand}"/>
+                                        </Grid.InputBindings>
+                                        <!-- Show original when ShowOriginalInToggle is true -->
+                                        <Image Source="{Binding OriginalFrame}" Stretch="Uniform"
+                                               Visibility="{Binding ShowOriginalInToggle, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                        <!-- Show processed when ShowOriginalInToggle is false -->
+                                        <Image Source="{Binding ProcessedFrame}" Stretch="Uniform"
+                                               Visibility="{Binding ShowOriginalInToggle, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+                                        <TextBlock Text="{Binding ShowOriginalInToggle, Converter={StaticResource BoolToToggleLabelConverter}}"
+                                                   Foreground="{Binding ShowOriginalInToggle, Converter={StaticResource BoolToToggleColorConverter}}"
+                                                   FontSize="9" FontWeight="Bold"
                                                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,8"/>
+                                        <TextBlock Text="Click to toggle" Foreground="#888" FontSize="9"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,12"/>
                                     </Grid>
                                 </Grid>
 
@@ -375,49 +531,68 @@
                                             <Button Content="Preview" Command="{Binding GeneratePreviewCommand}"
                                                     ToolTip="Generate a quick preview with this preset (2-5 seconds)"
                                                     Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
-                                                    IsEnabled="{Binding CanGeneratePreview}"/>
+                                                    IsEnabled="{Binding CanGeneratePreview}"
+                                                    AutomationProperties.Name="Generate Preview"
+                                                    AutomationProperties.HelpText="Generate a quick preview frame with this preset"/>
                                             <Button Content="Process Now" Command="{Binding ProcessNowCommand}"
                                                     ToolTip="Process immediately with selected preset"
-                                                    Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"/>
+                                                    Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
+                                                    AutomationProperties.Name="Process Now"
+                                                    AutomationProperties.HelpText="Start processing the video immediately with this preset"/>
                                             <Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"
                                                     ToolTip="Add to processing queue for batch processing"
-                                                    Style="{StaticResource SecondaryButton}"/>
+                                                    Style="{StaticResource SecondaryButton}"
+                                                    AutomationProperties.Name="Add to Queue"
+                                                    AutomationProperties.HelpText="Add this job to the processing queue for batch processing"/>
                                         </StackPanel>
                                     </Grid>
 
                                     <!-- Parameter Controls -->
                                     <ItemsControl Grid.Row="1" ItemsSource="{Binding SelectedPreset.Parameters}"
                                                   Margin="0,12,0,0"
-                                                  Visibility="{Binding SelectedPreset.HasParameters, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                  Visibility="{Binding SelectedPreset.HasParameters, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                  AutomationProperties.Name="Preset Parameters">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
-                                                <WrapPanel Orientation="Horizontal"/>
+                                                <UniformGrid Columns="2"/>
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Border Background="#333" CornerRadius="4" Padding="10,8"
-                                                        Margin="0,0,10,8" MinWidth="180">
+                                                        Margin="0,0,8,8">
                                                     <Grid>
                                                         <Grid.RowDefinitions>
                                                             <RowDefinition Height="Auto"/>
                                                             <RowDefinition Height="Auto"/>
                                                         </Grid.RowDefinitions>
 
-                                                        <!-- Parameter Label -->
-                                                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
-                                                            <TextBlock Text="{Binding DisplayName}" Foreground="#DDD"
-                                                                       FontSize="11" FontWeight="Medium"/>
-                                                            <TextBlock Text="?" Foreground="#9E9E9E" FontSize="9"
-                                                                       VerticalAlignment="Top" Margin="3,0,0,0"
-                                                                       ToolTip="{Binding Description}"/>
-                                                        </StackPanel>
+                                                        <!-- Parameter Label with Reset Button -->
+                                                        <Grid Grid.Row="0" Margin="0,0,0,6">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding DisplayName}" Foreground="#DDD"
+                                                                           FontSize="11" FontWeight="Medium"/>
+                                                                <TextBlock Text="?" Foreground="#9E9E9E" FontSize="9"
+                                                                           VerticalAlignment="Top" Margin="3,0,0,0"
+                                                                           ToolTip="{Binding Description}"
+                                                                           Cursor="Help"/>
+                                                            </StackPanel>
+                                                            <Button Content="&#xE777;" FontFamily="Segoe MDL2 Assets"
+                                                                    Command="{Binding DataContext.ResetParameterCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    HorizontalAlignment="Right"
+                                                                    Style="{StaticResource IconButtonStyle}"
+                                                                    Width="18" Height="18" FontSize="10"
+                                                                    ToolTip="Reset to default"
+                                                                    AutomationProperties.Name="Reset Parameter"
+                                                                    AutomationProperties.HelpText="Reset this parameter to its default value"/>
+                                                        </Grid>
 
                                                         <!-- Float Slider -->
                                                         <Grid Grid.Row="1" Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Float}">
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="50"/>
+                                                                <ColumnDefinition Width="45"/>
                                                             </Grid.ColumnDefinitions>
                                                             <Slider Grid.Column="0"
                                                                     Minimum="{Binding MinValue, TargetNullValue=0}"
@@ -425,10 +600,12 @@
                                                                     Value="{Binding CurrentValue, Mode=TwoWay, TargetNullValue=0}"
                                                                     SmallChange="{Binding Step, TargetNullValue=0.1}"
                                                                     LargeChange="{Binding Step, TargetNullValue=0.1}"
-                                                                    VerticalAlignment="Center"/>
+                                                                    VerticalAlignment="Center"
+                                                                    AutomationProperties.Name="{Binding DisplayName}"
+                                                                    AutomationProperties.HelpText="{Binding Description}"/>
                                                             <TextBlock Grid.Column="1" Text="{Binding CurrentValue, StringFormat=F1}"
                                                                        Foreground="#CCC" Background="#252526"
-                                                                       TextAlignment="Center" Padding="4,2" Margin="8,0,0,0"
+                                                                       TextAlignment="Center" Padding="4,2" Margin="6,0,0,0"
                                                                        FontSize="10" VerticalAlignment="Center"/>
                                                         </Grid>
 
@@ -436,7 +613,7 @@
                                                         <Grid Grid.Row="1" Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Int}">
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="50"/>
+                                                                <ColumnDefinition Width="45"/>
                                                             </Grid.ColumnDefinitions>
                                                             <Slider Grid.Column="0"
                                                                     Minimum="{Binding MinValue, TargetNullValue=0}"
@@ -446,24 +623,30 @@
                                                                     LargeChange="{Binding Step, TargetNullValue=1}"
                                                                     IsSnapToTickEnabled="True"
                                                                     TickFrequency="{Binding Step, TargetNullValue=1}"
-                                                                    VerticalAlignment="Center"/>
+                                                                    VerticalAlignment="Center"
+                                                                    AutomationProperties.Name="{Binding DisplayName}"
+                                                                    AutomationProperties.HelpText="{Binding Description}"/>
                                                             <TextBlock Grid.Column="1" Text="{Binding CurrentValue, StringFormat=F0}"
                                                                        Foreground="#CCC" Background="#252526"
-                                                                       TextAlignment="Center" Padding="4,2" Margin="8,0,0,0"
+                                                                       TextAlignment="Center" Padding="4,2" Margin="6,0,0,0"
                                                                        FontSize="10" VerticalAlignment="Center"/>
                                                         </Grid>
 
                                                         <!-- Bool Toggle -->
                                                         <CheckBox Grid.Row="1" IsChecked="{Binding CurrentValue, Mode=TwoWay}"
                                                                   Foreground="#AAA" FontSize="10"
-                                                                  Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Bool}"/>
+                                                                  Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Bool}"
+                                                                  AutomationProperties.Name="{Binding DisplayName}"
+                                                                  AutomationProperties.HelpText="{Binding Description}"/>
 
                                                         <!-- Enum ComboBox -->
                                                         <ComboBox Grid.Row="1" ItemsSource="{Binding EnumValues}"
                                                                   SelectedItem="{Binding CurrentValue, Mode=TwoWay}"
                                                                   Background="#252526" Foreground="#CCC" BorderBrush="#444"
                                                                   Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Enum}"
-                                                                  FontSize="10"/>
+                                                                  FontSize="10"
+                                                                  AutomationProperties.Name="{Binding DisplayName}"
+                                                                  AutomationProperties.HelpText="{Binding Description}"/>
                                                     </Grid>
                                                 </Border>
                                             </DataTemplate>
@@ -476,7 +659,8 @@
                 </Border>
 
                 <!-- Output Settings -->
-                <Border Grid.Row="1" Background="#252526" Padding="15" CornerRadius="8">
+                <Border Grid.Row="1" Background="#252526" Padding="15" CornerRadius="8"
+                        AutomationProperties.Name="Output Settings">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -488,7 +672,9 @@
                                    VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <TextBox Grid.Column="1" Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}"
                                  Background="#1E1E1E" Foreground="#CCC" BorderBrush="#3A3A3A"
-                                 Padding="8,6" FontSize="11">
+                                 Padding="8,6" FontSize="11"
+                                 AutomationProperties.Name="Output File Path"
+                                 AutomationProperties.HelpText="Path where the processed video will be saved">
                             <TextBox.Resources>
                                 <Style TargetType="Border">
                                     <Setter Property="CornerRadius" Value="4"/>
@@ -497,17 +683,21 @@
                         </TextBox>
                         <Button Grid.Column="2" Content="Browse..." Command="{Binding SelectOutputCommand}"
                                 ToolTip="Select output file location"
-                                Style="{StaticResource SecondaryButton}" Margin="10,0,0,0"/>
+                                Style="{StaticResource SecondaryButton}" Margin="10,0,0,0"
+                                AutomationProperties.Name="Browse Output Location"
+                                AutomationProperties.HelpText="Open file dialog to select output location"/>
                     </Grid>
                 </Border>
             </Grid>
 
             <!-- Queue Panel -->
-            <Border Grid.Column="2" Background="#252526" Margin="5,10,10,10" CornerRadius="8">
+            <Border Grid.Column="2" Background="#252526" Margin="5,10,10,10" CornerRadius="8"
+                    AutomationProperties.Name="Processing Queue Panel">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
@@ -519,18 +709,38 @@
                                 <TextBlock Text="Processing Queue" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#F1F1F1" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <Border Background="#333" CornerRadius="10" Padding="6,2"
-                                    HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding JobQueue.Count}"
-                                           Foreground="#AAA" FontSize="10"/>
-                            </Border>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <!-- Pause/Resume Button -->
+                                <Button Command="{Binding TogglePauseCommand}"
+                                        Style="{StaticResource IconButtonStyle}"
+                                        Width="24" Height="24" Margin="0,0,8,0"
+                                        ToolTip="{Binding IsPaused, Converter={StaticResource BoolToPauseTooltipConverter}}"
+                                        AutomationProperties.Name="{Binding IsPaused, Converter={StaticResource BoolToPauseLabelConverter}}"
+                                        Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock Text="{Binding IsPaused, Converter={StaticResource BoolToPauseIconConverter}}"
+                                               FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                               Foreground="{Binding IsPaused, Converter={StaticResource BoolToPauseColorConverter}}"/>
+                                </Button>
+                                <Border Background="#333" CornerRadius="10" Padding="6,2">
+                                    <TextBlock Text="{Binding JobQueue.Count}"
+                                               Foreground="#AAA" FontSize="10"/>
+                                </Border>
+                            </StackPanel>
                         </Grid>
                     </Border>
 
                     <!-- Queue List -->
                     <ListBox Grid.Row="1" ItemsSource="{Binding JobQueue}"
                              Background="Transparent" BorderThickness="0"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             AutomationProperties.Name="Job Queue List"
+                             KeyboardNavigation.TabNavigation="Once">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="AutomationProperties.Name" Value="{Binding SourceFileName}"/>
+                                <Setter Property="AutomationProperties.HelpText" Value="{Binding StatusText}"/>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Border Style="{StaticResource QueueCardStyle}">
@@ -538,15 +748,16 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
                                         <!-- Thumbnail -->
-                                        <Border Grid.Column="0" Width="64" Height="36" CornerRadius="3"
-                                                Background="#1E1E1E" Margin="0,0,10,0">
+                                        <Border Grid.Column="0" Width="56" Height="32" CornerRadius="3"
+                                                Background="#1E1E1E" Margin="0,0,8,0">
                                             <Grid>
                                                 <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"
                                                        Visibility="{Binding Thumbnail, Converter={StaticResource NullToVis}, ConverterParameter=Invert}"/>
-                                                <TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                                <TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                                            Foreground="#444" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                            Visibility="{Binding Thumbnail, Converter={StaticResource NullToVis}}"/>
                                             </Grid>
@@ -562,14 +773,15 @@
 
                                             <!-- File name and status -->
                                             <Grid Grid.Row="0">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding SourceFileName}" Foreground="#DDD" FontSize="11"
-                                                               MaxWidth="120" TextTrimming="CharacterEllipsis"
-                                                               ToolTip="{Binding SourcePath}"/>
-                                                </StackPanel>
-                                                <Border Background="#333" CornerRadius="2" Padding="4,1"
+                                                <TextBlock Text="{Binding SourceFileName}" Foreground="#DDD" FontSize="10"
+                                                           MaxWidth="100" TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding SourcePath}"/>
+                                                <Border Background="{Binding Status, Converter={StaticResource StatusToBackgroundConverter}}"
+                                                        CornerRadius="2" Padding="4,1"
                                                         HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="8"/>
+                                                    <TextBlock Text="{Binding StatusText}"
+                                                               Foreground="{Binding Status, Converter={StaticResource StatusToForegroundConverter}}"
+                                                               FontSize="8"/>
                                                 </Border>
                                             </Grid>
 
@@ -590,6 +802,34 @@
                                                 </Grid>
                                             </Grid>
                                         </Grid>
+
+                                        <!-- Job Actions -->
+                                        <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center" Margin="4,0,0,0">
+                                            <Button Command="{Binding DataContext.MoveJobUpCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{StaticResource IconButtonStyle}"
+                                                    Width="20" Height="20" Padding="0"
+                                                    ToolTip="Move up in queue"
+                                                    AutomationProperties.Name="Move Job Up">
+                                                <TextBlock Text="&#xE74A;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#888"/>
+                                            </Button>
+                                            <Button Command="{Binding DataContext.MoveJobDownCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{StaticResource IconButtonStyle}"
+                                                    Width="20" Height="20" Padding="0"
+                                                    ToolTip="Move down in queue"
+                                                    AutomationProperties.Name="Move Job Down">
+                                                <TextBlock Text="&#xE74B;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#888"/>
+                                            </Button>
+                                            <Button Command="{Binding DataContext.RemoveJobCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{StaticResource IconButtonStyle}"
+                                                    Width="20" Height="20" Padding="0"
+                                                    ToolTip="Remove from queue"
+                                                    AutomationProperties.Name="Remove Job">
+                                                <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#E74856"/>
+                                            </Button>
+                                        </StackPanel>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -600,28 +840,62 @@
                     <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
                                 Visibility="{Binding JobQueue.Count, Converter={StaticResource CountToVis}}">
                         <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="24"
-                                   Foreground="#9E9E9E" HorizontalAlignment="Center"/>
-                        <TextBlock Text="No jobs in queue" Foreground="#9E9E9E" FontSize="11"
+                                   Foreground="#444" HorizontalAlignment="Center"/>
+                        <TextBlock Text="No jobs in queue" Foreground="#666" FontSize="11"
                                    HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        <TextBlock Text="Select a preset and click 'Add to Queue'" Foreground="#555" FontSize="9"
+                                   HorizontalAlignment="Center" Margin="0,4,0,0"/>
                     </StackPanel>
 
+                    <!-- Queue Summary -->
+                    <Border Grid.Row="2" Background="#2A2A2A" Padding="10,6"
+                            Visibility="{Binding JobQueue.Count, Converter={StaticResource CountToVisInverse}}">
+                        <Grid>
+                            <TextBlock Foreground="#888" FontSize="9">
+                                <Run Text="{Binding CompletedJobCount, Mode=OneWay}"/> completed,
+                                <Run Text="{Binding PendingJobCount, Mode=OneWay}"/> pending
+                            </TextBlock>
+                            <TextBlock Text="{Binding EstimatedTotalTime, StringFormat='Est. {0:hh\\:mm\\:ss}'}"
+                                       Foreground="#888" FontSize="9" HorizontalAlignment="Right"
+                                       Visibility="{Binding EstimatedTotalTime, Converter={StaticResource TimeSpanToVisibilityConverter}}"/>
+                        </Grid>
+                    </Border>
+
                     <!-- Queue Controls -->
-                    <Border Grid.Row="2" Background="#2D2D2D" Padding="10" CornerRadius="0,0,8,8">
+                    <Border Grid.Row="3" Background="#2D2D2D" Padding="10" CornerRadius="0,0,8,8">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button Content="&#xE768; Process" Command="{Binding ProcessQueueCommand}"
+                            <Button Command="{Binding ProcessQueueCommand}"
                                     ToolTip="Start processing all queued jobs"
                                     Style="{StaticResource PrimaryButton}" Margin="0,0,6,0"
-                                    IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
-                                    FontFamily="Segoe MDL2 Assets, Segoe UI"/>
-                            <Button Content="&#xE711; Cancel" Command="{Binding CancelProcessingCommand}"
+                                    IsEnabled="{Binding CanStartProcessing}"
+                                    AutomationProperties.Name="Start Processing Queue"
+                                    AutomationProperties.HelpText="Begin processing all jobs in the queue">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Process"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding CancelProcessingCommand}"
                                     ToolTip="Cancel current processing"
                                     Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"
                                     IsEnabled="{Binding IsProcessing}"
-                                    FontFamily="Segoe MDL2 Assets, Segoe UI"/>
-                            <Button Content="&#xE74D; Clear" Command="{Binding ClearQueueCommand}"
+                                    AutomationProperties.Name="Cancel Processing"
+                                    AutomationProperties.HelpText="Stop the current processing job">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Cancel"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding ClearQueueCommand}"
                                     ToolTip="Remove completed jobs from queue"
                                     Style="{StaticResource SecondaryButton}"
-                                    FontFamily="Segoe MDL2 Assets, Segoe UI"/>
+                                    AutomationProperties.Name="Clear Completed Jobs"
+                                    AutomationProperties.HelpText="Remove all completed jobs from the queue">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Clear"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </Border>
                 </Grid>

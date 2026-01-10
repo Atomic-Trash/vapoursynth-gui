@@ -5,3 +5,5 @@ global using Moq;
 global using VapourSynthPortable.Services;
 global using VapourSynthPortable.Models;
 global using VapourSynthPortable.Models.NodeModels;
+global using VapourSynthPortable.ViewModels;
+global using VapourSynthPortable.Helpers;
