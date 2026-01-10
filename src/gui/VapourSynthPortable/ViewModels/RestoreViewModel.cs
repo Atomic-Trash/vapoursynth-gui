@@ -16,6 +16,7 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
 {
     private readonly IMediaPoolService _mediaPool;
     private readonly IVapourSynthService _vapourSynthService;
+    private readonly ISettingsService _settingsService;
     private readonly QuickPreviewService _quickPreviewService;
     private readonly ILogger<RestoreViewModel> _logger;
     private bool _disposed;
@@ -129,7 +130,7 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     private readonly string _vapourSynthPath;
     private readonly string _pythonPath;
 
-    public RestoreViewModel(IMediaPoolService mediaPool, IVapourSynthService vapourSynthService)
+    public RestoreViewModel(IMediaPoolService mediaPool, IVapourSynthService vapourSynthService, ISettingsService settingsService)
     {
         _logger = LoggingService.GetLogger<RestoreViewModel>();
         _mediaPool = mediaPool;
@@ -140,10 +141,14 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
         _vapourSynthService.ProgressChanged += OnVapourSynthProgressChanged;
         _vapourSynthService.LogMessage += OnVapourSynthLogMessage;
 
+        // Initialize settings service
+        _settingsService = settingsService;
+
         // Initialize quick preview service
         _quickPreviewService = new QuickPreviewService();
 
         LoadPresets();
+        LoadFavorites();
         DetectGpu();
 
         var basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -156,7 +161,8 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     // Parameterless constructor for XAML design-time support
     public RestoreViewModel() : this(
         App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(),
-        App.Services?.GetService(typeof(IVapourSynthService)) as IVapourSynthService ?? new VapourSynthService())
+        App.Services?.GetService(typeof(IVapourSynthService)) as IVapourSynthService ?? new VapourSynthService(),
+        App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService())
     {
     }
 
@@ -220,6 +226,45 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
         FilterPresets();
     }
 
+    private void LoadFavorites()
+    {
+        try
+        {
+            var settings = _settingsService.Load();
+            var favoriteNames = new HashSet<string>(settings.FavoritePresets);
+
+            foreach (var preset in Presets)
+            {
+                preset.IsFavorite = favoriteNames.Contains(preset.Name);
+            }
+
+            _logger.LogDebug("Loaded {Count} favorite presets", favoriteNames.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load favorite presets");
+        }
+    }
+
+    private void SaveFavorites()
+    {
+        try
+        {
+            var settings = _settingsService.Load();
+            settings.FavoritePresets = Presets
+                .Where(p => p.IsFavorite)
+                .Select(p => p.Name)
+                .ToList();
+
+            _settingsService.Save(settings);
+            _logger.LogDebug("Saved {Count} favorite presets", settings.FavoritePresets.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to save favorite presets");
+        }
+    }
+
     partial void OnSelectedCategoryChanged(string value)
     {
         FilterPresets();
@@ -254,7 +299,8 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
             FilterPresets();
         }
 
-        // TODO: Persist favorites to settings
+        // Persist favorites to settings
+        SaveFavorites();
     }
 
     [RelayCommand]

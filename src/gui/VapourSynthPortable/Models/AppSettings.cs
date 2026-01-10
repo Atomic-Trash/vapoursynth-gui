@@ -36,6 +36,9 @@ public class AppSettings
     public double TimelineZoom { get; set; } = 1.0;
     public bool ConfirmOnDelete { get; set; } = true;
 
+    // Favorite presets (stored by name)
+    public List<string> FavoritePresets { get; set; } = [];
+
     // Window state
     public double WindowLeft { get; set; } = -1;
     public double WindowTop { get; set; } = -1;
