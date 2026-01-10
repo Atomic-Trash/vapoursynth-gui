@@ -11,7 +11,7 @@ namespace VapourSynthPortable.Pages;
 
 public partial class EditPage : UserControl
 {
-    private readonly ILogger<EditPage> _logger = LoggingService.GetLogger<EditPage>();
+    private static readonly ILogger<EditPage> _logger = LoggingService.GetLogger<EditPage>();
     private bool _syncingFromPlayer;
     private bool _syncingFromTimeline;
     private string? _currentProgramSource;

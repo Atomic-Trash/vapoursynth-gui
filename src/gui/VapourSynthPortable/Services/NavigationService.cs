@@ -8,15 +8,10 @@ namespace VapourSynthPortable.Services;
 /// </summary>
 public class NavigationService : INavigationService
 {
-    private readonly ILogger<NavigationService> _logger;
+    private static readonly ILogger<NavigationService> _logger = LoggingService.GetLogger<NavigationService>();
     private readonly Stack<PageType> _backStack = new();
     private readonly Stack<PageType> _forwardStack = new();
     private PageType _currentPage = PageType.Restore;
-
-    public NavigationService()
-    {
-        _logger = LoggingService.GetLogger<NavigationService>();
-    }
 
     /// <inheritdoc />
     public PageType CurrentPage => _currentPage;

@@ -12,12 +12,12 @@ namespace VapourSynthPortable.Services;
 
 public class PluginService : IPluginService
 {
+    private static readonly ILogger<PluginService> _logger = LoggingService.GetLogger<PluginService>();
     private readonly string _configPath;
     private readonly string _enabledPluginsPath;
     private readonly string _pluginsDir;
     private readonly string _pythonPath;
     private readonly string _projectRoot;
-    private readonly ILogger<PluginService> _logger;
     private readonly HttpClient _httpClient;
 
     // Lazy loading cache
@@ -30,7 +30,6 @@ public class PluginService : IPluginService
 
     public PluginService()
     {
-        _logger = LoggingService.GetLogger<PluginService>();
         _httpClient = new HttpClient();
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("VapourSynthPortable/1.0");
 

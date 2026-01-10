@@ -30,7 +30,7 @@ public class StringToBoolConverter : IValueConverter
 
 public partial class MediaPage : UserControl
 {
-    private readonly ILogger<MediaPage> _logger = LoggingService.GetLogger<MediaPage>();
+    private static readonly ILogger<MediaPage> _logger = LoggingService.GetLogger<MediaPage>();
     private MediaViewModel ViewModel => (MediaViewModel)DataContext;
     private DispatcherTimer? _autoLoadTimer;
     private MediaItem? _pendingLoadItem;

@@ -9,10 +9,10 @@ namespace VapourSynthPortable.Controls;
 
 public partial class AudioWaveformControl : UserControl
 {
+    private static readonly ILogger<AudioWaveformControl> _logger = LoggingService.GetLogger<AudioWaveformControl>();
     private WaveformData? _waveformData;
     private StereoWaveformData? _stereoData;
     private readonly AudioWaveformService _waveformService;
-    private readonly ILogger<AudioWaveformControl> _logger;
     private CancellationTokenSource? _loadCts;
 
     public static readonly DependencyProperty WaveformColorProperty =
@@ -100,7 +100,6 @@ public partial class AudioWaveformControl : UserControl
     {
         InitializeComponent();
         _waveformService = new AudioWaveformService();
-        _logger = LoggingService.GetLogger<AudioWaveformControl>();
         Loaded += (s, e) => DrawWaveform();
         Unloaded += (s, e) => _loadCts?.Cancel();
     }

@@ -9,6 +9,9 @@ namespace VapourSynthPortable;
 
 public partial class App : Application
 {
+    private static ILogger<App>? _logger;
+    private static ILogger<App> Logger => _logger ??= LoggingService.GetLogger<App>();
+
     public static IServiceProvider Services { get; private set; } = null!;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -28,8 +31,7 @@ public partial class App : Application
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
 
-        var logger = LoggingService.GetLogger<App>();
-        logger.LogInformation("Application started");
+        Logger.LogInformation("Application started");
 
         // Cleanup old crash reports (keep last 10)
         CrashReporter.CleanupOldReports(10);
@@ -42,14 +44,12 @@ public partial class App : Application
 
     private async Task CheckDependenciesOnStartupAsync()
     {
-        var logger = LoggingService.GetLogger<App>();
-
         try
         {
             var dependencyService = Services.GetService<IDependencyStatusService>();
             if (dependencyService == null)
             {
-                logger.LogWarning("DependencyStatusService not available");
+                Logger.LogWarning("DependencyStatusService not available");
                 return;
             }
 
@@ -58,7 +58,7 @@ public partial class App : Application
             if (!status.AllRequiredAvailable)
             {
                 var missing = status.GetMissingSummary();
-                logger.LogWarning("Missing required dependencies: {Missing}", missing);
+                Logger.LogWarning("Missing required dependencies: {Missing}", missing);
 
                 // Show toast notification about missing dependencies
                 await Dispatcher.InvokeAsync(() =>
@@ -70,7 +70,7 @@ public partial class App : Application
             }
             else
             {
-                logger.LogInformation(
+                Logger.LogInformation(
                     "All dependencies available. VS: {VSVersion}, FFmpeg: {FFmpegVersion}",
                     status.VapourSynth.Version,
                     status.FFmpeg.Version);
@@ -78,14 +78,13 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error checking dependencies on startup");
+            Logger.LogError(ex, "Error checking dependencies on startup");
         }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
-        var logger = LoggingService.GetLogger<App>();
-        logger.LogInformation("Application exiting");
+        Logger.LogInformation("Application exiting");
 
         LoggingService.Shutdown();
         base.OnExit(e);
@@ -105,8 +104,7 @@ public partial class App : Application
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        var logger = LoggingService.GetLogger<App>();
-        logger.LogError(e.Exception, "Unhandled UI thread exception");
+        Logger.LogError(e.Exception, "Unhandled UI thread exception");
 
         // Create crash report
         var crashReportPath = CrashReporter.CreateCrashReport(e.Exception, "DispatcherUnhandled", isTerminating: false);
@@ -120,24 +118,22 @@ public partial class App : Application
 
     private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        var logger = LoggingService.GetLogger<App>();
         if (e.ExceptionObject is Exception ex)
         {
-            logger.LogCritical(ex, "Unhandled exception (IsTerminating: {IsTerminating})", e.IsTerminating);
+            Logger.LogCritical(ex, "Unhandled exception (IsTerminating: {IsTerminating})", e.IsTerminating);
 
             // Create crash report for fatal exceptions
             CrashReporter.CreateCrashReport(ex, "AppDomain.UnhandledException", e.IsTerminating);
         }
         else
         {
-            logger.LogCritical("Unhandled non-exception error: {Error}", e.ExceptionObject);
+            Logger.LogCritical("Unhandled non-exception error: {Error}", e.ExceptionObject);
         }
     }
 
     private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
-        var logger = LoggingService.GetLogger<App>();
-        logger.LogError(e.Exception, "Unobserved task exception");
+        Logger.LogError(e.Exception, "Unobserved task exception");
 
         // Create crash report for task exceptions
         CrashReporter.CreateCrashReport(e.Exception, "TaskScheduler.UnobservedTaskException", isTerminating: false);

@@ -7,13 +7,12 @@ namespace VapourSynthPortable.Services;
 
 public class SettingsService : ISettingsService
 {
+    private static readonly ILogger<SettingsService> _logger = LoggingService.GetLogger<SettingsService>();
     private readonly string _settingsPath;
     private readonly string _projectRoot;
-    private readonly ILogger<SettingsService> _logger;
 
     public SettingsService()
     {
-        _logger = LoggingService.GetLogger<SettingsService>();
         _projectRoot = FindProjectRoot(AppDomain.CurrentDomain.BaseDirectory) ?? AppDomain.CurrentDomain.BaseDirectory;
         _settingsPath = Path.Combine(_projectRoot, "settings.json");
     }

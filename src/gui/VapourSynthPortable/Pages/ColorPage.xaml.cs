@@ -9,7 +9,7 @@ namespace VapourSynthPortable.Pages;
 
 public partial class ColorPage : UserControl
 {
-    private readonly ILogger<ColorPage> _logger = LoggingService.GetLogger<ColorPage>();
+    private static readonly ILogger<ColorPage> _logger = LoggingService.GetLogger<ColorPage>();
     private string? _currentSource;
 
     public ColorPage()

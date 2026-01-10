@@ -14,11 +14,11 @@ namespace VapourSynthPortable.ViewModels;
 
 public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectPersistable
 {
+    private static readonly ILogger<RestoreViewModel> _logger = LoggingService.GetLogger<RestoreViewModel>();
     private readonly IMediaPoolService _mediaPool;
     private readonly IVapourSynthService _vapourSynthService;
     private readonly ISettingsService _settingsService;
     private readonly QuickPreviewService _quickPreviewService;
-    private readonly ILogger<RestoreViewModel> _logger;
     private bool _disposed;
 
     [ObservableProperty]
@@ -132,7 +132,6 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
 
     public RestoreViewModel(IMediaPoolService mediaPool, IVapourSynthService vapourSynthService, ISettingsService settingsService)
     {
-        _logger = LoggingService.GetLogger<RestoreViewModel>();
         _mediaPool = mediaPool;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
 

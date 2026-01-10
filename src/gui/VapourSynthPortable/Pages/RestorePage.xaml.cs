@@ -9,7 +9,7 @@ namespace VapourSynthPortable.Pages;
 
 public partial class RestorePage : UserControl
 {
-    private readonly ILogger<RestorePage> _logger = LoggingService.GetLogger<RestorePage>();
+    private static readonly ILogger<RestorePage> _logger = LoggingService.GetLogger<RestorePage>();
     private string? _currentSource;
 
     public RestorePage()
