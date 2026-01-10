@@ -43,33 +43,41 @@
             <DockPanel>
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
                     <Button Content="Add" Command="{Binding AddToTimelineCommand}"
+                            AutomationProperties.AutomationId="AddToTimelineButton"
                             ToolTip="Add to timeline (Append)"
                             Style="{StaticResource SecondaryButton}" Margin="8,0,4,0"/>
                     <Button Content="Insert" Command="{Binding InsertClipCommand}"
+                            AutomationProperties.AutomationId="InsertClipButton"
                             ToolTip="Insert at playhead"
                             Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
 
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
 
                     <Button Content="Cut" Command="{Binding CutClipCommand}"
+                            AutomationProperties.AutomationId="CutButton"
                             ToolTip="Cut clip (Ctrl+X)"
                             Style="{StaticResource SecondaryButton}" Margin="8,0,4,0" Width="50"/>
                     <Button Content="Copy" Command="{Binding CopyClipCommand}"
+                            AutomationProperties.AutomationId="CopyButton"
                             ToolTip="Copy clip (Ctrl+C)"
                             Style="{StaticResource SecondaryButton}" Margin="0,0,4,0" Width="50"/>
                     <Button Content="Paste" Command="{Binding PasteClipCommand}"
+                            AutomationProperties.AutomationId="PasteButton"
                             ToolTip="Paste clip (Ctrl+V)"
                             Style="{StaticResource SecondaryButton}" Margin="0,0,4,0" Width="50"/>
                     <Button Content="Delete" Command="{Binding DeleteClipCommand}"
+                            AutomationProperties.AutomationId="DeleteButton"
                             ToolTip="Delete clip (Del)"
                             Style="{StaticResource SecondaryButton}" Margin="0,0,4,0" Width="55"/>
                     <Button Content="Split" Command="{Binding SplitClipCommand}"
+                            AutomationProperties.AutomationId="SplitButton"
                             ToolTip="Split at playhead (S)"
                             Style="{StaticResource SecondaryButton}" Width="50"/>
 
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
 
                     <Button Content="Undo" Command="{Binding UndoCommand}"
+                            AutomationProperties.AutomationId="UndoButton"
                             IsEnabled="{Binding CanUndo}"
                             Style="{StaticResource SecondaryButton}" Margin="8,0,4,0" Width="50">
                         <Button.ToolTip>
@@ -83,6 +91,7 @@
                         </Button.ToolTip>
                     </Button>
                     <Button Content="Redo" Command="{Binding RedoCommand}"
+                            AutomationProperties.AutomationId="RedoButton"
                             IsEnabled="{Binding CanRedo}"
                             Style="{StaticResource SecondaryButton}" Width="50">
                         <Button.ToolTip>
@@ -99,21 +108,26 @@
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
 
                     <Button Content="+ Text" Command="{Binding AddTextOverlayCommand}"
+                            AutomationProperties.AutomationId="AddTextButton"
                             ToolTip="Add text overlay (T)"
                             Style="{StaticResource SecondaryButton}" Margin="8,0,4,0" Width="55"/>
                     <Button Content="Del Text" Command="{Binding DeleteTextOverlayCommand}"
+                            AutomationProperties.AutomationId="DeleteTextButton"
                             ToolTip="Delete selected text overlay"
                             Style="{StaticResource SecondaryButton}" Width="60"/>
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
                     <ToggleButton Content="Snap" IsChecked="{Binding SnapToClips}"
+                                  AutomationProperties.AutomationId="SnapToggle"
                                   ToolTip="Snap to clips"
                                   Style="{StaticResource ToggleButtonStyle}" Width="50" Margin="0,0,4,0"/>
                     <ToggleButton Content="Ripple" IsChecked="{Binding RippleEdit}"
+                                  AutomationProperties.AutomationId="RippleEditToggle"
                                   ToolTip="Ripple edit mode"
                                   Style="{StaticResource ToggleButtonStyle}" Width="55" Margin="0,0,4,0"/>
                     <ToggleButton Content="Keys" IsChecked="{Binding ShowKeyframePanel}"
+                                  AutomationProperties.AutomationId="KeyframePanelToggle"
                                   ToolTip="Show keyframe editor panel"
                                   Style="{StaticResource ToggleButtonStyle}" Width="50"/>
                 </StackPanel>
@@ -165,6 +179,7 @@
                     <TabItem Header="Media">
                         <Grid>
                             <ListBox ItemsSource="{Binding MediaPool}"
+                                     AutomationProperties.AutomationId="MediaPoolList"
                                      SelectedItem="{Binding SelectedMediaItem}"
                                      Background="Transparent" BorderThickness="0"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -358,10 +373,12 @@
                                     Width="28" Height="22" Background="#333" Foreground="#AAA"
                                     BorderThickness="0" ToolTip="Step back"/>
                             <Button x:Name="PlayButton" Content="&#xE768;" FontFamily="Segoe MDL2 Assets"
+                                    AutomationProperties.AutomationId="PlayButton"
                                     Command="{Binding PlayCommand}"
                                     Width="32" Height="22" Background="#0E639C" Foreground="#FFF"
                                     BorderThickness="0" Margin="4,0" ToolTip="Play/Pause (Space)"/>
                             <Button Content="&#xE71A;" FontFamily="Segoe MDL2 Assets"
+                                    AutomationProperties.AutomationId="StopButton"
                                     Command="{Binding StopCommand}"
                                     Width="28" Height="22" Background="#333" Foreground="#AAA"
                                     BorderThickness="0" ToolTip="Stop"/>
@@ -394,6 +411,7 @@
             <!-- Timeline -->
             <Border Grid.Column="0" Background="#1A1A1A">
                 <controls:TimelineControl x:Name="TimelineControl"
+                                          AutomationProperties.AutomationId="TimelineControl"
                                           Timeline="{Binding Timeline}"
                                           ClipSelected="TimelineControl_ClipSelected"/>
             </Border>
