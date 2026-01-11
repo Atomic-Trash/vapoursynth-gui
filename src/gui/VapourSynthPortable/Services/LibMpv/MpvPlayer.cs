@@ -632,7 +632,7 @@ public class MpvPlayer : IDisposable
             finally
             {
                 // Clean up temp file
-                try { File.Delete(tempFile); } catch { }
+                try { File.Delete(tempFile); } catch (Exception ex) { _logger.LogDebug(ex, "Failed to delete temp screenshot file: {Path}", tempFile); }
             }
         }
         catch (Exception ex)

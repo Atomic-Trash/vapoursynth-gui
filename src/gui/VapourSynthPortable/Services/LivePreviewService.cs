@@ -260,7 +260,10 @@ if 'video_out' in dir():
                         ffmpeg.StandardInput.BaseStream, ct);
                     ffmpeg.StandardInput.Close();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Pipe transfer interrupted during preview generation");
+                }
             }, ct);
 
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -346,7 +349,10 @@ if 'video_out' in dir():
             if (process != null && !process.HasExited)
                 process.Kill();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Process already terminated or could not be killed");
+        }
     }
 
     private void TryDeleteFile(string? path)
@@ -357,6 +363,9 @@ if 'video_out' in dir():
             if (File.Exists(path))
                 File.Delete(path);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to delete temp file: {Path}", path);
+        }
     }
 }

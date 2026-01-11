@@ -255,7 +255,7 @@ public class ThumbnailService
             }
             catch (OperationCanceledException)
             {
-                try { process.Kill(); } catch { }
+                try { process.Kill(); } catch (Exception ex) { _logger.LogDebug(ex, "Process already terminated during cancellation"); }
                 throw;
             }
 

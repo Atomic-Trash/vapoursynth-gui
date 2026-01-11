@@ -253,7 +253,10 @@ video_in = video_in[{frameNumber}:{frameNumber + 1}]
                         ffmpeg.StandardInput.BaseStream, ct);
                     ffmpeg.StandardInput.Close();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Pipe transfer interrupted during quick preview");
+                }
             }, ct);
 
             // Wait with timeout (5 seconds max)
@@ -388,7 +391,10 @@ video_in = video_in[{frameNumber}:{frameNumber + 1}]
             if (process != null && !process.HasExited)
                 process.Kill();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Process already terminated or could not be killed");
+        }
     }
 
     private void TryDeleteFile(string? path)
@@ -399,6 +405,9 @@ video_in = video_in[{frameNumber}:{frameNumber + 1}]
             if (File.Exists(path))
                 File.Delete(path);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to delete temp file: {Path}", path);
+        }
     }
 }

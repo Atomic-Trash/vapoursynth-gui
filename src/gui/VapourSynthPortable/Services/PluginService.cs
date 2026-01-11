@@ -399,7 +399,10 @@ public class PluginService : IPluginService
                 return buffer[0] == 0x50 && buffer[1] == 0x4B && buffer[2] == 0x03 && buffer[3] == 0x04;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to check ZIP magic number for: {FilePath}", filePath);
+        }
         return false;
     }
 

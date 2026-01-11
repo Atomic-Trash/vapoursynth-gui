@@ -152,7 +152,7 @@ public class AudioWaveformService : IDisposable
                 }
                 catch (OperationCanceledException)
                 {
-                    try { process.Kill(); } catch { }
+                    try { process.Kill(); } catch (Exception ex) { _logger.LogDebug(ex, "Process already terminated during cancellation"); }
                     throw;
                 }
 
@@ -177,7 +177,7 @@ public class AudioWaveformService : IDisposable
             }
             finally
             {
-                try { if (File.Exists(tempFile)) File.Delete(tempFile); } catch { }
+                try { if (File.Exists(tempFile)) File.Delete(tempFile); } catch (Exception ex) { _logger.LogDebug(ex, "Failed to delete temp file: {File}", tempFile); }
             }
         }
         catch (OperationCanceledException)
@@ -222,7 +222,7 @@ public class AudioWaveformService : IDisposable
             }
             catch (OperationCanceledException)
             {
-                try { process.Kill(); } catch { }
+                try { process.Kill(); } catch (Exception ex) { _logger.LogDebug(ex, "Process already terminated during cancellation"); }
             }
 
             // Parse duration from stderr (format: Duration: HH:MM:SS.ms)
@@ -410,8 +410,8 @@ public class AudioWaveformService : IDisposable
             }
             finally
             {
-                try { if (File.Exists(tempFileLeft)) File.Delete(tempFileLeft); } catch { }
-                try { if (File.Exists(tempFileRight)) File.Delete(tempFileRight); } catch { }
+                try { if (File.Exists(tempFileLeft)) File.Delete(tempFileLeft); } catch (Exception ex) { _logger.LogDebug(ex, "Failed to delete temp file: {File}", tempFileLeft); }
+                try { if (File.Exists(tempFileRight)) File.Delete(tempFileRight); } catch (Exception ex) { _logger.LogDebug(ex, "Failed to delete temp file: {File}", tempFileRight); }
             }
         }
         finally
@@ -444,7 +444,7 @@ public class AudioWaveformService : IDisposable
         }
         catch (OperationCanceledException)
         {
-            try { process.Kill(); } catch { }
+            try { process.Kill(); } catch (Exception ex) { _logger.LogDebug(ex, "Process already terminated during cancellation"); }
             throw;
         }
     }

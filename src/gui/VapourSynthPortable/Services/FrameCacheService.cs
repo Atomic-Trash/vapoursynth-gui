@@ -309,7 +309,7 @@ public class FrameCacheService : IDisposable
             }
             catch (OperationCanceledException)
             {
-                try { process.Kill(); } catch { }
+                try { process.Kill(); } catch (Exception ex) { _logger.LogDebug(ex, "Process already terminated during cancellation"); }
                 throw;
             }
 
@@ -327,7 +327,10 @@ public class FrameCacheService : IDisposable
                 if (File.Exists(tempPath))
                     File.Delete(tempPath);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to delete temp file: {Path}", tempPath);
+            }
         }
     }
 
