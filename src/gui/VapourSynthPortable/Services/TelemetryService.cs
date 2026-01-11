@@ -89,6 +89,7 @@ public class TelemetryService : ITelemetryService
     private readonly ConcurrentQueue<TelemetryMetric> _metrics = new();
     private readonly ConcurrentDictionary<string, int> _eventCounts = new();
     private readonly ConcurrentDictionary<string, List<double>> _metricValues = new();
+    private readonly object _metricsLock = new();
     private readonly DateTime _startTime = DateTime.Now;
     private readonly string _telemetryDir;
     private int _exceptionCount;
@@ -139,15 +140,20 @@ public class TelemetryService : ITelemetryService
         };
 
         _metrics.Enqueue(metric);
-        _metricValues.AddOrUpdate(
-            metricName,
-            _ => [value],
-            (_, list) =>
-            {
-                list.Add(value);
-                if (list.Count > 100) list.RemoveAt(0); // Keep last 100 values per metric
-                return list;
-            });
+
+        // Use lock to ensure thread-safe list operations
+        lock (_metricsLock)
+        {
+            _metricValues.AddOrUpdate(
+                metricName,
+                _ => [value],
+                (_, list) =>
+                {
+                    list.Add(value);
+                    if (list.Count > 100) list.RemoveAt(0); // Keep last 100 values per metric
+                    return list;
+                });
+        }
 
         // Trim if too many metrics
         while (_metrics.Count > MaxMetrics)
@@ -188,11 +194,16 @@ public class TelemetryService : ITelemetryService
     public TelemetryReport GenerateReport()
     {
         var metricAverages = new Dictionary<string, double>();
-        foreach (var kvp in _metricValues)
+
+        // Use lock to ensure thread-safe reading of metric values
+        lock (_metricsLock)
         {
-            if (kvp.Value.Count > 0)
+            foreach (var kvp in _metricValues)
             {
-                metricAverages[kvp.Key] = kvp.Value.Average();
+                if (kvp.Value.Count > 0)
+                {
+                    metricAverages[kvp.Key] = kvp.Value.Average();
+                }
             }
         }
 
