@@ -255,6 +255,28 @@ public partial class TimelineTrack : ObservableObject
     [ObservableProperty]
     private double _volume = 1.0;
 
+    /// <summary>
+    /// Pan position (-1.0 = full left, 0 = center, 1.0 = full right)
+    /// </summary>
+    [ObservableProperty]
+    private double _pan = 0.0;
+
+    /// <summary>
+    /// Volume in decibels for display purposes
+    /// </summary>
+    public double VolumeDb => Volume > 0 ? 20.0 * Math.Log10(Volume) : -96.0;
+
+    /// <summary>
+    /// Pan display string
+    /// </summary>
+    public string PanDisplay => Pan switch
+    {
+        0 => "C",
+        < 0 => $"L{(int)(-Pan * 100)}",
+        > 0 => $"R{(int)(Pan * 100)}",
+        _ => "C"
+    };
+
     public TimelineTrack()
     {
         Id = _nextId++;
@@ -278,6 +300,12 @@ public partial class Timeline : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<TimelineTextOverlay> _textOverlays = [];
+
+    [ObservableProperty]
+    private ObservableCollection<TimelineMarker> _markers = [];
+
+    [ObservableProperty]
+    private TimelineMarker? _selectedMarker;
 
     [ObservableProperty]
     private double _frameRate = 24;
@@ -432,6 +460,132 @@ public partial class Timeline : ObservableObject
     {
         return TextOverlays.Where(t => frame >= t.StartFrame && frame < t.EndFrame);
     }
+
+    /// <summary>
+    /// Adds a marker at the specified frame
+    /// </summary>
+    public TimelineMarker AddMarker(string name, long frame)
+    {
+        var marker = new TimelineMarker(name, frame);
+        Markers.Add(marker);
+        SortMarkers();
+        return marker;
+    }
+
+    /// <summary>
+    /// Adds a marker at the specified frame with a color
+    /// </summary>
+    public TimelineMarker AddMarker(string name, long frame, Color color)
+    {
+        var marker = new TimelineMarker(name, frame, color);
+        Markers.Add(marker);
+        SortMarkers();
+        return marker;
+    }
+
+    /// <summary>
+    /// Adds a marker at the current playhead position
+    /// </summary>
+    public TimelineMarker AddMarkerAtPlayhead(string name = "")
+    {
+        var markerName = string.IsNullOrEmpty(name) ? $"Marker {Markers.Count + 1}" : name;
+        return AddMarker(markerName, PlayheadFrame);
+    }
+
+    /// <summary>
+    /// Removes a marker from the timeline
+    /// </summary>
+    public void RemoveMarker(TimelineMarker marker)
+    {
+        Markers.Remove(marker);
+        if (SelectedMarker == marker)
+            SelectedMarker = null;
+    }
+
+    /// <summary>
+    /// Removes the selected marker
+    /// </summary>
+    public void DeleteSelectedMarker()
+    {
+        if (SelectedMarker != null)
+            RemoveMarker(SelectedMarker);
+    }
+
+    /// <summary>
+    /// Clears all markers from the timeline
+    /// </summary>
+    public void ClearMarkers()
+    {
+        Markers.Clear();
+        SelectedMarker = null;
+    }
+
+    /// <summary>
+    /// Navigates to the next marker after the current playhead
+    /// </summary>
+    public TimelineMarker? GoToNextMarker()
+    {
+        var nextMarker = Markers
+            .Where(m => m.Frame > PlayheadFrame)
+            .OrderBy(m => m.Frame)
+            .FirstOrDefault();
+
+        if (nextMarker != null)
+        {
+            PlayheadFrame = nextMarker.Frame;
+            SelectedMarker = nextMarker;
+        }
+        return nextMarker;
+    }
+
+    /// <summary>
+    /// Navigates to the previous marker before the current playhead
+    /// </summary>
+    public TimelineMarker? GoToPreviousMarker()
+    {
+        var prevMarker = Markers
+            .Where(m => m.Frame < PlayheadFrame)
+            .OrderByDescending(m => m.Frame)
+            .FirstOrDefault();
+
+        if (prevMarker != null)
+        {
+            PlayheadFrame = prevMarker.Frame;
+            SelectedMarker = prevMarker;
+        }
+        return prevMarker;
+    }
+
+    /// <summary>
+    /// Navigates to a specific marker
+    /// </summary>
+    public void GoToMarker(TimelineMarker marker)
+    {
+        if (Markers.Contains(marker))
+        {
+            PlayheadFrame = marker.Frame;
+            SelectedMarker = marker;
+        }
+    }
+
+    /// <summary>
+    /// Gets the marker at or near the specified frame (within tolerance)
+    /// </summary>
+    public TimelineMarker? GetMarkerAtFrame(long frame, int tolerance = 0)
+    {
+        return Markers.FirstOrDefault(m => Math.Abs(m.Frame - frame) <= tolerance);
+    }
+
+    /// <summary>
+    /// Sorts markers by frame position
+    /// </summary>
+    private void SortMarkers()
+    {
+        var sorted = Markers.OrderBy(m => m.Frame).ToList();
+        Markers.Clear();
+        foreach (var marker in sorted)
+            Markers.Add(marker);
+    }
 }
 
 /// <summary>
@@ -566,4 +720,82 @@ public enum TransitionEasing
     EaseIn,
     EaseOut,
     EaseInOut
+}
+
+/// <summary>
+/// Represents a marker on the timeline for navigation and annotation
+/// </summary>
+public partial class TimelineMarker : ObservableObject
+{
+    private static int _nextId = 1;
+
+    [ObservableProperty]
+    private int _id;
+
+    [ObservableProperty]
+    private string _name = "";
+
+    [ObservableProperty]
+    private long _frame;
+
+    [ObservableProperty]
+    private Color _color = Color.FromRgb(0x4A, 0xCF, 0x6A);
+
+    [ObservableProperty]
+    private string _comment = "";
+
+    [ObservableProperty]
+    private MarkerType _markerType = MarkerType.Standard;
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    public TimelineMarker()
+    {
+        Id = _nextId++;
+    }
+
+    public TimelineMarker(string name, long frame) : this()
+    {
+        Name = name;
+        Frame = frame;
+    }
+
+    public TimelineMarker(string name, long frame, Color color) : this(name, frame)
+    {
+        Color = color;
+    }
+
+    /// <summary>
+    /// Gets the timecode representation of this marker's position
+    /// </summary>
+    public string GetTimecode(double frameRate)
+    {
+        var totalSeconds = Frame / frameRate;
+        var hours = (int)(totalSeconds / 3600);
+        var minutes = (int)((totalSeconds % 3600) / 60);
+        var seconds = (int)(totalSeconds % 60);
+        var frameInSecond = (int)(Frame % frameRate);
+        return $"{hours:D2}:{minutes:D2}:{seconds:D2}:{frameInSecond:D2}";
+    }
+
+    public TimelineMarker Clone()
+    {
+        return new TimelineMarker
+        {
+            Name = Name,
+            Frame = Frame,
+            Color = Color,
+            Comment = Comment,
+            MarkerType = MarkerType
+        };
+    }
+}
+
+public enum MarkerType
+{
+    Standard,
+    Chapter,
+    ToDo,
+    Note
 }

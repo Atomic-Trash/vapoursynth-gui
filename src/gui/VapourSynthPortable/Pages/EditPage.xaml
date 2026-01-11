@@ -32,6 +32,11 @@
         <KeyBinding Key="K" Modifiers="Shift" Command="{Binding RemoveKeyframeCommand}"/>
         <KeyBinding Key="OemOpenBrackets" Command="{Binding PreviousKeyframeCommand}"/>
         <KeyBinding Key="OemCloseBrackets" Command="{Binding NextKeyframeCommand}"/>
+        <!-- Marker shortcuts -->
+        <KeyBinding Key="M" Command="{Binding AddMarkerCommand}"/>
+        <KeyBinding Key="M" Modifiers="Shift" Command="{Binding DeleteMarkerCommand}"/>
+        <KeyBinding Key="Left" Modifiers="Ctrl" Command="{Binding PreviousMarkerCommand}"/>
+        <KeyBinding Key="Right" Modifiers="Ctrl" Command="{Binding NextMarkerCommand}"/>
     </UserControl.InputBindings>
 
     <Grid>
@@ -122,6 +127,17 @@
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="+ Mark" Command="{Binding AddMarkerCommand}"
+                            AutomationProperties.AutomationId="AddMarkerButton"
+                            ToolTip="Add marker at playhead (M)"
+                            Style="{StaticResource SecondaryButton}" Width="55" Margin="0,0,4,0"/>
+                    <ToggleButton Content="Marks" IsChecked="{Binding ShowMarkerPanel}"
+                                  AutomationProperties.AutomationId="MarkerPanelToggle"
+                                  ToolTip="Show marker list panel"
+                                  Style="{StaticResource ToggleButtonStyle}" Width="50" Margin="0,0,8,0"/>
+
+                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,0,8,0"/>
+
                     <ToggleButton Content="Snap" IsChecked="{Binding SnapToClips}"
                                   AutomationProperties.AutomationId="SnapToggle"
                                   ToolTip="Snap to clips"
@@ -133,6 +149,10 @@
                     <ToggleButton Content="Keys" IsChecked="{Binding ShowKeyframePanel}"
                                   AutomationProperties.AutomationId="KeyframePanelToggle"
                                   ToolTip="Show keyframe editor panel"
+                                  Style="{StaticResource ToggleButtonStyle}" Width="50" Margin="0,0,4,0"/>
+                    <ToggleButton Content="Mixer" IsChecked="{Binding ShowMixerPanel}"
+                                  AutomationProperties.AutomationId="MixerPanelToggle"
+                                  ToolTip="Show audio mixer panel"
                                   Style="{StaticResource ToggleButtonStyle}" Width="50"/>
                 </StackPanel>
             </DockPanel>
@@ -408,13 +428,118 @@
         <!-- Timeline and Keyframe Editor -->
         <Grid Grid.Row="3" Margin="10,5,10,10">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="{Binding MarkerPanelWidth, FallbackValue=0}"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="{Binding KeyframePanelWidth, FallbackValue=0}"/>
             </Grid.ColumnDefinitions>
 
+            <!-- Marker Panel -->
+            <Border Grid.Column="0" Background="#252526"
+                    Visibility="{Binding ShowMarkerPanel, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Marker Panel Header -->
+                    <Border Grid.Row="0" Background="#2A2A2A" Padding="8,6">
+                        <Grid>
+                            <TextBlock Text="Markers" Foreground="#AAA" FontSize="11" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding Timeline.Markers.Count, StringFormat=({0})}"
+                                       Foreground="#666" FontSize="10"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Marker List -->
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Timeline.Markers}"
+                             SelectedItem="{Binding Timeline.SelectedMarker}"
+                             AutomationProperties.AutomationId="MarkerList"
+                             Background="Transparent" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="6,4" Margin="2" Background="#2A2A2A"
+                                        CornerRadius="3" BorderBrush="#3A3A3A" BorderThickness="1"
+                                        Cursor="Hand">
+                                    <Border.InputBindings>
+                                        <MouseBinding MouseAction="LeftDoubleClick"
+                                                      Command="{Binding DataContext.GoToMarkerCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                      CommandParameter="{Binding}"/>
+                                    </Border.InputBindings>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Marker color indicator -->
+                                        <Ellipse Grid.Column="0" Width="8" Height="8"
+                                                 Fill="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
+                                                 VerticalAlignment="Center"/>
+
+                                        <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                            <TextBlock Text="{Binding Name}" Foreground="#DDD" FontSize="10"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Foreground="#9E9E9E" FontSize="9" FontFamily="Consolas">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}{0:D5}">
+                                                        <Binding Path="Frame"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- Empty state -->
+                    <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                Visibility="{Binding Timeline.Markers.Count, Converter={StaticResource CountToVis}}">
+                        <TextBlock Text="&#xED63;" FontFamily="Segoe MDL2 Assets" FontSize="20"
+                                   Foreground="#444" HorizontalAlignment="Center"/>
+                        <TextBlock Text="No markers" Foreground="#9E9E9E" FontSize="10"
+                                   HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                        <TextBlock Text="Press M to add" Foreground="#666" FontSize="9"
+                                   HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <!-- Marker Panel Footer -->
+                    <Border Grid.Row="2" Background="#2A2A2A" Padding="4">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Content="&#xE893;" FontFamily="Segoe MDL2 Assets"
+                                    Command="{Binding PreviousMarkerCommand}"
+                                    ToolTip="Previous marker (Ctrl+Left)"
+                                    Width="28" Height="22" Background="#333" Foreground="#AAA"
+                                    BorderThickness="0"/>
+                            <Button Content="&#xE892;" FontFamily="Segoe MDL2 Assets"
+                                    Command="{Binding NextMarkerCommand}"
+                                    ToolTip="Next marker (Ctrl+Right)"
+                                    Width="28" Height="22" Background="#333" Foreground="#AAA"
+                                    BorderThickness="0" Margin="4,0"/>
+                            <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                    Command="{Binding DeleteMarkerCommand}"
+                                    ToolTip="Delete selected marker (Shift+M)"
+                                    Width="28" Height="22" Background="#333" Foreground="#AAA"
+                                    BorderThickness="0"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Marker Panel Splitter -->
+            <GridSplitter Grid.Column="1" Width="4" Background="#333"
+                          VerticalAlignment="Stretch" HorizontalAlignment="Center"
+                          Visibility="{Binding ShowMarkerPanel, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
             <!-- Timeline -->
-            <Border Grid.Column="0" Background="#1A1A1A">
+            <Border Grid.Column="2" Background="#1A1A1A">
                 <controls:TimelineControl x:Name="TimelineControl"
                                           AutomationProperties.AutomationId="TimelineControl"
                                           Timeline="{Binding Timeline}"
@@ -422,12 +547,12 @@
             </Border>
 
             <!-- Keyframe Panel Splitter -->
-            <GridSplitter Grid.Column="1" Width="4" Background="#333"
+            <GridSplitter Grid.Column="3" Width="4" Background="#333"
                           VerticalAlignment="Stretch" HorizontalAlignment="Center"
                           Visibility="{Binding ShowKeyframePanel, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
             <!-- Keyframe Editor Panel -->
-            <Border Grid.Column="2" Background="#252526"
+            <Border Grid.Column="4" Background="#252526"
                     Visibility="{Binding ShowKeyframePanel, Converter={StaticResource BoolToVisibilityConverter}}">
                 <controls:KeyframeEditorControl
                     SelectedEffect="{Binding SelectedEffect}"
@@ -435,6 +560,109 @@
                     CurrentFrame="{Binding Timeline.PlayheadFrame}"/>
             </Border>
         </Grid>
+
+        <!-- Audio Mixer Panel -->
+        <Border Grid.Row="3" VerticalAlignment="Bottom" Margin="10,0,10,30"
+                Background="#252526" Height="{Binding MixerPanelHeight}"
+                Visibility="{Binding ShowMixerPanel, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Mixer Header -->
+                <Border Grid.Row="0" Background="#2A2A2A" Padding="10,4">
+                    <Grid>
+                        <TextBlock Text="Audio Mixer" Foreground="#AAA" FontSize="11" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Mute All" Command="{Binding MuteAllTracksCommand}"
+                                    Style="{StaticResource SecondaryButtonSmall}" Width="60" Margin="0,0,4,0"/>
+                            <Button Content="Unmute" Command="{Binding UnmuteAllTracksCommand}"
+                                    Style="{StaticResource SecondaryButtonSmall}" Width="55"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Mixer Channels -->
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding AudioTracks}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="80" Background="#1E1E1E" Margin="2" Padding="4" CornerRadius="4">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Track Name -->
+                                        <TextBlock Grid.Row="0" Text="{Binding Name}" Foreground="#AAA" FontSize="10"
+                                                   HorizontalAlignment="Center" Margin="0,2"/>
+
+                                        <!-- Volume Slider (vertical) -->
+                                        <Slider Grid.Row="1" Orientation="Vertical" Minimum="0" Maximum="2"
+                                                Value="{Binding Volume}" Height="50" HorizontalAlignment="Center"
+                                                ToolTip="{Binding VolumeDb, StringFormat='{}{0:F1} dB'}"/>
+
+                                        <!-- Pan Slider -->
+                                        <Slider Grid.Row="2" Orientation="Horizontal" Minimum="-1" Maximum="1"
+                                                Value="{Binding Pan}" Width="60" HorizontalAlignment="Center"
+                                                ToolTip="{Binding PanDisplay}" Margin="0,4"/>
+
+                                        <!-- Mute/Solo Buttons -->
+                                        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4">
+                                            <ToggleButton Content="M" IsChecked="{Binding IsMuted}"
+                                                          ToolTip="Mute track"
+                                                          Width="24" Height="20" FontSize="10" Margin="0,0,2,0">
+                                                <ToggleButton.Style>
+                                                    <Style TargetType="ToggleButton">
+                                                        <Setter Property="Background" Value="#333"/>
+                                                        <Setter Property="Foreground" Value="#AAA"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsChecked" Value="True">
+                                                                <Setter Property="Background" Value="#C75050"/>
+                                                                <Setter Property="Foreground" Value="#FFF"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ToggleButton.Style>
+                                            </ToggleButton>
+                                            <ToggleButton Content="S" IsChecked="{Binding IsSolo}"
+                                                          ToolTip="Solo track"
+                                                          Width="24" Height="20" FontSize="10">
+                                                <ToggleButton.Style>
+                                                    <Style TargetType="ToggleButton">
+                                                        <Setter Property="Background" Value="#333"/>
+                                                        <Setter Property="Foreground" Value="#AAA"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsChecked" Value="True">
+                                                                <Setter Property="Background" Value="#4ACF6A"/>
+                                                                <Setter Property="Foreground" Value="#FFF"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ToggleButton.Style>
+                                            </ToggleButton>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
 
         <!-- Status Bar -->
         <Border Grid.Row="3" VerticalAlignment="Bottom"

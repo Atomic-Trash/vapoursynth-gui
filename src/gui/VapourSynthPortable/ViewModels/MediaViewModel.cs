@@ -63,6 +63,7 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     public void NotifySelectionChanged()
     {
         OnPropertyChanged(nameof(SelectionStatusText));
+        OnPropertyChanged(nameof(HasMultipleSelected));
     }
 
     [ObservableProperty]
@@ -648,6 +649,121 @@ public partial class MediaViewModel : ObservableObject, IDisposable
             }
         }
     }
+
+    // Batch Operations
+
+    [RelayCommand]
+    private void BatchDeleteSelected()
+    {
+        if (SelectedItems.Count == 0) return;
+
+        // Capture all selected items for undo
+        var itemsToDelete = SelectedItems.ToList();
+        var count = itemsToDelete.Count;
+
+        // Record undo action before removing
+        _undoService.RecordAction(
+            $"Delete {count} items",
+            undoAction: () =>
+            {
+                foreach (var item in itemsToDelete)
+                {
+                    _mediaPool.AddMedia(item);
+                }
+                RefreshDisplayedItems();
+            },
+            redoAction: () =>
+            {
+                foreach (var item in itemsToDelete)
+                {
+                    _mediaPool.RemoveMedia(item);
+                }
+                RefreshDisplayedItems();
+            });
+
+        // Remove all selected items
+        foreach (var item in itemsToDelete)
+        {
+            _mediaPool.RemoveMedia(item);
+            DisplayedItems.Remove(item);
+        }
+
+        SelectedItems.Clear();
+        SelectedItem = null;
+
+        OnPropertyChanged(nameof(VideoCount));
+        OnPropertyChanged(nameof(AudioCount));
+        OnPropertyChanged(nameof(ImageCount));
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+        NotifySelectionChanged();
+
+        UpdateStatus();
+        ToastService.Instance.ShowInfo("Deleted", $"{count} items removed (Ctrl+Z to undo)");
+        _logger.LogInformation("Batch deleted {Count} items from pool", count);
+    }
+
+    [RelayCommand]
+    private void BatchAddToBin(MediaBin? targetBin)
+    {
+        if (targetBin?.IsCustomBin != true || SelectedItems.Count == 0) return;
+
+        var itemsToAdd = SelectedItems.ToList();
+        var addedCount = 0;
+
+        foreach (var item in itemsToAdd)
+        {
+            // Check if item is already in the bin
+            if (!targetBin.Items.Contains(item))
+            {
+                targetBin.Items.Add(item);
+                addedCount++;
+            }
+        }
+
+        if (addedCount > 0)
+        {
+            SaveCustomBinsToSettings();
+            ToastService.Instance.ShowSuccess($"Added {addedCount} items to {targetBin.Name}");
+            _logger.LogInformation("Batch added {Count} items to bin {Bin}", addedCount, targetBin.Name);
+        }
+        else
+        {
+            ToastService.Instance.ShowInfo("Items already in bin");
+        }
+    }
+
+    [RelayCommand]
+    private void BatchRemoveFromBin()
+    {
+        if (SelectedBin?.IsCustomBin != true || SelectedItems.Count == 0) return;
+
+        var itemsToRemove = SelectedItems.ToList();
+        var removedCount = 0;
+
+        foreach (var item in itemsToRemove)
+        {
+            if (SelectedBin.Items.Remove(item))
+            {
+                removedCount++;
+            }
+        }
+
+        if (removedCount > 0)
+        {
+            SaveCustomBinsToSettings();
+            RefreshDisplayedItems();
+            SelectedItems.Clear();
+            NotifySelectionChanged();
+            ToastService.Instance.ShowInfo($"Removed {removedCount} items from {SelectedBin.Name}");
+            _logger.LogInformation("Batch removed {Count} items from bin {Bin}", removedCount, SelectedBin.Name);
+        }
+    }
+
+    /// <summary>
+    /// Indicates if batch operations are available (multiple items selected)
+    /// </summary>
+    public bool HasMultipleSelected => SelectedItems.Count > 1;
 
     [RelayCommand]
     private void ClearAll()

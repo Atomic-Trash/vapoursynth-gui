@@ -178,6 +178,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
@@ -199,8 +200,16 @@
                                           Background="#333" Foreground="#AAA" BorderThickness="0"/>
                         </Grid>
 
+                        <!-- Category Filter -->
+                        <ComboBox Grid.Row="1" ItemsSource="{Binding LutCategories}"
+                                  SelectedItem="{Binding SelectedLutCategory}"
+                                  AutomationProperties.AutomationId="LutCategoryFilter"
+                                  Margin="12,0,12,6" Padding="6,4"
+                                  Background="#1E1E1E" Foreground="#DDD" BorderBrush="#444"
+                                  ToolTip="Filter by category"/>
+
                         <!-- Search Box -->
-                        <TextBox Grid.Row="1" Text="{Binding LutSearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                        <TextBox Grid.Row="2" Text="{Binding LutSearchQuery, UpdateSourceTrigger=PropertyChanged}"
                                  AutomationProperties.AutomationId="LutSearchBox"
                                  Margin="12,0,12,8" Padding="6,4"
                                  Background="#1E1E1E" Foreground="#DDD" BorderBrush="#444"
@@ -216,7 +225,7 @@
                             </TextBox.Style>
                         </TextBox>
 
-                        <ListBox Grid.Row="2" ItemsSource="{Binding FilteredLuts}"
+                        <ListBox Grid.Row="3" ItemsSource="{Binding FilteredLuts}"
                                  AutomationProperties.AutomationId="LutsList"
                                  SelectedItem="{Binding SelectedLut}"
                                  Background="Transparent" BorderThickness="0">
@@ -270,7 +279,7 @@
                             </ListBox.ItemTemplate>
                         </ListBox>
 
-                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="8,4,8,8">
+                        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="8,4,8,8">
                             <Button Content="Load..." Command="{Binding LoadLutCommand}"
                                     AutomationProperties.AutomationId="LoadLutButton"
                                     Style="{StaticResource SecondaryButton}" Width="60" Margin="0,0,4,0"/>

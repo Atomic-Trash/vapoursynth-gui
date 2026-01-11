@@ -54,6 +54,25 @@
                                 <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
                             </MenuItem.Icon>
                         </MenuItem>
+                        <!-- Batch Add to Bin (visible when multiple selected) -->
+                        <MenuItem Header="Add Selected to Bin"
+                                  Visibility="{Binding DataContext.HasMultipleSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                  ItemsSource="{Binding DataContext.CustomBins, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                            <MenuItem.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </MenuItem.ItemTemplate>
+                            <MenuItem.ItemContainerStyle>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="Command" Value="{Binding DataContext.BatchAddToBinCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <Setter Property="CommandParameter" Value="{Binding}"/>
+                                </Style>
+                            </MenuItem.ItemContainerStyle>
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE762;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
                         <Separator/>
                         <MenuItem Header="Reveal in Explorer"
                                   Command="{Binding DataContext.RevealInExplorerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -66,6 +85,14 @@
                         <MenuItem Header="Remove from Pool"
                                   Command="{Binding DataContext.RemoveFromPoolCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   CommandParameter="{Binding}">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#C75050"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <!-- Batch Delete (visible when multiple selected) -->
+                        <MenuItem Header="Delete Selected"
+                                  Visibility="{Binding DataContext.HasMultipleSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                  Command="{Binding DataContext.BatchDeleteSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
                             <MenuItem.Icon>
                                 <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#C75050"/>
                             </MenuItem.Icon>
@@ -183,6 +210,25 @@
                                 <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
                             </MenuItem.Icon>
                         </MenuItem>
+                        <!-- Batch Add to Bin (visible when multiple selected) -->
+                        <MenuItem Header="Add Selected to Bin"
+                                  Visibility="{Binding DataContext.HasMultipleSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                  ItemsSource="{Binding DataContext.CustomBins, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                            <MenuItem.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </MenuItem.ItemTemplate>
+                            <MenuItem.ItemContainerStyle>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="Command" Value="{Binding DataContext.BatchAddToBinCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <Setter Property="CommandParameter" Value="{Binding}"/>
+                                </Style>
+                            </MenuItem.ItemContainerStyle>
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE762;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
                         <Separator/>
                         <MenuItem Header="Reveal in Explorer"
                                   Command="{Binding DataContext.RevealInExplorerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -195,6 +241,14 @@
                         <MenuItem Header="Remove from Pool"
                                   Command="{Binding DataContext.RemoveFromPoolCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   CommandParameter="{Binding}">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#C75050"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <!-- Batch Delete (visible when multiple selected) -->
+                        <MenuItem Header="Delete Selected"
+                                  Visibility="{Binding DataContext.HasMultipleSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                  Command="{Binding DataContext.BatchDeleteSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
                             <MenuItem.Icon>
                                 <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#C75050"/>
                             </MenuItem.Icon>

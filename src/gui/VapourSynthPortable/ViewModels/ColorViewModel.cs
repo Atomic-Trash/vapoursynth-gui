@@ -253,20 +253,119 @@ public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPer
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "LUTs"),
         };
 
-        foreach (var path in lutPaths)
+        var categories = new HashSet<string> { "All" };
+
+        foreach (var basePath in lutPaths)
         {
-            if (Directory.Exists(path))
+            if (Directory.Exists(basePath))
             {
-                foreach (var file in Directory.GetFiles(path, "*.cube", SearchOption.AllDirectories))
+                // Load .cube files
+                foreach (var file in Directory.GetFiles(basePath, "*.cube", SearchOption.AllDirectories))
                 {
-                    Luts.Add(new LutFile { Name = Path.GetFileNameWithoutExtension(file), Path = file });
+                    var lutFile = CreateLutFileWithCategory(file, basePath);
+                    Luts.Add(lutFile);
+                    categories.Add(lutFile.Category);
                 }
-                foreach (var file in Directory.GetFiles(path, "*.3dl", SearchOption.AllDirectories))
+                // Load .3dl files
+                foreach (var file in Directory.GetFiles(basePath, "*.3dl", SearchOption.AllDirectories))
                 {
-                    Luts.Add(new LutFile { Name = Path.GetFileNameWithoutExtension(file), Path = file });
+                    var lutFile = CreateLutFileWithCategory(file, basePath);
+                    Luts.Add(lutFile);
+                    categories.Add(lutFile.Category);
                 }
             }
         }
+
+        // Populate LUT categories (sorted with "All" first)
+        foreach (var cat in categories.OrderBy(c => c == "All" ? "" : c))
+        {
+            LutCategories.Add(cat);
+        }
+    }
+
+    /// <summary>
+    /// Creates a LutFile with category discovered from folder structure or filename patterns
+    /// </summary>
+    private static LutFile CreateLutFileWithCategory(string filePath, string basePath)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(filePath);
+        var category = DiscoverLutCategory(filePath, basePath, fileName);
+
+        return new LutFile
+        {
+            Name = fileName,
+            Path = filePath,
+            Category = category
+        };
+    }
+
+    /// <summary>
+    /// Discovers the LUT category from folder structure or filename patterns
+    /// </summary>
+    private static string DiscoverLutCategory(string filePath, string basePath, string fileName)
+    {
+        // Try to get category from folder structure first
+        var relativePath = Path.GetRelativePath(basePath, filePath);
+        var directory = Path.GetDirectoryName(relativePath);
+
+        if (!string.IsNullOrEmpty(directory) && directory != ".")
+        {
+            // Use the first subfolder as category
+            var firstFolder = directory.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0];
+            if (!string.IsNullOrEmpty(firstFolder))
+            {
+                return NormalizeCategoryName(firstFolder);
+            }
+        }
+
+        // Try to extract category from common filename patterns
+        // e.g., "Cinematic_Warm", "FILM-01", "Vintage - Sepia"
+        var fileNameLower = fileName.ToLowerInvariant();
+
+        // Common LUT category patterns
+        var categoryPatterns = new Dictionary<string, string[]>
+        {
+            ["Cinematic"] = ["cinematic", "film", "movie", "cinema"],
+            ["Vintage"] = ["vintage", "retro", "old", "classic", "nostalgic"],
+            ["Black & White"] = ["bw", "b&w", "blackwhite", "monochrome", "greyscale", "grayscale"],
+            ["Warm"] = ["warm", "golden", "sunset", "orange"],
+            ["Cool"] = ["cool", "cold", "blue", "teal"],
+            ["Portrait"] = ["portrait", "skin", "beauty", "face"],
+            ["Landscape"] = ["landscape", "nature", "outdoor"],
+            ["HDR"] = ["hdr", "highdynamic"],
+            ["Log"] = ["log", "slog", "clog", "vlog", "arri", "rec709"],
+            ["Creative"] = ["creative", "artistic", "stylized", "effect"],
+        };
+
+        foreach (var (category, patterns) in categoryPatterns)
+        {
+            foreach (var pattern in patterns)
+            {
+                if (fileNameLower.Contains(pattern))
+                {
+                    return category;
+                }
+            }
+        }
+
+        return "Uncategorized";
+    }
+
+    /// <summary>
+    /// Normalizes a folder name to a proper category name
+    /// </summary>
+    private static string NormalizeCategoryName(string folderName)
+    {
+        // Convert underscores and hyphens to spaces
+        var normalized = folderName.Replace('_', ' ').Replace('-', ' ');
+
+        // Title case
+        if (normalized.Length > 0)
+        {
+            normalized = char.ToUpper(normalized[0]) + normalized[1..];
+        }
+
+        return normalized.Trim();
     }
 
     partial void OnSelectedPresetChanged(ColorGradePreset? value)

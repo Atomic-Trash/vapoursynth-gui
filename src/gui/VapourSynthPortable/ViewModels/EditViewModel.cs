@@ -672,6 +672,90 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
         }
     }
 
+    // Audio Mixer Commands
+
+    [ObservableProperty]
+    private bool _showMixerPanel;
+
+    /// <summary>
+    /// Height of the mixer panel (when visible)
+    /// </summary>
+    public GridLength MixerPanelHeight => ShowMixerPanel ? new GridLength(120) : new GridLength(0);
+
+    partial void OnShowMixerPanelChanged(bool value)
+    {
+        OnPropertyChanged(nameof(MixerPanelHeight));
+    }
+
+    /// <summary>
+    /// Gets audio tracks for the mixer
+    /// </summary>
+    public IEnumerable<TimelineTrack> AudioTracks => Timeline.Tracks.Where(t => t.TrackType == TrackType.Audio);
+
+    [RelayCommand]
+    private void ToggleMixerPanel()
+    {
+        ShowMixerPanel = !ShowMixerPanel;
+    }
+
+    [RelayCommand]
+    private void ToggleTrackMute(TimelineTrack? track)
+    {
+        if (track == null) return;
+
+        track.IsMuted = !track.IsMuted;
+        StatusText = track.IsMuted ? $"{track.Name} muted" : $"{track.Name} unmuted";
+    }
+
+    [RelayCommand]
+    private void ToggleTrackSolo(TimelineTrack? track)
+    {
+        if (track == null) return;
+
+        track.IsSolo = !track.IsSolo;
+
+        // If soloing, unsolo other tracks of the same type
+        if (track.IsSolo)
+        {
+            foreach (var t in Timeline.Tracks.Where(t => t != track && t.TrackType == track.TrackType))
+            {
+                t.IsSolo = false;
+            }
+        }
+
+        StatusText = track.IsSolo ? $"{track.Name} soloed" : $"{track.Name} solo off";
+    }
+
+    [RelayCommand]
+    private void ResetTrackVolume(TimelineTrack? track)
+    {
+        if (track == null) return;
+
+        track.Volume = 1.0;
+        track.Pan = 0.0;
+        StatusText = $"{track.Name} reset to default";
+    }
+
+    [RelayCommand]
+    private void MuteAllTracks()
+    {
+        foreach (var track in AudioTracks)
+        {
+            track.IsMuted = true;
+        }
+        StatusText = "All audio tracks muted";
+    }
+
+    [RelayCommand]
+    private void UnmuteAllTracks()
+    {
+        foreach (var track in AudioTracks)
+        {
+            track.IsMuted = false;
+        }
+        StatusText = "All audio tracks unmuted";
+    }
+
     [RelayCommand]
     private void AddTransition()
     {
@@ -1183,6 +1267,154 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
     private void ToggleKeyframePanel()
     {
         ShowKeyframePanel = !ShowKeyframePanel;
+    }
+
+    // Marker Commands
+
+    [ObservableProperty]
+    private bool _showMarkerPanel;
+
+    /// <summary>
+    /// Width of the marker panel (when visible)
+    /// </summary>
+    public GridLength MarkerPanelWidth => ShowMarkerPanel ? new GridLength(200) : new GridLength(0);
+
+    partial void OnShowMarkerPanelChanged(bool value)
+    {
+        OnPropertyChanged(nameof(MarkerPanelWidth));
+    }
+
+    [RelayCommand]
+    private void AddMarker()
+    {
+        SaveUndoState("Add marker");
+
+        var marker = Timeline.AddMarkerAtPlayhead();
+        Timeline.SelectedMarker = marker;
+
+        StatusText = $"Marker added at {Timeline.PlayheadTimecode}";
+        ToastService.Instance.ShowSuccess("Marker added", marker.Name);
+    }
+
+    [RelayCommand]
+    private void AddMarkerWithName(string? name)
+    {
+        SaveUndoState("Add marker");
+
+        var markerName = string.IsNullOrEmpty(name) ? $"Marker {Timeline.Markers.Count + 1}" : name;
+        var marker = Timeline.AddMarkerAtPlayhead(markerName);
+        Timeline.SelectedMarker = marker;
+
+        StatusText = $"Marker '{markerName}' added at {Timeline.PlayheadTimecode}";
+        ToastService.Instance.ShowSuccess("Marker added", markerName);
+    }
+
+    [RelayCommand]
+    private void DeleteMarker()
+    {
+        if (Timeline.SelectedMarker == null)
+        {
+            // Try to find marker at playhead
+            var markerAtPlayhead = Timeline.GetMarkerAtFrame(Timeline.PlayheadFrame, tolerance: 2);
+            if (markerAtPlayhead != null)
+            {
+                Timeline.SelectedMarker = markerAtPlayhead;
+            }
+            else
+            {
+                ToastService.Instance.ShowInfo("No marker selected");
+                return;
+            }
+        }
+
+        SaveUndoState("Delete marker");
+
+        var markerName = Timeline.SelectedMarker.Name;
+        Timeline.DeleteSelectedMarker();
+
+        StatusText = $"Marker '{markerName}' deleted";
+        ToastService.Instance.ShowInfo("Marker deleted", markerName);
+    }
+
+    [RelayCommand]
+    private void NextMarker()
+    {
+        var marker = Timeline.GoToNextMarker();
+        if (marker != null)
+        {
+            StatusText = $"Jumped to marker: {marker.Name}";
+        }
+        else
+        {
+            ToastService.Instance.ShowInfo("No next marker");
+        }
+    }
+
+    [RelayCommand]
+    private void PreviousMarker()
+    {
+        var marker = Timeline.GoToPreviousMarker();
+        if (marker != null)
+        {
+            StatusText = $"Jumped to marker: {marker.Name}";
+        }
+        else
+        {
+            ToastService.Instance.ShowInfo("No previous marker");
+        }
+    }
+
+    [RelayCommand]
+    private void GoToMarker(TimelineMarker? marker)
+    {
+        if (marker == null) return;
+
+        Timeline.GoToMarker(marker);
+        StatusText = $"Jumped to marker: {marker.Name}";
+    }
+
+    [RelayCommand]
+    private void ClearAllMarkers()
+    {
+        if (Timeline.Markers.Count == 0)
+        {
+            ToastService.Instance.ShowInfo("No markers to clear");
+            return;
+        }
+
+        SaveUndoState("Clear all markers");
+
+        var count = Timeline.Markers.Count;
+        Timeline.ClearMarkers();
+
+        StatusText = $"Cleared {count} marker(s)";
+        ToastService.Instance.ShowInfo("Markers cleared", $"{count} marker(s)");
+    }
+
+    [RelayCommand]
+    private void RenameMarker(TimelineMarker? marker)
+    {
+        if (marker == null && Timeline.SelectedMarker != null)
+        {
+            marker = Timeline.SelectedMarker;
+        }
+
+        if (marker == null)
+        {
+            ToastService.Instance.ShowInfo("No marker selected");
+            return;
+        }
+
+        // For now, just append a number - in a real implementation, this would show a dialog
+        SaveUndoState("Rename marker");
+        marker.Name = $"{marker.Name} (edited)";
+        StatusText = $"Marker renamed to '{marker.Name}'";
+    }
+
+    [RelayCommand]
+    private void ToggleMarkerPanel()
+    {
+        ShowMarkerPanel = !ShowMarkerPanel;
     }
 
     [RelayCommand]
