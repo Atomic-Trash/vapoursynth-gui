@@ -8,7 +8,9 @@ public class RestoreViewModelTests
     {
         mockMediaPool ??= new Mock<IMediaPoolService>();
         var mockVsService = new Mock<IVapourSynthService>();
-        return new RestoreViewModel(mockMediaPool.Object, mockVsService.Object);
+        var mockSettingsService = new Mock<ISettingsService>();
+        mockSettingsService.Setup(s => s.Load()).Returns(new AppSettings());
+        return new RestoreViewModel(mockMediaPool.Object, mockVsService.Object, mockSettingsService.Object);
     }
 
     #region Construction Tests
