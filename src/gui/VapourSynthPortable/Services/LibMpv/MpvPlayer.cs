@@ -1,5 +1,6 @@
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
 
 namespace VapourSynthPortable.Services.LibMpv;
@@ -583,6 +584,70 @@ public class MpvPlayer : IDisposable
 
         var position = Duration * (percent / 100.0);
         Seek(Math.Clamp(position, 0, Duration));
+    }
+
+    /// <summary>
+    /// Capture the current video frame as RGB byte array for scopes analysis.
+    /// Returns (rgbData, width, height) or null if capture fails.
+    /// </summary>
+    public (byte[] RgbData, int Width, int Height)? CaptureCurrentFrame()
+    {
+        if (_handle == IntPtr.Zero || !IsPlaying) return null;
+
+        try
+        {
+            // Create temp file for screenshot
+            var tempFile = Path.Combine(Path.GetTempPath(), $"vs_scope_{Guid.NewGuid():N}.png");
+
+            // Use mpv screenshot command - captures video frame only (no subtitles/OSD)
+            Command($"screenshot-to-file \"{tempFile.Replace("\\", "/")}\" video");
+
+            // Wait briefly for file to be written
+            Thread.Sleep(50);
+
+            if (!File.Exists(tempFile))
+            {
+                _logger.LogDebug("Screenshot file not created");
+                return null;
+            }
+
+            try
+            {
+                // Load the screenshot as a bitmap
+                using var stream = new FileStream(tempFile, FileMode.Open, FileAccess.Read);
+                var decoder = new PngBitmapDecoder(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+                var frame = decoder.Frames[0];
+
+                int width = frame.PixelWidth;
+                int height = frame.PixelHeight;
+
+                // Convert to RGB24 if needed and extract pixel data
+                var formatFrame = new FormatConvertedBitmap(frame, System.Windows.Media.PixelFormats.Rgb24, null, 0);
+                int stride = width * 3;
+                byte[] rgbData = new byte[stride * height];
+                formatFrame.CopyPixels(rgbData, stride, 0);
+
+                return (rgbData, width, height);
+            }
+            finally
+            {
+                // Clean up temp file
+                try { File.Delete(tempFile); } catch { }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to capture frame");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Capture the current video frame asynchronously.
+    /// </summary>
+    public Task<(byte[] RgbData, int Width, int Height)?> CaptureCurrentFrameAsync()
+    {
+        return Task.Run(() => CaptureCurrentFrame());
     }
 
     private void Command(string cmd)

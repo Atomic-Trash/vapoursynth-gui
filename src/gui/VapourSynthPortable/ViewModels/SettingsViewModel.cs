@@ -23,6 +23,7 @@ public partial class SettingsViewModel : ObservableObject
         VideoCodecs = new ObservableCollection<string> { "libx264", "libx265", "h264_nvenc", "hevc_nvenc", "prores_ks", "ffv1" };
         AudioCodecs = new ObservableCollection<string> { "aac", "libmp3lame", "pcm_s16le", "flac" };
         GpuPreferences = new ObservableCollection<GpuPreference>(Enum.GetValues<GpuPreference>());
+        AppThemes = new ObservableCollection<AppTheme>(Enum.GetValues<AppTheme>());
         InstalledPlugins = [];
 
         LoadSettings();
@@ -108,6 +109,9 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _confirmOnDelete = true;
+
+    [ObservableProperty]
+    private AppTheme _appTheme = AppTheme.Dark;
     #endregion
 
     #region Collections
@@ -116,6 +120,7 @@ public partial class SettingsViewModel : ObservableObject
     public ObservableCollection<string> VideoCodecs { get; }
     public ObservableCollection<string> AudioCodecs { get; }
     public ObservableCollection<GpuPreference> GpuPreferences { get; }
+    public ObservableCollection<AppTheme> AppThemes { get; }
     public ObservableCollection<VapourSynthPlugin> InstalledPlugins { get; }
     #endregion
 
@@ -166,6 +171,7 @@ public partial class SettingsViewModel : ObservableObject
         ShowLogPanel = settings.ShowLogPanel;
         TimelineZoom = settings.TimelineZoom;
         ConfirmOnDelete = settings.ConfirmOnDelete;
+        AppTheme = settings.Theme;
     }
 
     private void UpdateCacheInfo()
@@ -221,7 +227,8 @@ public partial class SettingsViewModel : ObservableObject
             // UI settings
             ShowLogPanel = ShowLogPanel,
             TimelineZoom = TimelineZoom,
-            ConfirmOnDelete = ConfirmOnDelete
+            ConfirmOnDelete = ConfirmOnDelete,
+            Theme = AppTheme
         };
         _settingsService.Save(settings);
         ToastService.Instance.ShowSuccess("Settings saved");
@@ -253,6 +260,7 @@ public partial class SettingsViewModel : ObservableObject
         ShowLogPanel = defaults.ShowLogPanel;
         TimelineZoom = defaults.TimelineZoom;
         ConfirmOnDelete = defaults.ConfirmOnDelete;
+        AppTheme = defaults.Theme;
 
         ToastService.Instance.ShowInfo("Settings reset to defaults");
     }

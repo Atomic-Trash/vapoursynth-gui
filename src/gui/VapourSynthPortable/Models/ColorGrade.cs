@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace VapourSynthPortable.Models;
@@ -35,10 +36,39 @@ public partial class ColorGrade : ObservableObject
     [ObservableProperty] private double _vibrance;
     [ObservableProperty] private double _clarity;
 
-    // Curves (simplified - just store control points)
-    [ObservableProperty] private double _curveShadows = 0;
-    [ObservableProperty] private double _curveMidtones = 0;
-    [ObservableProperty] private double _curveHighlights = 0;
+    // Curves - store control points for each channel
+    // Each point is stored as [x, y] pair in normalized 0-1 range
+    [ObservableProperty] private List<CurvePoint> _curvePointsRgb = [new(0, 0), new(1, 1)];
+    [ObservableProperty] private List<CurvePoint> _curvePointsRed = [new(0, 0), new(1, 1)];
+    [ObservableProperty] private List<CurvePoint> _curvePointsGreen = [new(0, 0), new(1, 1)];
+    [ObservableProperty] private List<CurvePoint> _curvePointsBlue = [new(0, 0), new(1, 1)];
+
+    // Curve lookup tables (generated from points, not persisted)
+    [JsonIgnore] public byte[]? CurveLutRgb { get; set; }
+    [JsonIgnore] public byte[]? CurveLutRed { get; set; }
+    [JsonIgnore] public byte[]? CurveLutGreen { get; set; }
+    [JsonIgnore] public byte[]? CurveLutBlue { get; set; }
+
+    /// <summary>
+    /// Returns true if any curve has been modified from default (straight line)
+    /// </summary>
+    [JsonIgnore]
+    public bool HasCurveAdjustments =>
+        !IsDefaultCurve(CurvePointsRgb) ||
+        !IsDefaultCurve(CurvePointsRed) ||
+        !IsDefaultCurve(CurvePointsGreen) ||
+        !IsDefaultCurve(CurvePointsBlue) ||
+        CurveLutRgb != null ||
+        CurveLutRed != null ||
+        CurveLutGreen != null ||
+        CurveLutBlue != null;
+
+    private static bool IsDefaultCurve(List<CurvePoint> points)
+    {
+        if (points.Count != 2) return false;
+        return Math.Abs(points[0].X) < 0.001 && Math.Abs(points[0].Y) < 0.001 &&
+               Math.Abs(points[1].X - 1) < 0.001 && Math.Abs(points[1].Y - 1) < 0.001;
+    }
 
     // LUT
     [ObservableProperty] private string _lutPath = "";
@@ -68,9 +98,14 @@ public partial class ColorGrade : ObservableObject
             Blacks = Blacks,
             Vibrance = Vibrance,
             Clarity = Clarity,
-            CurveShadows = CurveShadows,
-            CurveMidtones = CurveMidtones,
-            CurveHighlights = CurveHighlights,
+            CurvePointsRgb = CurvePointsRgb.Select(p => new CurvePoint(p.X, p.Y)).ToList(),
+            CurvePointsRed = CurvePointsRed.Select(p => new CurvePoint(p.X, p.Y)).ToList(),
+            CurvePointsGreen = CurvePointsGreen.Select(p => new CurvePoint(p.X, p.Y)).ToList(),
+            CurvePointsBlue = CurvePointsBlue.Select(p => new CurvePoint(p.X, p.Y)).ToList(),
+            CurveLutRgb = CurveLutRgb != null ? (byte[])CurveLutRgb.Clone() : null,
+            CurveLutRed = CurveLutRed != null ? (byte[])CurveLutRed.Clone() : null,
+            CurveLutGreen = CurveLutGreen != null ? (byte[])CurveLutGreen.Clone() : null,
+            CurveLutBlue = CurveLutBlue != null ? (byte[])CurveLutBlue.Clone() : null,
             LutPath = LutPath,
             LutIntensity = LutIntensity
         };
@@ -85,9 +120,25 @@ public partial class ColorGrade : ObservableObject
         Temperature = Tint = 0;
         Highlights = Shadows = Whites = Blacks = 0;
         Vibrance = Clarity = 0;
-        CurveShadows = CurveMidtones = CurveHighlights = 0;
+        CurvePointsRgb = [new(0, 0), new(1, 1)];
+        CurvePointsRed = [new(0, 0), new(1, 1)];
+        CurvePointsGreen = [new(0, 0), new(1, 1)];
+        CurvePointsBlue = [new(0, 0), new(1, 1)];
+        CurveLutRgb = CurveLutRed = CurveLutGreen = CurveLutBlue = null;
         LutPath = "";
         LutIntensity = 1.0;
+    }
+
+    /// <summary>
+    /// Resets only the curve adjustments
+    /// </summary>
+    public void ResetCurves()
+    {
+        CurvePointsRgb = [new(0, 0), new(1, 1)];
+        CurvePointsRed = [new(0, 0), new(1, 1)];
+        CurvePointsGreen = [new(0, 0), new(1, 1)];
+        CurvePointsBlue = [new(0, 0), new(1, 1)];
+        CurveLutRgb = CurveLutRed = CurveLutGreen = CurveLutBlue = null;
     }
 
     /// <summary>
@@ -213,5 +264,22 @@ public class ColorGradePreset
                 Temperature = -30, Tint = 5
             }},
         ];
+    }
+}
+
+/// <summary>
+/// Represents a control point on a curve (normalized 0-1 range)
+/// </summary>
+public class CurvePoint
+{
+    public double X { get; set; }
+    public double Y { get; set; }
+
+    public CurvePoint() { }
+
+    public CurvePoint(double x, double y)
+    {
+        X = x;
+        Y = y;
     }
 }

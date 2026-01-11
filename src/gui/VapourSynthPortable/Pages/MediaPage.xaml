@@ -753,6 +753,34 @@
                                            Visibility="{Binding SelectedItem, Converter={StaticResource NullToVis}}"/>
                             </Grid>
                         </Border>
+
+                        <!-- Audio Waveform Display (shown for audio files) -->
+                        <Border x:Name="AudioWaveformPanel" Background="#1A1A1A" CornerRadius="8"
+                                Visibility="{Binding SelectedItem.IsAudio, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Waveform visualization -->
+                                <controls:AudioWaveformControl x:Name="AudioWaveform"
+                                                              SourcePath="{Binding SelectedItem.FilePath}"
+                                                              WaveformColor="#4ACF6A"
+                                                              DisplayMode="Stereo"
+                                                              Margin="8"/>
+
+                                <!-- Audio info bar -->
+                                <Border Grid.Row="1" Background="#252526" Padding="8,6">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets"
+                                                   Foreground="#4ACF6A" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding SelectedItem.Name}" Foreground="#CCC"
+                                                   FontSize="11" TextTrimming="CharacterEllipsis" MaxWidth="180"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
                     </Grid>
                 </Border>
 

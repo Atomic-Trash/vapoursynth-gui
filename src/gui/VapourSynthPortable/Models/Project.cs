@@ -272,6 +272,12 @@ public class ColorGradeData
     public string LutPath { get; set; } = "";
     public double LutIntensity { get; set; } = 1.0;
 
+    // Curves - control points for each channel
+    public List<CurvePoint> CurvePointsRgb { get; set; } = [new(0, 0), new(1, 1)];
+    public List<CurvePoint> CurvePointsRed { get; set; } = [new(0, 0), new(1, 1)];
+    public List<CurvePoint> CurvePointsGreen { get; set; } = [new(0, 0), new(1, 1)];
+    public List<CurvePoint> CurvePointsBlue { get; set; } = [new(0, 0), new(1, 1)];
+
     public static ColorGradeData FromColorGrade(ColorGrade grade)
     {
         return new ColorGradeData
@@ -297,7 +303,11 @@ public class ColorGradeData
             Vibrance = grade.Vibrance,
             Clarity = grade.Clarity,
             LutPath = grade.LutPath,
-            LutIntensity = grade.LutIntensity
+            LutIntensity = grade.LutIntensity,
+            CurvePointsRgb = grade.CurvePointsRgb.Select(p => new CurvePoint(p.X, p.Y)).ToList(),
+            CurvePointsRed = grade.CurvePointsRed.Select(p => new CurvePoint(p.X, p.Y)).ToList(),
+            CurvePointsGreen = grade.CurvePointsGreen.Select(p => new CurvePoint(p.X, p.Y)).ToList(),
+            CurvePointsBlue = grade.CurvePointsBlue.Select(p => new CurvePoint(p.X, p.Y)).ToList()
         };
     }
 
@@ -326,7 +336,11 @@ public class ColorGradeData
             Vibrance = Vibrance,
             Clarity = Clarity,
             LutPath = LutPath,
-            LutIntensity = LutIntensity
+            LutIntensity = LutIntensity,
+            CurvePointsRgb = CurvePointsRgb.Select(p => new CurvePoint(p.X, p.Y)).ToList(),
+            CurvePointsRed = CurvePointsRed.Select(p => new CurvePoint(p.X, p.Y)).ToList(),
+            CurvePointsGreen = CurvePointsGreen.Select(p => new CurvePoint(p.X, p.Y)).ToList(),
+            CurvePointsBlue = CurvePointsBlue.Select(p => new CurvePoint(p.X, p.Y)).ToList()
         };
     }
 }

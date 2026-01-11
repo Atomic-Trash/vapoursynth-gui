@@ -11,11 +11,13 @@ namespace VapourSynthPortable.ViewModels;
 public partial class ExportViewModel : ObservableObject, IDisposable
 {
     private readonly IMediaPoolService _mediaPool;
+    private readonly ISettingsService _settingsService;
     private readonly FFmpegService _ffmpegService = new();
     private readonly VapourSynthService _vapourSynthService = new();
     private readonly EffectService _effectService = EffectService.Instance;
     private CancellationTokenSource? _cancellationTokenSource;
     private bool _disposed;
+    private bool _isLoading; // Prevent saving during load
 
     // Timeline reference for timeline export mode
     [ObservableProperty]
@@ -27,6 +29,40 @@ public partial class ExportViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private ObservableCollection<ExportMode> _exportModes = [ExportMode.DirectEncode, ExportMode.TimelineWithEffects];
+
+    /// <summary>
+    /// Helper property for radio button binding - Direct Encode mode
+    /// </summary>
+    public bool IsDirectEncodeMode
+    {
+        get => ExportMode == ExportMode.DirectEncode;
+        set
+        {
+            if (value && ExportMode != ExportMode.DirectEncode)
+            {
+                ExportMode = ExportMode.DirectEncode;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsTimelineWithEffectsMode));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Helper property for radio button binding - Timeline with Effects mode
+    /// </summary>
+    public bool IsTimelineWithEffectsMode
+    {
+        get => ExportMode == ExportMode.TimelineWithEffects;
+        set
+        {
+            if (value && ExportMode != ExportMode.TimelineWithEffects)
+            {
+                ExportMode = ExportMode.TimelineWithEffects;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsDirectEncodeMode));
+            }
+        }
+    }
 
     // VapourSynth availability
     public bool IsVapourSynthAvailable => _vapourSynthService.IsAvailable;
@@ -97,6 +133,24 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _selectedFrameRate = "Source";
 
+    // NVENC Hardware Encoder Presets (p1=fastest/lowest quality, p7=slowest/highest quality)
+    [ObservableProperty]
+    private ObservableCollection<string> _nvencPresets = ["p1 (fastest)", "p2", "p3", "p4 (balanced)", "p5", "p6", "p7 (best quality)"];
+
+    [ObservableProperty]
+    private string _selectedNvencPreset = "p4 (balanced)";
+
+    // ProRes Profiles (0=proxy, 1=LT, 2=standard, 3=HQ, 4=4444, 5=4444XQ)
+    [ObservableProperty]
+    private ObservableCollection<string> _proresProfiles = ["0 - Proxy", "1 - LT", "2 - Standard", "3 - HQ", "4 - 4444", "5 - 4444XQ"];
+
+    [ObservableProperty]
+    private string _selectedProresProfile = "2 - Standard";
+
+    // Visibility helpers for codec-specific options
+    public bool IsNvencCodec => SelectedVideoCodec?.Contains("nvenc", StringComparison.OrdinalIgnoreCase) ?? false;
+    public bool IsProresCodec => SelectedVideoCodec?.Contains("prores", StringComparison.OrdinalIgnoreCase) ?? false;
+
     // Audio settings
     [ObservableProperty]
     private bool _audioEnabled = true;
@@ -130,13 +184,15 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private double _inputDuration;
 
-    public ExportViewModel(IMediaPoolService mediaPool)
+    public ExportViewModel(IMediaPoolService mediaPool, ISettingsService settingsService)
     {
         _mediaPool = mediaPool;
+        _settingsService = settingsService;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
 
         LoadPresets();
         InitializeResolutions();
+        LoadExportSettings();
 
         _ffmpegService.ProgressChanged += OnProgressChanged;
         _ffmpegService.LogMessage += OnLogMessage;
@@ -151,8 +207,9 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     }
 
     // Parameterless constructor for XAML design-time support
-    public ExportViewModel() : this(App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService
-        ?? new MediaPoolService())
+    public ExportViewModel() : this(
+        App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(),
+        App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService())
     {
     }
 
@@ -188,6 +245,79 @@ public partial class ExportViewModel : ObservableObject, IDisposable
         SelectedResolution = Resolutions.First();
     }
 
+    private void LoadExportSettings()
+    {
+        try
+        {
+            _isLoading = true;
+            var settings = _settingsService.Load();
+
+            // Load export settings from AppSettings
+            SelectedFormat = settings.DefaultExportFormat;
+            SelectedVideoCodec = settings.DefaultVideoCodec;
+            SelectedAudioCodec = settings.DefaultAudioCodec;
+            Quality = settings.DefaultVideoQuality;
+            SelectedAudioBitrate = settings.DefaultAudioBitrate;
+            SelectedPresetSpeed = settings.DefaultPresetSpeed;
+            VideoEnabled = settings.DefaultVideoEnabled;
+            AudioEnabled = settings.DefaultAudioEnabled;
+            SelectedFrameRate = settings.DefaultFrameRate;
+            SelectedNvencPreset = settings.DefaultNvencPreset;
+            SelectedProresProfile = settings.DefaultProresProfile;
+
+            // Load export mode
+            if (Enum.TryParse<ExportMode>(settings.DefaultExportMode, out var mode))
+            {
+                ExportMode = mode;
+            }
+
+            // Load resolution
+            var resolution = Resolutions.FirstOrDefault(r => r.Name == settings.DefaultResolution);
+            if (resolution != null)
+            {
+                SelectedResolution = resolution;
+            }
+        }
+        catch
+        {
+            // Use defaults on error
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void SaveExportSettings()
+    {
+        if (_isLoading) return;
+
+        try
+        {
+            var settings = _settingsService.Load();
+
+            settings.DefaultExportFormat = SelectedFormat;
+            settings.DefaultVideoCodec = SelectedVideoCodec;
+            settings.DefaultAudioCodec = SelectedAudioCodec;
+            settings.DefaultVideoQuality = Quality;
+            settings.DefaultAudioBitrate = SelectedAudioBitrate;
+            settings.DefaultPresetSpeed = SelectedPresetSpeed;
+            settings.DefaultExportMode = ExportMode.ToString();
+            settings.DefaultVideoEnabled = VideoEnabled;
+            settings.DefaultAudioEnabled = AudioEnabled;
+            settings.DefaultResolution = SelectedResolution?.Name ?? "Source";
+            settings.DefaultFrameRate = SelectedFrameRate;
+            settings.DefaultNvencPreset = SelectedNvencPreset;
+            settings.DefaultProresProfile = SelectedProresProfile;
+
+            _settingsService.Save(settings);
+        }
+        catch
+        {
+            // Ignore save errors
+        }
+    }
+
     partial void OnSelectedPresetChanged(ExportPreset? value)
     {
         if (value == null) return;
@@ -217,6 +347,7 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     {
         UpdateOutputPath();
         UpdateEstimatedSize();
+        SaveExportSettings();
     }
 
     partial void OnOutputFileNameChanged(string value)
@@ -227,6 +358,64 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     partial void OnQualityChanged(int value)
     {
         UpdateEstimatedSize();
+        SaveExportSettings();
+    }
+
+    partial void OnSelectedVideoCodecChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsNvencCodec));
+        OnPropertyChanged(nameof(IsProresCodec));
+        SaveExportSettings();
+    }
+
+    partial void OnSelectedAudioCodecChanged(string value)
+    {
+        SaveExportSettings();
+    }
+
+    partial void OnSelectedAudioBitrateChanged(int value)
+    {
+        SaveExportSettings();
+    }
+
+    partial void OnSelectedPresetSpeedChanged(string value)
+    {
+        SaveExportSettings();
+    }
+
+    partial void OnExportModeChanged(ExportMode value)
+    {
+        SaveExportSettings();
+    }
+
+    partial void OnVideoEnabledChanged(bool value)
+    {
+        SaveExportSettings();
+    }
+
+    partial void OnAudioEnabledChanged(bool value)
+    {
+        SaveExportSettings();
+    }
+
+    partial void OnSelectedResolutionChanged(ResolutionOption? value)
+    {
+        SaveExportSettings();
+    }
+
+    partial void OnSelectedFrameRateChanged(string value)
+    {
+        SaveExportSettings();
+    }
+
+    partial void OnSelectedNvencPresetChanged(string value)
+    {
+        SaveExportSettings();
+    }
+
+    partial void OnSelectedProresProfileChanged(string value)
+    {
+        SaveExportSettings();
     }
 
     private void UpdateOutputPath()
@@ -609,6 +798,23 @@ public partial class ExportViewModel : ObservableObject, IDisposable
             AudioCodec = SelectedAudioCodec,
             AudioBitrate = SelectedAudioBitrate
         };
+
+        // Extract NVENC preset (e.g., "p4 (balanced)" -> "p4")
+        if (IsNvencCodec && !string.IsNullOrEmpty(SelectedNvencPreset))
+        {
+            var preset = SelectedNvencPreset.Split(' ')[0];
+            settings.HardwarePreset = preset;
+        }
+
+        // Extract ProRes profile (e.g., "2 - Standard" -> 2)
+        if (IsProresCodec && !string.IsNullOrEmpty(SelectedProresProfile))
+        {
+            var profileStr = SelectedProresProfile.Split(' ')[0];
+            if (int.TryParse(profileStr, out var profile))
+            {
+                settings.ProResProfile = profile;
+            }
+        }
 
         if (SelectedResolution != null && SelectedResolution.Width > 0)
         {

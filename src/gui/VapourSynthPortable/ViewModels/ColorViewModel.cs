@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
+using VapourSynthPortable.Controls;
 using VapourSynthPortable.Models;
 using VapourSynthPortable.Services;
 
@@ -390,6 +392,67 @@ public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPer
     }
 
     [RelayCommand]
+    private void ResetCurves()
+    {
+        SaveUndoState();
+        CurrentGrade.ResetCurves();
+        CurvesReset?.Invoke(this, EventArgs.Empty);
+        StatusText = "Curves reset";
+        _ = UpdateGradedPreviewAsync();
+    }
+
+    /// <summary>
+    /// Event raised when curves need to be reset in the UI control
+    /// </summary>
+    public event EventHandler? CurvesReset;
+
+    /// <summary>
+    /// Handle curve changes from CurvesControl
+    /// </summary>
+    public void OnCurveChanged(CurveChannel channel, byte[] lookupTable, List<Point> points)
+    {
+        // Store the lookup table for the color grading service
+        switch (channel)
+        {
+            case CurveChannel.RGB:
+                CurrentGrade.CurveLutRgb = lookupTable;
+                CurrentGrade.CurvePointsRgb = points.Select(p => new CurvePoint(p.X, p.Y)).ToList();
+                break;
+            case CurveChannel.Red:
+                CurrentGrade.CurveLutRed = lookupTable;
+                CurrentGrade.CurvePointsRed = points.Select(p => new CurvePoint(p.X, p.Y)).ToList();
+                break;
+            case CurveChannel.Green:
+                CurrentGrade.CurveLutGreen = lookupTable;
+                CurrentGrade.CurvePointsGreen = points.Select(p => new CurvePoint(p.X, p.Y)).ToList();
+                break;
+            case CurveChannel.Blue:
+                CurrentGrade.CurveLutBlue = lookupTable;
+                CurrentGrade.CurvePointsBlue = points.Select(p => new CurvePoint(p.X, p.Y)).ToList();
+                break;
+        }
+
+        // Update preview
+        _ = UpdateGradedPreviewAsync();
+    }
+
+    /// <summary>
+    /// Get curve points to restore CurvesControl state
+    /// </summary>
+    public List<Point> GetCurvePoints(CurveChannel channel)
+    {
+        var points = channel switch
+        {
+            CurveChannel.RGB => CurrentGrade.CurvePointsRgb,
+            CurveChannel.Red => CurrentGrade.CurvePointsRed,
+            CurveChannel.Green => CurrentGrade.CurvePointsGreen,
+            CurveChannel.Blue => CurrentGrade.CurvePointsBlue,
+            _ => CurrentGrade.CurvePointsRgb
+        };
+        return points.Select(p => new Point(p.X, p.Y)).ToList();
+    }
+
+    [RelayCommand]
     private void Undo()
     {
         if (_undoStack.Count > 0)
@@ -662,6 +725,21 @@ public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPer
             CurrentGrade.LutPath = importedGrade.LutPath;
             CurrentGrade.LutIntensity = importedGrade.LutIntensity;
 
+            // Copy curve points
+            CurrentGrade.CurvePointsRgb = importedGrade.CurvePointsRgb;
+            CurrentGrade.CurvePointsRed = importedGrade.CurvePointsRed;
+            CurrentGrade.CurvePointsGreen = importedGrade.CurvePointsGreen;
+            CurrentGrade.CurvePointsBlue = importedGrade.CurvePointsBlue;
+
+            // Clear curve LUTs (will be regenerated when curves control syncs)
+            CurrentGrade.CurveLutRgb = null;
+            CurrentGrade.CurveLutRed = null;
+            CurrentGrade.CurveLutGreen = null;
+            CurrentGrade.CurveLutBlue = null;
+
+            // Notify UI to sync curves control
+            CurvesLoaded?.Invoke(this, EventArgs.Empty);
+
             // Clear undo/redo stacks for fresh start
             _undoStack.Clear();
             _redoStack.Clear();
@@ -671,6 +749,11 @@ public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPer
             StatusText = "Color grade loaded from project";
         }
     }
+
+    /// <summary>
+    /// Event raised when curves need to be loaded into UI control from project
+    /// </summary>
+    public event EventHandler? CurvesLoaded;
 
     #endregion
 

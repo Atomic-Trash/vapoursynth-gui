@@ -101,6 +101,21 @@ public partial class MediaItem : ObservableObject
     /// </summary>
     public bool HasWaveform => WaveformData != null || StereoWaveformData != null;
 
+    /// <summary>
+    /// Whether this is an audio-only file
+    /// </summary>
+    public bool IsAudio => MediaType == MediaType.Audio;
+
+    /// <summary>
+    /// Whether this is a video file
+    /// </summary>
+    public bool IsVideo => MediaType == MediaType.Video;
+
+    /// <summary>
+    /// Whether this is an image file
+    /// </summary>
+    public bool IsImage => MediaType == MediaType.Image;
+
     public string Resolution => Width > 0 && Height > 0 ? $"{Width}x{Height}" : "";
 
     public string DurationFormatted

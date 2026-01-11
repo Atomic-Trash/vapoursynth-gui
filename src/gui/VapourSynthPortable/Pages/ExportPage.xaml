@@ -55,6 +55,36 @@
                     <TextBlock Text="{Binding SelectedPreset.Description}" Foreground="#AAA" FontSize="10"
                                Margin="0,0,0,15" TextWrapping="Wrap"/>
 
+                    <!-- Export Mode Selection -->
+                    <TextBlock Text="EXPORT MODE" Foreground="#F1F1F1" FontSize="11" Margin="0,0,0,8"/>
+                    <StackPanel Margin="0,0,0,5">
+                        <RadioButton Content="Direct Encode" GroupName="ExportMode"
+                                     AutomationProperties.AutomationId="DirectEncodeRadio"
+                                     IsChecked="{Binding IsDirectEncodeMode}"
+                                     Foreground="#F1F1F1" Margin="0,0,0,5">
+                            <RadioButton.ToolTip>
+                                <ToolTip Content="Encode source file directly with FFmpeg. Best for simple format conversion."/>
+                            </RadioButton.ToolTip>
+                        </RadioButton>
+                        <RadioButton Content="Timeline with Effects" GroupName="ExportMode"
+                                     AutomationProperties.AutomationId="TimelineWithEffectsRadio"
+                                     IsChecked="{Binding IsTimelineWithEffectsMode}"
+                                     IsEnabled="{Binding IsVapourSynthAvailable}"
+                                     Foreground="#F1F1F1" Margin="0,0,0,5">
+                            <RadioButton.ToolTip>
+                                <ToolTip Content="Process timeline through VapourSynth with all effects applied. Requires VapourSynth."/>
+                            </RadioButton.ToolTip>
+                        </RadioButton>
+                    </StackPanel>
+                    <!-- Timeline mode warning when VS not available -->
+                    <TextBlock Text="⚠ VapourSynth not available - Timeline mode disabled"
+                               Foreground="#FFA500" FontSize="10" Margin="0,0,0,10"
+                               Visibility="{Binding IsVapourSynthAvailable, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+                    <!-- Timeline mode info when active -->
+                    <TextBlock Text="Effects and timeline edits will be applied during export"
+                               Foreground="#6366F1" FontSize="10" Margin="0,0,0,10"
+                               Visibility="{Binding IsTimelineWithEffectsMode, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
                     <!-- Format -->
                     <TextBlock Text="FORMAT" Foreground="#F1F1F1" FontSize="11" Margin="0,0,0,8"/>
                     <ComboBox ItemsSource="{Binding Formats}"
@@ -101,6 +131,30 @@
                                 <ComboBox ItemsSource="{Binding PresetSpeeds}"
                                           SelectedItem="{Binding SelectedPresetSpeed}"
                                           Margin="0,0,0,10"/>
+
+                                <!-- NVENC Hardware Preset (visible only for NVENC codecs) -->
+                                <StackPanel Visibility="{Binding IsNvencCodec, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock Text="NVENC Quality Preset" Foreground="#CCC" FontSize="10" Margin="0,0,0,5"/>
+                                    <ComboBox ItemsSource="{Binding NvencPresets}"
+                                              AutomationProperties.AutomationId="NvencPresetComboBox"
+                                              SelectedItem="{Binding SelectedNvencPreset}"
+                                              Margin="0,0,0,5"/>
+                                    <TextBlock Foreground="#AAA" FontSize="9" Margin="0,0,0,10">
+                                        <Run Text="p1=fastest, p7=best quality. Requires NVIDIA GPU."/>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <!-- ProRes Profile (visible only for ProRes codec) -->
+                                <StackPanel Visibility="{Binding IsProresCodec, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock Text="ProRes Profile" Foreground="#CCC" FontSize="10" Margin="0,0,0,5"/>
+                                    <ComboBox ItemsSource="{Binding ProresProfiles}"
+                                              AutomationProperties.AutomationId="ProresProfileComboBox"
+                                              SelectedItem="{Binding SelectedProresProfile}"
+                                              Margin="0,0,0,5"/>
+                                    <TextBlock Foreground="#AAA" FontSize="9" Margin="0,0,0,10">
+                                        <Run Text="Higher profiles = better quality, larger files"/>
+                                    </TextBlock>
+                                </StackPanel>
 
                                 <TextBlock Text="Resolution" Foreground="#CCC" FontSize="10" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding Resolutions}"

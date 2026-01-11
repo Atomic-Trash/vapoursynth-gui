@@ -26,6 +26,7 @@ public partial class VideoPlayerControl : UserControl
 
     public event EventHandler<string>? FileLoaded;
     public event EventHandler? PlaybackEnded;
+    public event EventHandler<double>? PositionChanged;
 
     public MpvPlayer? Player => _player;
     public bool IsPlaying => _player?.IsPlaying ?? false;
@@ -130,6 +131,7 @@ public partial class VideoPlayerControl : UserControl
                 {
                     UpdateTimeDisplay(pos, _player.Duration);
                 }
+                PositionChanged?.Invoke(this, pos);
             });
         };
 
@@ -290,6 +292,22 @@ public partial class VideoPlayerControl : UserControl
     public void Pause() => _player?.Pause();
     public void Stop() => _player?.Stop();
     public void Seek(double position) => _player?.Seek(position);
+
+    /// <summary>
+    /// Capture the current video frame as RGB data for scopes analysis.
+    /// </summary>
+    public (byte[] RgbData, int Width, int Height)? CaptureCurrentFrame()
+    {
+        return _player?.CaptureCurrentFrame();
+    }
+
+    /// <summary>
+    /// Capture the current video frame asynchronously.
+    /// </summary>
+    public Task<(byte[] RgbData, int Width, int Height)?> CaptureCurrentFrameAsync()
+    {
+        return _player?.CaptureCurrentFrameAsync() ?? Task.FromResult<(byte[], int, int)?>(null);
+    }
 
     private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
     {

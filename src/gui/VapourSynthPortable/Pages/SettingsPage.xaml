@@ -166,6 +166,20 @@
                 <TextBlock Text="Interface" Style="{StaticResource SettingsSectionHeader}"/>
 
                 <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="Theme" Style="{StaticResource SettingLabel}"/>
+                    <ComboBox ItemsSource="{Binding AppThemes}"
+                              AutomationProperties.AutomationId="ThemeComboBox"
+                              SelectedItem="{Binding AppTheme}"
+                              Style="{StaticResource SettingComboBox}" Width="150">
+                        <ComboBox.ToolTip>
+                            <ToolTip Content="Changes take effect after restart"/>
+                        </ComboBox.ToolTip>
+                    </ComboBox>
+                    <TextBlock Text="(restart required)" Foreground="#9E9E9E"
+                               FontSize="10" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
                     <TextBlock Text="Show Log Panel" Style="{StaticResource SettingLabel}"/>
                     <CheckBox IsChecked="{Binding ShowLogPanel}" Style="{StaticResource FormCheckBox}" VerticalAlignment="Center"
                               AutomationProperties.AutomationId="ShowLogPanelCheckbox"/>

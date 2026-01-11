@@ -98,6 +98,18 @@ public class ColorGradingService
                     ApplySaturationVibrance(ref r, ref g, ref b, (float)grade.Saturation, (float)grade.Vibrance);
                 }
 
+                // 7. Apply clarity (midtone contrast enhancement)
+                if (Math.Abs(grade.Clarity) > 0.001)
+                {
+                    ApplyClarity(ref r, ref g, ref b, (float)grade.Clarity);
+                }
+
+                // 8. Apply curves (before final clamp)
+                if (grade.HasCurveAdjustments)
+                {
+                    ApplyCurves(ref r, ref g, ref b, grade);
+                }
+
                 // Clamp and write back
                 pixels[i] = (byte)Math.Clamp(b * 255, 0, 255);
                 pixels[i + 1] = (byte)Math.Clamp(g * 255, 0, 255);
@@ -154,7 +166,8 @@ public class ColorGradingService
                Math.Abs(grade.Shadows) > 0.001 ||
                Math.Abs(grade.Whites) > 0.001 ||
                Math.Abs(grade.Blacks) > 0.001 ||
-               Math.Abs(grade.Vibrance) > 0.001;
+               Math.Abs(grade.Vibrance) > 0.001 ||
+               Math.Abs(grade.Clarity) > 0.001;
     }
 
     private static bool HasLiftGammaGain(ColorGrade grade)
@@ -344,6 +357,76 @@ public class ColorGradingService
     {
         x = Math.Clamp((x - edge0) / (edge1 - edge0), 0, 1);
         return x * x * (3 - 2 * x);
+    }
+
+    /// <summary>
+    /// Apply clarity adjustment (local contrast enhancement in midtones)
+    /// Clarity enhances texture and detail without affecting shadows or highlights
+    /// </summary>
+    private static void ApplyClarity(ref float r, ref float g, ref float b, float clarity)
+    {
+        // Calculate luminance
+        var lum = r * 0.2126f + g * 0.7152f + b * 0.0722f;
+
+        // Clarity affects midtones most (bell curve centered at 0.5)
+        // This creates a mask that peaks at mid-gray and falls off at shadows/highlights
+        var midtoneMask = 1f - Math.Abs(lum - 0.5f) * 2f;
+        midtoneMask = Math.Max(0, midtoneMask);
+        midtoneMask = midtoneMask * midtoneMask; // Smooth falloff
+
+        // Clarity is essentially localized contrast enhancement
+        // We apply a contrast-like adjustment weighted by the midtone mask
+        var clarityFactor = clarity / 100f * midtoneMask;
+
+        // Apply clarity as contrast around the pixel's own luminance
+        // This enhances local detail without shifting overall brightness
+        var adjustedR = lum + (r - lum) * (1f + clarityFactor * 0.5f);
+        var adjustedG = lum + (g - lum) * (1f + clarityFactor * 0.5f);
+        var adjustedB = lum + (b - lum) * (1f + clarityFactor * 0.5f);
+
+        // Also add subtle contrast around midpoint for punch
+        var contrastAmount = clarityFactor * 0.3f;
+        r = adjustedR + (adjustedR - 0.5f) * contrastAmount;
+        g = adjustedG + (adjustedG - 0.5f) * contrastAmount;
+        b = adjustedB + (adjustedB - 0.5f) * contrastAmount;
+    }
+
+    /// <summary>
+    /// Apply curve lookup tables to RGB values
+    /// </summary>
+    private static void ApplyCurves(ref float r, ref float g, ref float b, ColorGrade grade)
+    {
+        // Convert to 0-255 range for LUT lookup
+        int ri = (int)Math.Clamp(r * 255, 0, 255);
+        int gi = (int)Math.Clamp(g * 255, 0, 255);
+        int bi = (int)Math.Clamp(b * 255, 0, 255);
+
+        // Apply RGB curve (affects all channels equally)
+        if (grade.CurveLutRgb != null)
+        {
+            ri = grade.CurveLutRgb[ri];
+            gi = grade.CurveLutRgb[gi];
+            bi = grade.CurveLutRgb[bi];
+        }
+
+        // Apply individual channel curves
+        if (grade.CurveLutRed != null)
+        {
+            ri = grade.CurveLutRed[ri];
+        }
+        if (grade.CurveLutGreen != null)
+        {
+            gi = grade.CurveLutGreen[gi];
+        }
+        if (grade.CurveLutBlue != null)
+        {
+            bi = grade.CurveLutBlue[bi];
+        }
+
+        // Convert back to 0-1 range
+        r = ri / 255f;
+        g = gi / 255f;
+        b = bi / 255f;
     }
 
     /// <summary>

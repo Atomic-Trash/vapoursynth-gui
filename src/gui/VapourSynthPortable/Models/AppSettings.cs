@@ -18,6 +18,14 @@ public class AppSettings
     public string DefaultAudioCodec { get; set; } = "aac";
     public int DefaultVideoQuality { get; set; } = 22;
     public int DefaultAudioBitrate { get; set; } = 192;
+    public string DefaultPresetSpeed { get; set; } = "medium";
+    public string DefaultExportMode { get; set; } = "DirectEncode";
+    public bool DefaultVideoEnabled { get; set; } = true;
+    public bool DefaultAudioEnabled { get; set; } = true;
+    public string DefaultResolution { get; set; } = "Source";
+    public string DefaultFrameRate { get; set; } = "Source";
+    public string DefaultNvencPreset { get; set; } = "p4 (balanced)";
+    public string DefaultProresProfile { get; set; } = "2 - Standard";
 
     // Hardware acceleration
     public GpuPreference GpuPreference { get; set; } = GpuPreference.Auto;
@@ -35,6 +43,7 @@ public class AppSettings
     public bool ShowLogPanel { get; set; } = false;
     public double TimelineZoom { get; set; } = 1.0;
     public bool ConfirmOnDelete { get; set; } = true;
+    public AppTheme Theme { get; set; } = AppTheme.Dark;
 
     // Favorite presets (stored by name)
     public List<string> FavoritePresets { get; set; } = [];
@@ -62,4 +71,10 @@ public class CustomBinSettings
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
     public List<string> ItemPaths { get; set; } = [];
+}
+
+public enum AppTheme
+{
+    Dark,
+    Light
 }
