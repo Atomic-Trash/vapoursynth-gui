@@ -18,6 +18,11 @@ public interface INavigationService
     event EventHandler<PageChangedEventArgs>? PageChanged;
 
     /// <summary>
+    /// Event raised when navigation history changes (for UI binding)
+    /// </summary>
+    event EventHandler? HistoryChanged;
+
+    /// <summary>
     /// Navigate to the specified page
     /// </summary>
     /// <param name="page">The page to navigate to</param>
@@ -44,6 +49,35 @@ public interface INavigationService
     /// Check if forward navigation is available
     /// </summary>
     bool CanGoForward { get; }
+
+    /// <summary>
+    /// Gets the back navigation history (most recent first)
+    /// </summary>
+    IReadOnlyList<PageType> BackHistory { get; }
+
+    /// <summary>
+    /// Gets the forward navigation history (most recent first)
+    /// </summary>
+    IReadOnlyList<PageType> ForwardHistory { get; }
+
+    /// <summary>
+    /// Navigate back by a specific number of steps
+    /// </summary>
+    /// <param name="steps">Number of steps to go back</param>
+    /// <returns>True if navigation occurred</returns>
+    bool GoBack(int steps);
+
+    /// <summary>
+    /// Navigate forward by a specific number of steps
+    /// </summary>
+    /// <param name="steps">Number of steps to go forward</param>
+    /// <returns>True if navigation occurred</returns>
+    bool GoForward(int steps);
+
+    /// <summary>
+    /// Clear all navigation history
+    /// </summary>
+    void ClearHistory();
 }
 
 /// <summary>

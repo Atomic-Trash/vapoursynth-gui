@@ -41,6 +41,14 @@
         </Style>
     </Window.Resources>
 
+    <Window.InputBindings>
+        <!-- Navigation keyboard shortcuts -->
+        <KeyBinding Key="Left" Modifiers="Alt" Command="{Binding GoBackCommand}"/>
+        <KeyBinding Key="Right" Modifiers="Alt" Command="{Binding GoForwardCommand}"/>
+        <KeyBinding Key="BrowserBack" Command="{Binding GoBackCommand}"/>
+        <KeyBinding Key="BrowserForward" Command="{Binding GoForwardCommand}"/>
+    </Window.InputBindings>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -92,6 +100,54 @@
                             <MenuItem Header="E_xit" Click="Exit_Click" InputGestureText="Alt+F4"/>
                         </MenuItem>
                     </Menu>
+
+                    <!-- Navigation History Buttons -->
+                    <StackPanel Orientation="Horizontal" Margin="10,0,0,0">
+                        <Button Command="{Binding GoBackCommand}"
+                                ToolTip="Go Back (Alt+Left)"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="8,4"
+                                Cursor="Hand"
+                                AutomationProperties.AutomationId="GoBackButton">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.3"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                        </Button>
+                        <Button Command="{Binding GoForwardCommand}"
+                                ToolTip="Go Forward (Alt+Right)"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="8,4"
+                                Cursor="Hand"
+                                AutomationProperties.AutomationId="GoForwardButton">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.3"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <TextBlock Text="&#xE72A;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                        </Button>
+                    </StackPanel>
                 </StackPanel>
 
                 <!-- Page Navigation -->

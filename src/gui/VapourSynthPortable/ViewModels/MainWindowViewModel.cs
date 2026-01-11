@@ -31,6 +31,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         // Subscribe to navigation changes
         _navigationService.PageChanged += OnPageChanged;
+        _navigationService.HistoryChanged += OnHistoryChanged;
 
         // Subscribe to dependency status changes
         _dependencyStatusService.StatusChanged += OnDependencyStatusChanged;
@@ -58,6 +59,14 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CurrentPage));
         OnPropertyChanged(nameof(CanGoBack));
         OnPropertyChanged(nameof(CanGoForward));
+        GoBackCommand.NotifyCanExecuteChanged();
+        GoForwardCommand.NotifyCanExecuteChanged();
+    }
+
+    private void OnHistoryChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(BackHistory));
+        OnPropertyChanged(nameof(ForwardHistory));
     }
 
     #region Project State
@@ -275,6 +284,16 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     /// Whether forward navigation is available
     /// </summary>
     public bool CanGoForward => _navigationService.CanGoForward;
+
+    /// <summary>
+    /// Gets the back navigation history (most recent first)
+    /// </summary>
+    public IReadOnlyList<PageType> BackHistory => _navigationService.BackHistory;
+
+    /// <summary>
+    /// Gets the forward navigation history (most recent first)
+    /// </summary>
+    public IReadOnlyList<PageType> ForwardHistory => _navigationService.ForwardHistory;
 
     /// <summary>
     /// Navigate to a specific page by name (for backwards compatibility)
