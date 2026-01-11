@@ -429,7 +429,19 @@ public class PluginService : IPluginService
             if (shouldExtract)
             {
                 var targetPath = Path.Combine(_pluginsDir, fileName);
-                entry.ExtractToFile(targetPath, overwrite: true);
+
+                // Ensure target directory exists
+                var targetDir = Path.GetDirectoryName(targetPath);
+                if (!string.IsNullOrEmpty(targetDir) && !Directory.Exists(targetDir))
+                {
+                    Directory.CreateDirectory(targetDir);
+                }
+
+                // Extract using async stream copy
+                await using var entryStream = entry.Open();
+                await using var fileStream = new FileStream(targetPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+                await entryStream.CopyToAsync(fileStream, cancellationToken);
+
                 _logger.LogDebug("Extracted {FileName} to {TargetPath}", fileName, targetPath);
             }
 
@@ -437,8 +449,6 @@ public class PluginService : IPluginService
             var percentage = 50 + (int)((processedCount * 50.0) / entries.Count); // 50-100% for extraction
             progress?.Report(percentage);
         }
-
-        await Task.CompletedTask; // Placeholder for async operation
     }
 
     /// <summary>

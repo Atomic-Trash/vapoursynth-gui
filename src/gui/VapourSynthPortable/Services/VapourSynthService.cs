@@ -120,7 +120,7 @@ public class VapourSynthService : IVapourSynthService
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
-            await WaitForProcessAsync(process, ct);
+            await WaitForProcessAsync(process, ct, TimeSpan.FromSeconds(30));
 
             if (process.ExitCode != 0)
             {
@@ -129,6 +129,11 @@ public class VapourSynthService : IVapourSynthService
             }
 
             return ParseScriptInfo(output.ToString());
+        }
+        catch (TimeoutException ex)
+        {
+            _logger.LogError(ex, "Timeout getting script info for: {ScriptPath}", scriptPath);
+            return null;
         }
         catch (Exception ex)
         {
@@ -532,11 +537,30 @@ public class VapourSynthService : IVapourSynthService
         return info;
     }
 
-    private async Task WaitForProcessAsync(Process process, CancellationToken ct)
+    private async Task WaitForProcessAsync(Process process, CancellationToken ct, TimeSpan? timeout = null)
     {
+        var effectiveTimeout = timeout ?? TimeSpan.FromMinutes(30); // Default 30 min for encoding
+        var stopwatch = Stopwatch.StartNew();
+
         while (!process.HasExited)
         {
             ct.ThrowIfCancellationRequested();
+
+            // Check for timeout (watchdog)
+            if (stopwatch.Elapsed > effectiveTimeout)
+            {
+                _logger.LogWarning("Process timeout after {Elapsed}. Killing process.", stopwatch.Elapsed);
+                try
+                {
+                    process.Kill();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Failed to kill timed out process");
+                }
+                throw new TimeoutException($"Process did not complete within {effectiveTimeout.TotalMinutes} minutes");
+            }
+
             await Task.Delay(50, ct);
         }
     }
@@ -663,7 +687,7 @@ clip.set_output()
                 process.Start();
                 process.BeginOutputReadLine();
 
-                await WaitForProcessAsync(process, ct);
+                await WaitForProcessAsync(process, ct, TimeSpan.FromSeconds(30));
 
                 // Parse plugin output
                 foreach (var line in output.ToString().Split('\n'))

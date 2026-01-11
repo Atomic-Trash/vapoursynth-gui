@@ -123,10 +123,14 @@ public class ColorGradingService
             // 7. Apply LUT if specified
             if (!string.IsNullOrEmpty(grade.LutPath))
             {
-                var lut = _lutService.LoadLut(grade.LutPath);
-                if (lut != null)
+                var lutResult = _lutService.LoadLut(grade.LutPath);
+                if (lutResult.IsSuccess && lutResult.Value != null)
                 {
-                    result = _lutService.ApplyLut(result, lut, grade.LutIntensity) ?? result;
+                    result = _lutService.ApplyLut(result, lutResult.Value, grade.LutIntensity) ?? result;
+                }
+                else if (lutResult.IsFailure)
+                {
+                    _logger.LogWarning("Could not apply LUT: {Error}", lutResult.Error);
                 }
             }
 
@@ -148,11 +152,14 @@ public class ColorGradingService
         if (source == null || string.IsNullOrEmpty(lutPath))
             return source;
 
-        var lut = _lutService.LoadLut(lutPath);
-        if (lut == null)
+        var lutResult = _lutService.LoadLut(lutPath);
+        if (lutResult.IsFailure || lutResult.Value == null)
+        {
+            _logger.LogWarning("Could not load LUT for preview: {Error}", lutResult.Error);
             return source;
+        }
 
-        return _lutService.ApplyLut(source, lut, intensity);
+        return _lutService.ApplyLut(source, lutResult.Value, intensity);
     }
 
     private static bool HasColorAdjustments(ColorGrade grade)

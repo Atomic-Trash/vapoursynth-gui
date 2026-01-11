@@ -348,8 +348,9 @@ public class FrameCacheService : IDisposable
                 bitmap.Freeze();
                 return (BitmapSource)bitmap;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogDebug(ex, "Failed to load bitmap from {Path}", path);
                 return null;
             }
         });

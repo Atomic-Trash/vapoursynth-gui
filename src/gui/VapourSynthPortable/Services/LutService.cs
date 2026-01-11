@@ -20,34 +20,39 @@ public class LutService
     /// <summary>
     /// Load a .cube LUT file
     /// </summary>
-    public Lut3D? LoadLut(string path)
+    public Result<Lut3D> LoadLut(string path)
     {
-        if (string.IsNullOrEmpty(path) || !File.Exists(path))
-            return null;
+        if (string.IsNullOrEmpty(path))
+            return Result<Lut3D>.Failure("LUT path is empty");
+
+        if (!File.Exists(path))
+            return Result<Lut3D>.Failure("LUT file not found", path);
 
         lock (_cacheLock)
         {
             if (_lutCache.TryGetValue(path, out var cached))
-                return cached;
+                return Result<Lut3D>.Success(cached);
         }
 
         try
         {
             var lut = ParseCubeLut(path);
-            if (lut != null)
+            if (lut == null)
             {
-                lock (_cacheLock)
-                {
-                    _lutCache[path] = lut;
-                }
-                _logger.LogInformation("Loaded LUT: {Path} ({Size}x{Size}x{Size})", path, lut.Size, lut.Size, lut.Size);
+                return Result<Lut3D>.Failure("Failed to parse LUT file", $"Invalid format or data in {Path.GetFileName(path)}");
             }
-            return lut;
+
+            lock (_cacheLock)
+            {
+                _lutCache[path] = lut;
+            }
+            _logger.LogInformation("Loaded LUT: {Path} ({Size}x{Size}x{Size})", path, lut.Size, lut.Size, lut.Size);
+            return Result<Lut3D>.Success(lut);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load LUT: {Path}", path);
-            return null;
+            return Result<Lut3D>.Failure(ex, "Failed to load LUT file");
         }
     }
 

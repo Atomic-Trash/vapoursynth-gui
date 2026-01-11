@@ -51,6 +51,13 @@ public class SettingsService : ISettingsService
 
     public void Save(AppSettings settings)
     {
+        // Ensure directory exists before writing
+        var directory = Path.GetDirectoryName(_settingsPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
         var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
         File.WriteAllText(_settingsPath, json);
     }

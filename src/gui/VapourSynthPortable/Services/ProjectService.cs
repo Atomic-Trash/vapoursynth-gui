@@ -52,6 +52,13 @@ public class ProjectService : IProjectService
         project.FilePath = filePath;
         project.ModifiedDate = DateTime.Now;
 
+        // Ensure directory exists before writing
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
         var json = JsonSerializer.Serialize(project, JsonOptions);
         await File.WriteAllTextAsync(filePath, json);
 
