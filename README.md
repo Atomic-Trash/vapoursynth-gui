@@ -2,7 +2,11 @@
 
 A DaVinci Resolve-style video processing application built with WPF/.NET 8, featuring timeline editing, professional color grading, AI-powered restoration, and VapourSynth integration.
 
-![VapourSynth Studio](https://img.shields.io/badge/.NET-8.0-purple) ![License](https://img.shields.io/badge/license-MIT-blue) ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
+[![Release](https://img.shields.io/github/v/release/Atomic-Trash/vapoursynth-gui?include_prereleases)](https://github.com/Atomic-Trash/vapoursynth-gui/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/Atomic-Trash/vapoursynth-gui/build.yml?branch=master)](https://github.com/Atomic-Trash/vapoursynth-gui/actions)
+![.NET](https://img.shields.io/badge/.NET-8.0-purple)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 
 ## Screenshots
 
