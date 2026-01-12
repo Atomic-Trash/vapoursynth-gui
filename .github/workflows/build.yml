@@ -51,15 +51,15 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore src/gui/VapourSynthPortable.sln
 
-      - name: Run tests
-        run: dotnet test src/gui/VapourSynthPortable.Tests/VapourSynthPortable.Tests.csproj --configuration Release --no-restore --verbosity normal --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
+      - name: Run tests with coverage
+        run: dotnet test src/gui/VapourSynthPortable.Tests/VapourSynthPortable.Tests.csproj --configuration Release --no-restore --verbosity normal --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-results
-          path: src/gui/VapourSynthPortable.Tests/TestResults/
+          path: ./TestResults/
           retention-days: 30
 
       - name: Test Report
@@ -67,8 +67,35 @@ jobs:
         if: always()
         with:
           name: Unit Tests
-          path: src/gui/VapourSynthPortable.Tests/TestResults/*.trx
+          path: ./TestResults/*.trx
           reporter: dotnet-trx
+
+      - name: Generate Coverage Report
+        uses: danielpalme/ReportGenerator-GitHub-Action@5
+        with:
+          reports: './TestResults/**/coverage.cobertura.xml'
+          targetdir: './CoverageReport'
+          reporttypes: 'HtmlSummary;Cobertura;MarkdownSummary'
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./CoverageReport/
+          retention-days: 30
+
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request'
+        with:
+          path: ./CoverageReport/Summary.md
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./TestResults/**/coverage.cobertura.xml
+          fail_ci_if_error: false
+          verbose: true
 
   powershell-lint:
     runs-on: windows-latest

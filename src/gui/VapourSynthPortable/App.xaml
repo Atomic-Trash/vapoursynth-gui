@@ -11,6 +11,8 @@
                 <ResourceDictionary Source="Styles/Buttons.xaml"/>
                 <ResourceDictionary Source="Styles/FormControls.xaml"/>
                 <ResourceDictionary Source="Styles/Cards.xaml"/>
+                <!-- Accessibility -->
+                <ResourceDictionary Source="Styles/HighContrast.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <!-- ═══════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        type: string
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event.inputs.version }}") {
+            $version = "${{ github.event.inputs.version }}"
+          } else {
+            $version = "${{ github.ref_name }}".TrimStart('v')
+          }
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          echo "Version: $version"
+
+      - name: Restore dependencies
+        run: dotnet restore src/gui/VapourSynthPortable.sln
+
+      - name: Build Release
+        run: dotnet build src/gui/VapourSynthPortable.sln --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test src/gui/VapourSynthPortable.Tests/VapourSynthPortable.Tests.csproj --configuration Release --no-restore --verbosity normal
+
+      - name: Publish self-contained
+        run: dotnet publish src/gui/VapourSynthPortable/VapourSynthPortable.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -o ./publish/self-contained
+
+      - name: Publish framework-dependent
+        run: dotnet publish src/gui/VapourSynthPortable/VapourSynthPortable.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -o ./publish/framework-dependent
+
+      - name: Create archives
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          Compress-Archive -Path ./publish/self-contained/* -DestinationPath "./VapourSynthStudio-$version-win-x64-portable.zip"
+          Compress-Archive -Path ./publish/framework-dependent/* -DestinationPath "./VapourSynthStudio-$version-win-x64-framework-dependent.zip"
+
+      - name: Upload self-contained artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VapourSynthStudio-${{ steps.version.outputs.VERSION }}-win-x64-portable
+          path: ./publish/self-contained/
+          retention-days: 90
+
+      - name: Upload framework-dependent artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VapourSynthStudio-${{ steps.version.outputs.VERSION }}-win-x64-framework-dependent
+          path: ./publish/framework-dependent/
+          retention-days: 90
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          generate_release_notes: true
+          files: |
+            ./VapourSynthStudio-*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
