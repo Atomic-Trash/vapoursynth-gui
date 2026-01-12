@@ -202,8 +202,9 @@ public class DiagnosticsService : IDiagnosticsService
             var result = await RunProcessAsync(vspipePath, "--version");
             return result.ExitCode == 0;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "VapourSynth check failed");
             return false;
         }
     }
@@ -222,8 +223,9 @@ public class DiagnosticsService : IDiagnosticsService
             var result = await RunProcessAsync(pythonPath, "--version");
             return result.ExitCode == 0;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "Python check failed");
             return false;
         }
     }
@@ -241,8 +243,9 @@ public class DiagnosticsService : IDiagnosticsService
             var result = await RunProcessAsync(ffmpegPath, "-version");
             return result.ExitCode == 0;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "FFmpeg check failed");
             return false;
         }
     }
@@ -340,8 +343,9 @@ public class DiagnosticsService : IDiagnosticsService
             var result = await RunProcessAsync(vspipePath, "--version");
             return result.Output.Split('\n').FirstOrDefault()?.Trim() ?? "";
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "Failed to get VapourSynth version");
             return "";
         }
     }
@@ -356,8 +360,9 @@ public class DiagnosticsService : IDiagnosticsService
             var result = await RunProcessAsync(pythonPath, "--version");
             return result.Output.Trim();
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "Failed to get Python version");
             return "";
         }
     }
@@ -372,8 +377,9 @@ public class DiagnosticsService : IDiagnosticsService
             var result = await RunProcessAsync(ffmpegPath, "-version");
             return result.Output.Split('\n').FirstOrDefault()?.Trim() ?? "";
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "Failed to get FFmpeg version");
             return "";
         }
     }
@@ -385,8 +391,9 @@ public class DiagnosticsService : IDiagnosticsService
             using var counter = new PerformanceCounter("Memory", "Available MBytes");
             return (long)counter.NextValue();
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "Failed to get available memory");
             return 0;
         }
     }

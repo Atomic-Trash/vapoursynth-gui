@@ -225,8 +225,9 @@ public class ProjectService : IProjectService
                 {
                     clip.Color = (Color)ColorConverter.ConvertFromString(clipData.ColorHex);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger.LogDebug(ex, "Failed to parse clip color '{ColorHex}', using default", clipData.ColorHex);
                     clip.Color = clipData.TrackType == TrackType.Video
                         ? Color.FromRgb(0x4A, 0x9E, 0xCF)
                         : Color.FromRgb(0x4A, 0xCF, 0x6A);
@@ -358,8 +359,9 @@ public class ProjectService : IProjectService
             var relativeUri = baseUri.MakeRelativeUri(fullUri);
             return Uri.UnescapeDataString(relativeUri.ToString().Replace('/', Path.DirectorySeparatorChar));
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "Failed to create relative path from '{FullPath}' to '{BasePath}'", fullPath, basePath);
             return fullPath;
         }
     }
@@ -396,8 +398,9 @@ public class ProjectService : IProjectService
             var settings = JsonSerializer.Deserialize<ProjectAppSettings>(json);
             return settings?.RecentProjects ?? [];
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "Failed to read recent projects from settings");
             return [];
         }
     }
@@ -428,8 +431,9 @@ public class ProjectService : IProjectService
                 var json = File.ReadAllText(settingsPath);
                 return JsonSerializer.Deserialize<ProjectAppSettings>(json) ?? new ProjectAppSettings();
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogDebug(ex, "Failed to load project settings, using defaults");
                 return new ProjectAppSettings();
             }
         }

@@ -360,7 +360,7 @@ public class DependencyStatusService : IDependencyStatusService
         }
         catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
         {
-            try { process.Kill(); } catch { /* ignore */ }
+            try { process.Kill(); } catch (Exception ex) { _logger.LogDebug(ex, "Process already terminated during timeout"); }
             throw new TimeoutException($"Process did not complete within {timeout.TotalSeconds} seconds");
         }
     }

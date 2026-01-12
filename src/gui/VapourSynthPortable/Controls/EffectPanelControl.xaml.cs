@@ -24,7 +24,9 @@ public class InverseBoolToVisibilityConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        if (value is Visibility v)
+            return v != Visibility.Visible;
+        return Binding.DoNothing;
     }
 }
 
@@ -45,7 +47,7 @@ public class ParameterTypeToVisibilityConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return Binding.DoNothing;
     }
 }
 

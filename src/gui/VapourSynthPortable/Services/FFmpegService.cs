@@ -99,8 +99,9 @@ public class FFmpegService
                 return !string.IsNullOrEmpty(ffmpegPath) &&
                        File.Exists(Path.Combine(ffmpegPath, "ffmpeg.exe"));
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogDebug(ex, "FFmpeg availability check failed");
                 return false;
             }
         }
@@ -570,8 +571,9 @@ public class FFmpegService
 
             return output.Contains(encoderName, StringComparison.OrdinalIgnoreCase);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "Failed to check encoder availability: {Encoder}", encoderName);
             return false;
         }
     }

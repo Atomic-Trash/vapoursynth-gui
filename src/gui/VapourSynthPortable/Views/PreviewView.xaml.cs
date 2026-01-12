@@ -190,7 +190,7 @@ public class WipeClipConverter : IMultiValueConverter
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return Array.Empty<object>();
     }
 }
 
@@ -215,6 +215,6 @@ public class WipeMarginConverter : IMultiValueConverter
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return Array.Empty<object>();
     }
 }
