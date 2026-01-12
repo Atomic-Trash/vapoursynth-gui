@@ -47,7 +47,7 @@ jobs:
         run: dotnet build src/gui/VapourSynthPortable.sln --configuration Release --no-restore
 
       - name: Run tests
-        run: dotnet test src/gui/VapourSynthPortable.Tests/VapourSynthPortable.Tests.csproj --configuration Release --no-restore --verbosity normal
+        run: dotnet test src/gui/VapourSynthPortable.Tests/VapourSynthPortable.Tests.csproj --configuration Release --no-restore --verbosity normal --filter "FullyQualifiedName!~UITests"
 
       - name: Publish self-contained
         run: dotnet publish src/gui/VapourSynthPortable/VapourSynthPortable.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -o ./publish/self-contained

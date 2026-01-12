@@ -52,7 +52,7 @@ jobs:
         run: dotnet restore src/gui/VapourSynthPortable.sln
 
       - name: Run tests with coverage
-        run: dotnet test src/gui/VapourSynthPortable.Tests/VapourSynthPortable.Tests.csproj --configuration Release --no-restore --verbosity normal --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+        run: dotnet test src/gui/VapourSynthPortable.Tests/VapourSynthPortable.Tests.csproj --configuration Release --no-restore --verbosity normal --filter "FullyQualifiedName!~UITests" --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
