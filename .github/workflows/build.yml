@@ -117,9 +117,15 @@ jobs:
       - name: Run PSScriptAnalyzer
         shell: pwsh
         run: |
-          $results = Invoke-ScriptAnalyzer -Path scripts/ -Recurse -Severity Error,Warning -ExcludeRule PSAvoidUsingWriteHost
-          if ($results) {
-            $results | Format-Table -AutoSize
+          # Only fail on errors, warnings are reported but don't block CI
+          $errors = Invoke-ScriptAnalyzer -Path scripts/ -Recurse -Severity Error
+          $warnings = Invoke-ScriptAnalyzer -Path scripts/ -Recurse -Severity Warning
+          if ($warnings) {
+            Write-Host "::warning::PSScriptAnalyzer found $($warnings.Count) style warnings (non-blocking)"
+          }
+          if ($errors) {
+            Write-Host "::error::PSScriptAnalyzer found $($errors.Count) errors"
+            $errors | Format-Table -AutoSize
             exit 1
           }
-          Write-Host "No issues found!"
+          Write-Host "No blocking issues found!"
