@@ -171,8 +171,15 @@ public partial class ColorWheelControl : UserControl
         {
             control.UpdateIndicatorPosition();
             control.UpdateWheelColor();
+            control.UpdateXYValueDisplay();
             control.ColorChanged?.Invoke(control, EventArgs.Empty);
         }
+    }
+
+    private void UpdateXYValueDisplay()
+    {
+        XValueText.Text = ColorX.ToString("F2");
+        YValueText.Text = ColorY.ToString("F2");
     }
 
     private static void OnMasterChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

@@ -34,6 +34,11 @@
             <Setter Property="MinWidth" Value="100"/>
         </Style>
 
+        <!-- Settings TextBox with Validation -->
+        <Style x:Key="SettingTextBoxValidating" TargetType="TextBox" BasedOn="{StaticResource FormTextBoxValidating}">
+            <Setter Property="MinWidth" Value="100"/>
+        </Style>
+
         <!-- Settings ComboBox -->
         <Style x:Key="SettingComboBox" TargetType="ComboBox" BasedOn="{StaticResource FormComboBox}">
             <Setter Property="MinWidth" Value="150"/>
@@ -121,12 +126,30 @@
 
                 <StackPanel Orientation="Horizontal" Margin="0,5">
                     <TextBlock Text="Cache Directory" Style="{StaticResource SettingLabel}"/>
-                    <TextBox Text="{Binding CacheDirectory}" Style="{StaticResource SettingTextBox}" Width="200"/>
+                    <TextBox Style="{StaticResource SettingTextBoxValidating}" Width="200"
+                             AutomationProperties.AutomationId="CacheDirectoryTextBox">
+                        <TextBox.Text>
+                            <Binding Path="CacheDirectory" UpdateSourceTrigger="PropertyChanged">
+                                <Binding.ValidationRules>
+                                    <helpers:DirectoryPathRule FieldName="Cache directory" AllowEmpty="True"/>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,5">
                     <TextBlock Text="Max Cache Size (MB)" Style="{StaticResource SettingLabel}"/>
-                    <TextBox Text="{Binding MaxCacheSizeMB}" Style="{StaticResource SettingTextBox}" Width="100"/>
+                    <TextBox Style="{StaticResource SettingTextBoxValidating}" Width="100"
+                             AutomationProperties.AutomationId="MaxCacheSizeTextBox">
+                        <TextBox.Text>
+                            <Binding Path="MaxCacheSizeMB" UpdateSourceTrigger="PropertyChanged">
+                                <Binding.ValidationRules>
+                                    <helpers:PositiveIntegerRule FieldName="Max cache size" Minimum="100" Maximum="100000"/>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,5">
@@ -147,7 +170,16 @@
 
                 <StackPanel Orientation="Horizontal" Margin="0,5">
                     <TextBlock Text="Recent Projects Limit" Style="{StaticResource SettingLabel}"/>
-                    <TextBox Text="{Binding RecentProjectsLimit}" Style="{StaticResource SettingTextBox}" Width="100"/>
+                    <TextBox Style="{StaticResource SettingTextBoxValidating}" Width="100"
+                             AutomationProperties.AutomationId="RecentProjectsLimitTextBox">
+                        <TextBox.Text>
+                            <Binding Path="RecentProjectsLimit" UpdateSourceTrigger="PropertyChanged">
+                                <Binding.ValidationRules>
+                                    <helpers:PositiveIntegerRule FieldName="Recent projects limit" Minimum="1" Maximum="50"/>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,5">
@@ -158,8 +190,17 @@
 
                 <StackPanel Orientation="Horizontal" Margin="0,5">
                     <TextBlock Text="Auto-save Interval (min)" Style="{StaticResource SettingLabel}"/>
-                    <TextBox Text="{Binding AutoSaveIntervalMinutes}" Style="{StaticResource SettingTextBox}" Width="100"
-                             IsEnabled="{Binding AutoSaveEnabled}"/>
+                    <TextBox Style="{StaticResource SettingTextBoxValidating}" Width="100"
+                             IsEnabled="{Binding AutoSaveEnabled}"
+                             AutomationProperties.AutomationId="AutoSaveIntervalTextBox">
+                        <TextBox.Text>
+                            <Binding Path="AutoSaveIntervalMinutes" UpdateSourceTrigger="PropertyChanged">
+                                <Binding.ValidationRules>
+                                    <helpers:PositiveIntegerRule FieldName="Auto-save interval" Minimum="1" Maximum="120"/>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
                 </StackPanel>
 
                 <!-- UI Settings -->
@@ -212,7 +253,16 @@
 
                 <StackPanel Orientation="Horizontal" Margin="0,5">
                     <TextBlock Text="Output Directory" Style="{StaticResource SettingLabel}"/>
-                    <TextBox Text="{Binding OutputDirectory}" Style="{StaticResource SettingTextBox}" Width="200"/>
+                    <TextBox Style="{StaticResource SettingTextBoxValidating}" Width="200"
+                             AutomationProperties.AutomationId="OutputDirectoryTextBox">
+                        <TextBox.Text>
+                            <Binding Path="OutputDirectory" UpdateSourceTrigger="PropertyChanged">
+                                <Binding.ValidationRules>
+                                    <helpers:DirectoryPathRule FieldName="Output directory" AllowEmpty="True"/>
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,5">

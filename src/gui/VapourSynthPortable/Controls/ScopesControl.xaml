@@ -43,6 +43,12 @@
 
                 <!-- Graticule lines -->
                 <Canvas x:Name="GraticuleCanvas" IsHitTestVisible="False"/>
+
+                <!-- Waiting for video placeholder -->
+                <TextBlock x:Name="ScopePlaceholder" Text="Waiting for video..."
+                           Foreground="#666" FontSize="12"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Visibility="Visible"/>
             </Grid>
         </Border>
 
@@ -58,6 +64,12 @@
                 <TextBlock Text="255" Foreground="#888" FontSize="10"
                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
                            Margin="0,0,5,2"/>
+
+                <!-- Histogram placeholder -->
+                <TextBlock x:Name="HistogramPlaceholder" Text="Histogram"
+                           Foreground="#444" FontSize="11"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Visibility="Visible"/>
             </Grid>
         </Border>
     </Grid>

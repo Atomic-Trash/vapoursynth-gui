@@ -58,6 +58,34 @@
         <Setter Property="Padding" Value="6,4"/>
     </Style>
 
+    <!-- Validation Error Template -->
+    <ControlTemplate x:Key="ValidationErrorTemplate">
+        <StackPanel>
+            <AdornedElementPlaceholder x:Name="placeholder"/>
+            <TextBlock Text="{Binding ElementName=placeholder, Path=AdornedElement.(Validation.Errors)[0].ErrorContent}"
+                       Foreground="{StaticResource ErrorBrush}"
+                       FontSize="{StaticResource FontSizeSmall}"
+                       Margin="4,2,0,0"/>
+        </StackPanel>
+    </ControlTemplate>
+
+    <!-- TextBox with validation support -->
+    <Style x:Key="FormTextBoxValidating" TargetType="TextBox" BasedOn="{StaticResource FormTextBox}">
+        <Setter Property="Validation.ErrorTemplate" Value="{StaticResource ValidationErrorTemplate}"/>
+        <Style.Triggers>
+            <Trigger Property="Validation.HasError" Value="True">
+                <Setter Property="BorderBrush" Value="{StaticResource ErrorBrush}"/>
+                <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Validation.Errors)[0].ErrorContent}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Small variant with validation -->
+    <Style x:Key="FormTextBoxValidatingSmall" TargetType="TextBox" BasedOn="{StaticResource FormTextBoxValidating}">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}"/>
+        <Setter Property="Padding" Value="6,4"/>
+    </Style>
+
     <!-- ═══════════════════════════════════════════════════════════════════════════
          COMBOBOX STYLES
          ═══════════════════════════════════════════════════════════════════════════ -->

@@ -30,8 +30,12 @@
         <KeyBinding Key="T" Command="{Binding AddTextOverlayCommand}"/>
         <KeyBinding Key="K" Command="{Binding AddKeyframeCommand}"/>
         <KeyBinding Key="K" Modifiers="Shift" Command="{Binding RemoveKeyframeCommand}"/>
+        <!-- Keyframe navigation - [ and ] keys (may vary by keyboard layout) -->
         <KeyBinding Key="OemOpenBrackets" Command="{Binding PreviousKeyframeCommand}"/>
         <KeyBinding Key="OemCloseBrackets" Command="{Binding NextKeyframeCommand}"/>
+        <!-- Alternative keyframe navigation - works on all keyboard layouts -->
+        <KeyBinding Key="Left" Modifiers="Ctrl+Shift" Command="{Binding PreviousKeyframeCommand}"/>
+        <KeyBinding Key="Right" Modifiers="Ctrl+Shift" Command="{Binding NextKeyframeCommand}"/>
         <!-- Marker shortcuts -->
         <KeyBinding Key="M" Command="{Binding AddMarkerCommand}"/>
         <KeyBinding Key="M" Modifiers="Shift" Command="{Binding DeleteMarkerCommand}"/>

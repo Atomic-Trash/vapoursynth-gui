@@ -104,7 +104,16 @@ public partial class ScopesControl : UserControl
     private void UpdateScopes()
     {
         if (_frameData == null || _frameWidth == 0 || _frameHeight == 0)
+        {
+            // Show placeholders when no data
+            if (ScopePlaceholder != null) ScopePlaceholder.Visibility = Visibility.Visible;
+            if (HistogramPlaceholder != null) HistogramPlaceholder.Visibility = Visibility.Visible;
             return;
+        }
+
+        // Hide placeholders when we have data
+        if (ScopePlaceholder != null) ScopePlaceholder.Visibility = Visibility.Collapsed;
+        if (HistogramPlaceholder != null) HistogramPlaceholder.Visibility = Visibility.Collapsed;
 
         DrawGraticule();
 
