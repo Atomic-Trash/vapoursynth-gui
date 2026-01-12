@@ -91,9 +91,11 @@ public class FrameCacheService : IDisposable
         if (_cache.TryGetValue(cacheKey, out var cached))
         {
             UpdateAccessOrder(cacheKey);
+            _logger.LogTrace("Cache HIT for frame {Frame} of {File}", frameNumber, Path.GetFileName(filePath));
             return cached.Frame;
         }
 
+        _logger.LogTrace("Cache MISS for frame {Frame} of {File}", frameNumber, Path.GetFileName(filePath));
         return null;
     }
 
@@ -148,7 +150,10 @@ public class FrameCacheService : IDisposable
         CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+        {
+            _logger.LogDebug("GetFrameAsync: File not found or empty path: {FilePath}", filePath);
             return null;
+        }
 
         var cacheKey = GetCacheKey(filePath, frameNumber, width, height);
 
@@ -156,8 +161,11 @@ public class FrameCacheService : IDisposable
         if (_cache.TryGetValue(cacheKey, out var cached))
         {
             UpdateAccessOrder(cacheKey);
+            _logger.LogTrace("GetFrameAsync: Cache HIT for frame {Frame}", frameNumber);
             return cached.Frame;
         }
+
+        _logger.LogTrace("GetFrameAsync: Cache MISS for frame {Frame}, extracting...", frameNumber);
 
         // Check if extraction is already in progress
         if (_pendingExtractions.TryGetValue(cacheKey, out var pendingTask))

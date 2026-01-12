@@ -51,15 +51,24 @@ public class SettingsService : ISettingsService
 
     public void Save(AppSettings settings)
     {
-        // Ensure directory exists before writing
-        var directory = Path.GetDirectoryName(_settingsPath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        try
         {
-            Directory.CreateDirectory(directory);
-        }
+            // Ensure directory exists before writing
+            var directory = Path.GetDirectoryName(_settingsPath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
 
-        var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
-        File.WriteAllText(_settingsPath, json);
+            var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
+            File.WriteAllText(_settingsPath, json);
+            _logger.LogDebug("Settings saved to {SettingsPath}", _settingsPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save settings to {SettingsPath}", _settingsPath);
+            throw; // Re-throw so caller knows save failed
+        }
     }
 
     public string GetOutputPath()
