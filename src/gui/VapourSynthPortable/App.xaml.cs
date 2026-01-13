@@ -159,6 +159,7 @@ public partial class App : Application
         services.AddSingleton<IDependencyStatusService, DependencyStatusService>();
         services.AddSingleton<ThumbnailService>();
         services.AddSingleton<UndoService>();
+        services.AddSingleton<IBinService, BinService>();
 
         // ViewModels - transient (new instance per request)
         services.AddTransient<MediaViewModel>();

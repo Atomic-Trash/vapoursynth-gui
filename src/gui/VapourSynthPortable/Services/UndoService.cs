@@ -385,13 +385,14 @@ public class UndoTransaction : IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        _disposed = true;
 
         if (!_committed)
         {
             // Auto-commit on dispose if not cancelled
             Commit();
         }
+
+        _disposed = true;
     }
 }
 
