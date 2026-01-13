@@ -243,40 +243,16 @@ public class RestorePageObject
     }
 
     /// <summary>
-    /// Gets the Process Queue button.
+    /// Gets the Clear Restoration button.
     /// </summary>
-    public Button? ProcessQueueButton =>
-        ElementFinder.Button(_mainWindow, "ProcessQueueButton");
-
-    /// <summary>
-    /// Gets the Cancel Processing button.
-    /// </summary>
-    public Button? CancelProcessingButton =>
-        ElementFinder.Button(_mainWindow, "CancelProcessingButton");
+    public Button? ClearRestorationButton =>
+        ElementFinder.Button(_mainWindow, "ClearRestorationButton");
 
     /// <summary>
     /// Gets the Clear Queue button.
     /// </summary>
     public Button? ClearQueueButton =>
         ElementFinder.Button(_mainWindow, "ClearQueueButton");
-
-    /// <summary>
-    /// Clicks the Process Queue button to start processing.
-    /// </summary>
-    public void ClickProcessQueue()
-    {
-        ProcessQueueButton?.Click();
-        Thread.Sleep(500);
-    }
-
-    /// <summary>
-    /// Clicks the Cancel Processing button.
-    /// </summary>
-    public void ClickCancelProcessing()
-    {
-        CancelProcessingButton?.Click();
-        Thread.Sleep(500);
-    }
 
     /// <summary>
     /// Clicks the Clear Queue button.
@@ -288,16 +264,19 @@ public class RestorePageObject
     }
 
     /// <summary>
-    /// Checks if the Process Queue button is enabled.
+    /// Clicks the Clear Restoration button.
     /// </summary>
-    public bool IsProcessQueueEnabled =>
-        ProcessQueueButton?.IsEnabled ?? false;
+    public void ClickClearRestoration()
+    {
+        ClearRestorationButton?.Click();
+        Thread.Sleep(500);
+    }
 
     /// <summary>
-    /// Checks if the Cancel Processing button is enabled.
+    /// Checks if the Clear Queue button is enabled.
     /// </summary>
-    public bool IsCancelProcessingEnabled =>
-        CancelProcessingButton?.IsEnabled ?? false;
+    public bool IsClearQueueEnabled =>
+        ClearQueueButton?.IsEnabled ?? false;
 
     #endregion
 

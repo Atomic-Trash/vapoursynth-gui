@@ -54,10 +54,10 @@ public class RestorePageTests : UITestBase
     [Fact]
     public void RestorePage_HasQueueControlButtons()
     {
-        // Assert
-        _restorePage.ProcessQueueButton.Should().NotBeNull("Process Queue button should exist");
-        _restorePage.CancelProcessingButton.Should().NotBeNull("Cancel Processing button should exist");
+        // Assert - The RestorePage has Clear Queue and Clear Restoration buttons
+        // Note: Processing happens automatically, no explicit Process/Cancel buttons
         _restorePage.ClearQueueButton.Should().NotBeNull("Clear Queue button should exist");
+        _restorePage.ClearRestorationButton.Should().NotBeNull("Clear Restoration button should exist");
     }
 
     #endregion
@@ -223,15 +223,14 @@ public class RestorePageTests : UITestBase
     }
 
     [Fact]
-    public void QueueControls_ProcessButton_DisabledWhenQueueEmpty()
+    public void QueueControls_ClearQueueButton_CanBeChecked()
     {
-        // The Process button should be disabled when there are no jobs
-        // This depends on the CanStartProcessing binding working correctly
-        var processButton = _restorePage.ProcessQueueButton;
-        processButton.Should().NotBeNull();
+        // Verify the Clear Queue button exists and we can check its state
+        var clearQueueButton = _restorePage.ClearQueueButton;
+        clearQueueButton.Should().NotBeNull("Clear Queue button should exist");
 
         // Just verify we can check the enabled state without crashing
-        var isEnabled = _restorePage.IsProcessQueueEnabled;
+        var isEnabled = _restorePage.IsClearQueueEnabled;
         App.HasExited.Should().BeFalse();
     }
 
