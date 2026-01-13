@@ -6,7 +6,6 @@ using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
-using Microsoft.Win32;
 using VapourSynthPortable.Models;
 using VapourSynthPortable.Services;
 
@@ -18,6 +17,7 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     private readonly IMediaPoolService _mediaPool;
     private readonly IVapourSynthService _vapourSynthService;
     private readonly ISettingsService _settingsService;
+    private readonly INavigationService _navigationService;
     private readonly QuickPreviewService _quickPreviewService;
     private bool _disposed;
 
@@ -53,9 +53,6 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     // Source is now managed by MediaPoolService
     public string SourcePath => _mediaPool.CurrentSource?.FilePath ?? "";
     public bool HasSource => _mediaPool.HasSource;
-
-    [ObservableProperty]
-    private string _outputPath = "";
 
     [ObservableProperty]
     private ObservableCollection<RestoreJob> _jobQueue = [];
@@ -130,18 +127,23 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     private readonly string _vapourSynthPath;
     private readonly string _pythonPath;
 
-    public RestoreViewModel(IMediaPoolService mediaPool, IVapourSynthService vapourSynthService, ISettingsService settingsService)
+    public RestoreViewModel(
+        IMediaPoolService mediaPool,
+        IVapourSynthService vapourSynthService,
+        ISettingsService settingsService,
+        INavigationService navigationService)
     {
         _mediaPool = mediaPool;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
 
-        // Initialize VapourSynth service
+        // Initialize VapourSynth service (for preview generation)
         _vapourSynthService = vapourSynthService;
-        _vapourSynthService.ProgressChanged += OnVapourSynthProgressChanged;
-        _vapourSynthService.LogMessage += OnVapourSynthLogMessage;
 
         // Initialize settings service
         _settingsService = settingsService;
+
+        // Initialize navigation service
+        _navigationService = navigationService;
 
         // Initialize quick preview service
         _quickPreviewService = new QuickPreviewService();
@@ -161,7 +163,8 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     public RestoreViewModel() : this(
         GetServiceWithFallback<IMediaPoolService>(() => new MediaPoolService()),
         GetServiceWithFallback<IVapourSynthService>(() => new VapourSynthService()),
-        GetServiceWithFallback<ISettingsService>(() => new SettingsService()))
+        GetServiceWithFallback<ISettingsService>(() => new SettingsService()),
+        GetServiceWithFallback<INavigationService>(() => new NavigationService()))
     {
     }
 
@@ -203,13 +206,15 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
             SourceDuration = item.DurationFormatted;
             SourceCodec = item.Codec;
 
-            // Auto-generate output path
-            var dir = Path.GetDirectoryName(item.FilePath) ?? "";
-            var name = Path.GetFileNameWithoutExtension(item.FilePath);
-            var ext = Path.GetExtension(item.FilePath);
-            OutputPath = Path.Combine(dir, $"{name}_restored{ext}");
-
-            StatusText = $"Source: {item.Name}";
+            // Show restoration status if applied
+            if (item.HasRestoration)
+            {
+                StatusText = $"Source: {item.Name} (Restoration: {item.AppliedRestoration!.PresetName})";
+            }
+            else
+            {
+                StatusText = $"Source: {item.Name}";
+            }
         }
         else
         {
@@ -507,22 +512,6 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
         }
     }
 
-    private void OnVapourSynthProgressChanged(object? sender, VapourSynthProgressEventArgs e)
-    {
-        if (CurrentJob == null) return;
-
-        CurrentJob.CurrentFrame = e.CurrentFrame;
-        CurrentJob.Progress = e.Progress;
-        CurrentJob.ElapsedTime = e.ElapsedTime;
-        CurrentJob.EstimatedTimeRemaining = e.EstimatedTimeRemaining;
-        CurrentJob.StatusText = $"Processing frame {e.CurrentFrame}/{e.TotalFrames} ({e.Fps:F1} fps)";
-    }
-
-    private void OnVapourSynthLogMessage(object? sender, string message)
-    {
-        _logger.LogDebug("[VapourSynth] {Message}", message);
-    }
-
     private async Task LoadSourceInfo(string path)
     {
         try
@@ -597,22 +586,6 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     }
 
     [RelayCommand]
-    private void SelectOutput()
-    {
-        var dialog = new SaveFileDialog
-        {
-            Title = "Save Restored Video",
-            Filter = "MP4 Video|*.mp4|MKV Video|*.mkv|AVI Video|*.avi|All Files|*.*",
-            FileName = Path.GetFileName(OutputPath)
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            OutputPath = dialog.FileName;
-        }
-    }
-
-    [RelayCommand]
     private void ApplyPreset(RestorePreset preset)
     {
         SelectedPreset = preset;
@@ -624,216 +597,80 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
         }
     }
 
+    /// <summary>
+    /// Applies the current restoration preset to the source media item.
+    /// The restoration settings are stored on the MediaItem for use by Export page.
+    /// </summary>
     [RelayCommand]
-    private async Task ProcessNow()
+    private void ApplyToSource()
     {
         if (!HasSource || SelectedPreset == null) return;
 
-        var job = new RestoreJob
+        var source = _mediaPool.CurrentSource;
+        if (source == null) return;
+
+        // Capture current parameter values
+        var parameters = SelectedPreset.Parameters
+            .Select(p => new ParameterSnapshot
+            {
+                Name = p.Name,
+                DisplayName = p.DisplayName,
+                Type = p.Type,
+                Value = p.CurrentValue ?? p.DefaultValue
+            })
+            .ToList();
+
+        // Create restoration settings
+        source.AppliedRestoration = new RestorationSettings
         {
-            SourcePath = SourcePath,
-            OutputPath = OutputPath,
-            Preset = SelectedPreset,
-            Status = ProcessingStatus.Processing,
-            StatusText = "Starting...",
-            StartTime = DateTime.Now,
-            TotalFrames = SourceFrameCount
+            PresetName = SelectedPreset.Name,
+            PresetDescription = SelectedPreset.Description,
+            TaskType = SelectedPreset.TaskType,
+            GeneratedScript = SelectedPreset.GenerateScript(),
+            Parameters = parameters,
+            IsEnabled = true,
+            AppliedAt = DateTime.Now,
+            RequiresGpu = SelectedPreset.RequiresGpu,
+            AiModel = SelectedPreset.AiModel
         };
 
-        JobQueue.Add(job);
-        CurrentJob = job;
-
-        await ProcessJob(job);
+        StatusText = $"Applied: {SelectedPreset.Name}";
+        ToastService.Instance.ShowSuccess($"Applied {SelectedPreset.Name} to {source.Name}");
     }
 
+    /// <summary>
+    /// Applies the current restoration preset and navigates to Export page.
+    /// </summary>
     [RelayCommand]
-    private void AddToQueue()
+    private void SendToExport()
     {
         if (!HasSource || SelectedPreset == null) return;
 
-        var job = new RestoreJob
-        {
-            SourcePath = SourcePath,
-            OutputPath = OutputPath,
-            Preset = SelectedPreset,
-            Status = ProcessingStatus.Pending,
-            StatusText = "Queued",
-            TotalFrames = SourceFrameCount
-        };
+        // Apply restoration first
+        ApplyToSource();
 
-        JobQueue.Add(job);
-        StatusText = $"Added to queue: {SelectedPreset.Name}";
+        // Navigate to Export page
+        _navigationService.NavigateTo(PageType.Export);
     }
 
+    /// <summary>
+    /// Clears the restoration settings from the current source.
+    /// </summary>
     [RelayCommand]
-    private async Task ProcessQueue()
+    private void ClearRestoration()
     {
-        if (IsProcessing) return;
+        var source = _mediaPool.CurrentSource;
+        if (source == null) return;
 
-        var pendingJobs = JobQueue.Where(j => j.Status == ProcessingStatus.Pending).ToList();
-        foreach (var job in pendingJobs)
-        {
-            if (_cancellationTokenSource?.IsCancellationRequested == true)
-                break;
-
-            // Wait while paused
-            while (IsPaused && (_cancellationTokenSource?.IsCancellationRequested != true))
-            {
-                await Task.Delay(100);
-            }
-
-            if (_cancellationTokenSource?.IsCancellationRequested == true)
-                break;
-
-            await ProcessJob(job);
-
-            // Update queue summary properties
-            OnPropertyChanged(nameof(CompletedJobCount));
-            OnPropertyChanged(nameof(PendingJobCount));
-            OnPropertyChanged(nameof(CanStartProcessing));
-            OnPropertyChanged(nameof(EstimatedTotalTime));
-        }
-    }
-
-    private async Task ProcessJob(RestoreJob job)
-    {
-        IsProcessing = true;
-        CurrentJob = job;
-        _cancellationTokenSource = new CancellationTokenSource();
-
-        try
-        {
-            job.Status = ProcessingStatus.Processing;
-            job.StatusText = "Generating script...";
-            job.StartTime = DateTime.Now;
-
-            // Create temporary VapourSynth script
-            var scriptPath = Path.Combine(Path.GetTempPath(), $"restore_{job.Id}.vpy");
-            var script = GenerateScript(job);
-            await File.WriteAllTextAsync(scriptPath, script);
-
-            job.StatusText = "Processing...";
-
-            // Run VapourSynth + FFmpeg pipeline
-            await RunVapourSynthPipeline(job, scriptPath, _cancellationTokenSource.Token);
-
-            if (job.Status != ProcessingStatus.Cancelled)
-            {
-                job.Status = ProcessingStatus.Completed;
-                job.StatusText = "Completed";
-                job.Progress = 100;
-                job.EndTime = DateTime.Now;
-                StatusText = $"Completed: {Path.GetFileName(job.OutputPath)}";
-            }
-
-            // Cleanup
-            if (File.Exists(scriptPath))
-                File.Delete(scriptPath);
-        }
-        catch (OperationCanceledException)
-        {
-            job.Status = ProcessingStatus.Cancelled;
-            job.StatusText = "Cancelled";
-            StatusText = "Processing cancelled";
-        }
-        catch (Exception ex)
-        {
-            job.Status = ProcessingStatus.Failed;
-            job.StatusText = "Failed";
-            job.ErrorMessage = ex.Message;
-            StatusText = $"Error: {ex.Message}";
-        }
-        finally
-        {
-            IsProcessing = false;
-            CurrentJob = null;
-        }
-    }
-
-    private string GenerateScript(RestoreJob job)
-    {
-        var preset = job.Preset;
-        if (preset == null) return "";
-
-        // Use the preset's GenerateScript() method which handles parameter substitution
-        var presetScript = preset.GenerateScript();
-
-        var script = $@"
-import vapoursynth as vs
-core = vs.core
-
-# Load source
-video_in = core.lsmas.LWLibavSource(r'{job.SourcePath.Replace("'", "\\'")}')
-
-{presetScript}
-";
-        return script;
-    }
-
-    private async Task RunVapourSynthPipeline(RestoreJob job, string scriptPath, CancellationToken token)
-    {
-        // Check if VapourSynth is available
-        if (!_vapourSynthService.IsAvailable)
-        {
-            // Fall back to simulated processing if VSPipe is not available
-            var totalFrames = job.TotalFrames > 0 ? job.TotalFrames : 1000;
-            var sw = Stopwatch.StartNew();
-
-            for (int frame = 0; frame < totalFrames && !token.IsCancellationRequested; frame += 10)
-            {
-                job.CurrentFrame = frame;
-                job.Progress = (double)frame / totalFrames * 100;
-                job.ElapsedTime = sw.Elapsed;
-
-                if (frame > 0)
-                {
-                    var fps = frame / sw.Elapsed.TotalSeconds;
-                    var remaining = (totalFrames - frame) / fps;
-                    job.EstimatedTimeRemaining = TimeSpan.FromSeconds(remaining);
-                }
-
-                job.StatusText = $"[Simulated] Processing frame {frame}/{totalFrames}";
-                await Task.Delay(10, token);
-            }
-
-            StatusText = "Note: VSPipe not available, using simulated processing";
-            return;
-        }
-
-        // Use real VapourSynth pipeline
-        var settings = new VapourSynthEncodingSettings
-        {
-            VideoCodec = GpuAvailable && GpuName.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)
-                ? "h264_nvenc"
-                : "libx264",
-            Quality = 18,
-            Preset = "medium",
-            HardwarePreset = "p4"
-        };
-
-        var success = await _vapourSynthService.ProcessScriptAsync(
-            scriptPath,
-            job.OutputPath,
-            settings,
-            token);
-
-        if (!success && !token.IsCancellationRequested)
-        {
-            throw new Exception("VapourSynth processing failed");
-        }
+        source.AppliedRestoration = null;
+        StatusText = $"Cleared restoration from {source.Name}";
+        ToastService.Instance.ShowInfo($"Cleared restoration from {source.Name}");
     }
 
     [RelayCommand]
     private void CancelProcessing()
     {
         _cancellationTokenSource?.Cancel();
-        _vapourSynthService.Cancel();
-
-        if (CurrentJob != null)
-        {
-            CurrentJob.Status = ProcessingStatus.Cancelled;
-            CurrentJob.StatusText = "Cancelled";
-        }
         StatusText = "Cancelled";
     }
 
@@ -864,26 +701,6 @@ video_in = core.lsmas.LWLibavSource(r'{job.SourcePath.Replace("'", "\\'")}')
     private void ToggleMode()
     {
         IsSimpleMode = !IsSimpleMode;
-    }
-
-    [RelayCommand]
-    private void MoveUp(RestoreJob job)
-    {
-        var index = JobQueue.IndexOf(job);
-        if (index > 0 && job.Status == ProcessingStatus.Pending)
-        {
-            JobQueue.Move(index, index - 1);
-        }
-    }
-
-    [RelayCommand]
-    private void MoveDown(RestoreJob job)
-    {
-        var index = JobQueue.IndexOf(job);
-        if (index < JobQueue.Count - 1 && job.Status == ProcessingStatus.Pending)
-        {
-            JobQueue.Move(index, index + 1);
-        }
     }
 
     #region IProjectPersistable Implementation
@@ -944,8 +761,6 @@ video_in = core.lsmas.LWLibavSource(r'{job.SourcePath.Replace("'", "\\'")}')
         _disposed = true;
 
         _mediaPool.CurrentSourceChanged -= OnCurrentSourceChanged;
-        _vapourSynthService.ProgressChanged -= OnVapourSynthProgressChanged;
-        _vapourSynthService.LogMessage -= OnVapourSynthLogMessage;
         _cancellationTokenSource?.Dispose();
     }
 }

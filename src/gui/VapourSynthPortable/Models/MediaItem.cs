@@ -97,6 +97,18 @@ public partial class MediaItem : ObservableObject
     private bool _hasClipping;
 
     /// <summary>
+    /// Restoration settings applied to this media item.
+    /// Set by the Restore page, used by Export page for rendering.
+    /// </summary>
+    [ObservableProperty]
+    private RestorationSettings? _appliedRestoration;
+
+    /// <summary>
+    /// Whether this media item has restoration applied
+    /// </summary>
+    public bool HasRestoration => AppliedRestoration?.IsEnabled == true;
+
+    /// <summary>
     /// Whether waveform data is available
     /// </summary>
     public bool HasWaveform => WaveformData != null || StereoWaveformData != null;

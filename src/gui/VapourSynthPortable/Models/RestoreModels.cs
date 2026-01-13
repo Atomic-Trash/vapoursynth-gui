@@ -924,3 +924,75 @@ public partial class AIModelSettings : ObservableObject
     [ObservableProperty]
     private bool _fp16 = true;
 }
+
+/// <summary>
+/// Stores restoration settings applied to a media source.
+/// Used for cross-page communication between Restore and Export pages.
+/// </summary>
+public partial class RestorationSettings : ObservableObject
+{
+    /// <summary>
+    /// Name of the applied preset
+    /// </summary>
+    [ObservableProperty]
+    private string _presetName = "";
+
+    /// <summary>
+    /// Description of the preset
+    /// </summary>
+    [ObservableProperty]
+    private string _presetDescription = "";
+
+    /// <summary>
+    /// The task type (Upscale, Denoise, etc.)
+    /// </summary>
+    [ObservableProperty]
+    private RestoreTaskType _taskType;
+
+    /// <summary>
+    /// Generated VapourSynth script code for the restoration
+    /// </summary>
+    [ObservableProperty]
+    private string _generatedScript = "";
+
+    /// <summary>
+    /// Snapshot of parameter values at time of application
+    /// </summary>
+    [ObservableProperty]
+    private List<ParameterSnapshot> _parameters = [];
+
+    /// <summary>
+    /// Whether restoration is enabled for export
+    /// </summary>
+    [ObservableProperty]
+    private bool _isEnabled = true;
+
+    /// <summary>
+    /// When the restoration was applied
+    /// </summary>
+    [ObservableProperty]
+    private DateTime _appliedAt = DateTime.Now;
+
+    /// <summary>
+    /// Whether the preset requires GPU
+    /// </summary>
+    [ObservableProperty]
+    private bool _requiresGpu;
+
+    /// <summary>
+    /// AI model name if applicable
+    /// </summary>
+    [ObservableProperty]
+    private string _aiModel = "";
+}
+
+/// <summary>
+/// Snapshot of a parameter value for serialization
+/// </summary>
+public class ParameterSnapshot
+{
+    public string Name { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public ParameterType Type { get; set; }
+    public object? Value { get; set; }
+}

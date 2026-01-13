@@ -85,6 +85,65 @@
                                Foreground="#6366F1" FontSize="10" Margin="0,0,0,10"
                                Visibility="{Binding IsTimelineWithEffectsMode, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
+                    <!-- Restoration Indicator -->
+                    <Border Background="#1A2A3A" CornerRadius="6" Padding="12,10" Margin="0,0,0,15"
+                            BorderBrush="#0E639C" BorderThickness="1"
+                            Visibility="{Binding HasRestoration, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Header Row -->
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE773;" FontFamily="Segoe MDL2 Assets"
+                                               Foreground="#4ADE80" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="RESTORATION APPLIED" Foreground="#4ADE80" FontSize="11"
+                                               FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <Button Grid.Column="2" Content="Clear"
+                                        Style="{StaticResource SecondaryButton}"
+                                        Command="{Binding ClearRestorationCommand}"
+                                        Padding="8,4" FontSize="10"
+                                        ToolTip="Remove restoration from this source"
+                                        AutomationProperties.AutomationId="ClearRestorationButton"
+                                        AutomationProperties.Name="Clear Restoration"/>
+                            </Grid>
+
+                            <!-- Settings Row -->
+                            <Grid Grid.Row="1" Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <CheckBox Grid.Column="0"
+                                          IsChecked="{Binding IncludeRestoration}"
+                                          VerticalAlignment="Center" Margin="0,0,8,0"
+                                          AutomationProperties.AutomationId="IncludeRestorationCheckbox"
+                                          AutomationProperties.Name="Include Restoration"
+                                          ToolTip="Include restoration effects in export"/>
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Foreground="#CCC" FontSize="11">
+                                        <Run Text="Preset: "/>
+                                        <Run Text="{Binding RestorationPresetName, Mode=OneWay}" FontWeight="SemiBold"/>
+                                    </TextBlock>
+                                    <TextBlock Text="Uncheck to export without restoration" Foreground="#888" FontSize="9" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
                     <!-- Format -->
                     <TextBlock Text="FORMAT" Foreground="#F1F1F1" FontSize="11" Margin="0,0,0,8"/>
                     <ComboBox ItemsSource="{Binding Formats}"

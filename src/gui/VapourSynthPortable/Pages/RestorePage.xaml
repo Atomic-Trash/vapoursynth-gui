@@ -549,18 +549,23 @@
                                                     AutomationProperties.AutomationId="PreviewButton"
                                                     AutomationProperties.Name="Generate Preview"
                                                     AutomationProperties.HelpText="Generate a quick preview frame with this preset"/>
-                                            <Button Content="Process Now" Command="{Binding ProcessNowCommand}"
-                                                    ToolTip="Process immediately with selected preset"
-                                                    Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
-                                                    AutomationProperties.AutomationId="ProcessNowButton"
-                                                    AutomationProperties.Name="Process Now"
-                                                    AutomationProperties.HelpText="Start processing the video immediately with this preset"/>
-                                            <Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"
-                                                    ToolTip="Add to processing queue for batch processing"
-                                                    Style="{StaticResource SecondaryButton}"
-                                                    AutomationProperties.AutomationId="AddToQueueButton"
-                                                    AutomationProperties.Name="Add to Queue"
-                                                    AutomationProperties.HelpText="Add this job to the processing queue for batch processing"/>
+                                            <Button Content="Apply to Source" Command="{Binding ApplyToSourceCommand}"
+                                                    ToolTip="Apply this preset to the source media"
+                                                    Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                                                    AutomationProperties.AutomationId="ApplyToSourceButton"
+                                                    AutomationProperties.Name="Apply to Source"
+                                                    AutomationProperties.HelpText="Store restoration settings on the source for export"/>
+                                            <Button Command="{Binding SendToExportCommand}"
+                                                    ToolTip="Apply preset and go to Export page"
+                                                    Style="{StaticResource PrimaryButton}"
+                                                    AutomationProperties.AutomationId="SendToExportButton"
+                                                    AutomationProperties.Name="Apply and Export"
+                                                    AutomationProperties.HelpText="Apply this preset and navigate to Export page">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="Apply &amp; Export"/>
+                                                    <TextBlock Text="&#xE72A;" FontFamily="Segoe MDL2 Assets" FontSize="10" Margin="6,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
                                         </StackPanel>
                                     </Grid>
 
@@ -673,36 +678,6 @@
                     </ScrollViewer>
                 </Border>
 
-                <!-- Output Settings -->
-                <Border Grid.Row="2" Background="#252526" Padding="15" CornerRadius="8"
-                        AutomationProperties.Name="Output Settings">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Column="0" Text="Output:" Foreground="#AAA" FontSize="11"
-                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <TextBox Grid.Column="1" Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}"
-                                 Background="#1E1E1E" Foreground="#CCC" BorderBrush="#3A3A3A"
-                                 Padding="8,6" FontSize="11"
-                                 AutomationProperties.Name="Output File Path"
-                                 AutomationProperties.HelpText="Path where the processed video will be saved">
-                            <TextBox.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="4"/>
-                                </Style>
-                            </TextBox.Resources>
-                        </TextBox>
-                        <Button Grid.Column="2" Content="Browse..." Command="{Binding SelectOutputCommand}"
-                                ToolTip="Select output file location"
-                                Style="{StaticResource SecondaryButton}" Margin="10,0,0,0"
-                                AutomationProperties.Name="Browse Output Location"
-                                AutomationProperties.HelpText="Open file dialog to select output location"/>
-                    </Grid>
-                </Border>
             </Grid>
 
             <!-- Queue Panel -->
@@ -859,7 +834,7 @@
                                    Foreground="#444" HorizontalAlignment="Center"/>
                         <TextBlock Text="No jobs in queue" Foreground="#666" FontSize="11"
                                    HorizontalAlignment="Center" Margin="0,8,0,0"/>
-                        <TextBlock Text="Select a preset and click 'Add to Queue'" Foreground="#555" FontSize="9"
+                        <TextBlock Text="Jobs from previous sessions appear here" Foreground="#555" FontSize="9"
                                    HorizontalAlignment="Center" Margin="0,4,0,0"/>
                     </StackPanel>
 
@@ -868,51 +843,34 @@
                             Visibility="{Binding JobQueue.Count, Converter={StaticResource CountToVisInverse}}">
                         <Grid>
                             <TextBlock Foreground="#888" FontSize="9">
-                                <Run Text="{Binding CompletedJobCount, Mode=OneWay}"/> completed,
-                                <Run Text="{Binding PendingJobCount, Mode=OneWay}"/> pending
+                                <Run Text="{Binding JobQueue.Count, Mode=OneWay}"/> job(s) in queue
                             </TextBlock>
-                            <TextBlock Text="{Binding EstimatedTotalTime, StringFormat='Est. {0:hh\\:mm\\:ss}'}"
-                                       Foreground="#888" FontSize="9" HorizontalAlignment="Right"
-                                       Visibility="{Binding EstimatedTotalTime, Converter={StaticResource TimeSpanToVisibilityConverter}}"/>
                         </Grid>
                     </Border>
 
                     <!-- Queue Controls -->
                     <Border Grid.Row="3" Background="#2D2D2D" Padding="10" CornerRadius="0,0,8,8">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button Command="{Binding ProcessQueueCommand}"
-                                    ToolTip="Start processing all queued jobs"
-                                    Style="{StaticResource PrimaryButton}" Margin="0,0,6,0"
-                                    IsEnabled="{Binding CanStartProcessing}"
-                                    AutomationProperties.AutomationId="ProcessQueueButton"
-                                    AutomationProperties.Name="Start Processing Queue"
-                                    AutomationProperties.HelpText="Begin processing all jobs in the queue">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0"/>
-                                    <TextBlock Text="Process"/>
-                                </StackPanel>
-                            </Button>
-                            <Button Command="{Binding CancelProcessingCommand}"
-                                    ToolTip="Cancel current processing"
+                            <Button Command="{Binding ClearRestorationCommand}"
+                                    ToolTip="Clear restoration settings from current source"
                                     Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"
-                                    IsEnabled="{Binding IsProcessing}"
-                                    AutomationProperties.AutomationId="CancelProcessingButton"
-                                    AutomationProperties.Name="Cancel Processing"
-                                    AutomationProperties.HelpText="Stop the current processing job">
+                                    AutomationProperties.AutomationId="ClearRestorationButton"
+                                    AutomationProperties.Name="Clear Restoration"
+                                    AutomationProperties.HelpText="Remove restoration settings from current source">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0"/>
-                                    <TextBlock Text="Cancel"/>
+                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Clear Restoration"/>
                                 </StackPanel>
                             </Button>
                             <Button Command="{Binding ClearQueueCommand}"
                                     ToolTip="Remove completed jobs from queue"
                                     Style="{StaticResource SecondaryButton}"
                                     AutomationProperties.AutomationId="ClearQueueButton"
-                                    AutomationProperties.Name="Clear Completed Jobs"
-                                    AutomationProperties.HelpText="Remove all completed jobs from the queue">
+                                    AutomationProperties.Name="Clear Queue"
+                                    AutomationProperties.HelpText="Remove all jobs from the queue">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0"/>
-                                    <TextBlock Text="Clear"/>
+                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Clear Queue"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -930,11 +888,6 @@
             <Grid Margin="10,0">
                 <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="10"
                            VerticalAlignment="Center"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
-                            Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <TextBlock Text="Processing: " Foreground="#9E9E9E" FontSize="10"/>
-                    <TextBlock Text="{Binding CurrentJob.ProgressText}" Foreground="#0E639C" FontSize="10"/>
-                </StackPanel>
             </Grid>
         </Border>
     </Grid>

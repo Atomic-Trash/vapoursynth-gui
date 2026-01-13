@@ -80,6 +80,14 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     public bool HasCurrentSource => _mediaPool.HasSource;
     public string CurrentSourcePath => _mediaPool.CurrentSource?.FilePath ?? "";
 
+    // Restoration awareness - from MediaItem
+    public bool HasRestoration => _mediaPool.CurrentSource?.HasRestoration ?? false;
+    public string RestorationPresetName => _mediaPool.CurrentSource?.AppliedRestoration?.PresetName ?? "";
+    public bool RestorationEnabled => _mediaPool.CurrentSource?.AppliedRestoration?.IsEnabled ?? false;
+
+    [ObservableProperty]
+    private bool _includeRestoration = true;
+
     [ObservableProperty]
     private string _outputFileName = "output";
 
@@ -228,11 +236,20 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(HasCurrentSource));
         OnPropertyChanged(nameof(CurrentSourcePath));
+        OnPropertyChanged(nameof(HasRestoration));
+        OnPropertyChanged(nameof(RestorationPresetName));
+        OnPropertyChanged(nameof(RestorationEnabled));
 
         // Auto-populate input from current source if not already set
         if (item != null && string.IsNullOrEmpty(InputPath))
         {
             InputPath = item.FilePath;
+        }
+
+        // Default to include restoration if present
+        if (item?.HasRestoration == true)
+        {
+            IncludeRestoration = true;
         }
     }
 
@@ -546,6 +563,10 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task StartExportAsync()
     {
+        // Check if we need VapourSynth (for restoration or timeline effects)
+        var needsVapourSynth = ExportMode == ExportMode.TimelineWithEffects ||
+                               (HasRestoration && IncludeRestoration);
+
         // Validate based on export mode
         if (ExportMode == ExportMode.TimelineWithEffects)
         {
@@ -567,6 +588,14 @@ public partial class ExportViewModel : ObservableObject, IDisposable
             if (string.IsNullOrEmpty(InputPath) || string.IsNullOrEmpty(OutputPath))
             {
                 StatusText = "Please select input and output files";
+                return;
+            }
+
+            // Warn if restoration requires VapourSynth but it's not available
+            if (needsVapourSynth && !IsVapourSynthAvailable)
+            {
+                StatusText = "VapourSynth required for restoration. Please build the distribution first.";
+                AppendLog("Error: Restoration requires VapourSynth. Run scripts/build/Build-Portable.ps1.");
                 return;
             }
         }
@@ -595,10 +624,14 @@ public partial class ExportViewModel : ObservableObject, IDisposable
         }
 
         var settings = CreateExportSettings();
+        var sourceDescription = ExportMode == ExportMode.TimelineWithEffects
+            ? "Timeline"
+            : (HasRestoration && IncludeRestoration ? $"{Path.GetFileName(InputPath)} + {RestorationPresetName}" : InputPath);
+
         var job = new ExportJob
         {
             Name = Path.GetFileName(OutputPath),
-            InputPath = ExportMode == ExportMode.TimelineWithEffects ? "Timeline" : InputPath,
+            InputPath = sourceDescription,
             OutputPath = OutputPath,
             Settings = settings,
             Status = ExportJobStatus.Encoding,
@@ -618,6 +651,12 @@ public partial class ExportViewModel : ObservableObject, IDisposable
             {
                 StatusText = "Rendering timeline with VapourSynth...";
                 success = await ExportTimelineWithVapourSynthAsync(_cancellationTokenSource.Token);
+            }
+            else if (HasRestoration && IncludeRestoration)
+            {
+                StatusText = $"Rendering with restoration ({RestorationPresetName})...";
+                AppendLog($"Exporting with restoration: {RestorationPresetName}");
+                success = await ExportWithRestorationAsync(_cancellationTokenSource.Token);
             }
             else
             {
@@ -696,6 +735,88 @@ public partial class ExportViewModel : ObservableObject, IDisposable
                 catch { /* Ignore cleanup errors */ }
             }
         }
+    }
+
+    /// <summary>
+    /// Export source with restoration settings using VapourSynth pipeline
+    /// </summary>
+    private async Task<bool> ExportWithRestorationAsync(CancellationToken ct)
+    {
+        var source = _mediaPool.CurrentSource;
+        if (source?.AppliedRestoration == null)
+        {
+            AppendLog("Error: No restoration settings found");
+            return false;
+        }
+
+        var restoration = source.AppliedRestoration;
+        string? scriptPath = null;
+
+        try
+        {
+            AppendLog($"Generating restoration script ({restoration.PresetName})...");
+
+            // Generate VapourSynth script with restoration
+            var scriptContent = GenerateRestorationScript(InputPath, restoration.GeneratedScript);
+
+            // Save script to temp file
+            scriptPath = Path.Combine(Path.GetTempPath(), $"restore_export_{Guid.NewGuid():N}.vpy");
+            await File.WriteAllTextAsync(scriptPath, scriptContent, ct);
+
+            AppendLog($"Script saved to: {scriptPath}");
+            AppendLog("Starting VapourSynth pipeline with restoration...");
+
+            // Create encoding settings
+            var vsSettings = new VapourSynthEncodingSettings
+            {
+                VideoCodec = SelectedVideoCodec,
+                Quality = Quality,
+                Preset = SelectedPresetSpeed,
+                PixelFormat = "yuv420p"
+            };
+
+            // Add NVENC preset if applicable
+            if (IsNvencCodec && !string.IsNullOrEmpty(SelectedNvencPreset))
+            {
+                vsSettings.HardwarePreset = SelectedNvencPreset.Split(' ')[0];
+            }
+
+            // Process script with VapourSynth → FFmpeg pipeline
+            var success = await _vapourSynthService.ProcessScriptAsync(
+                scriptPath,
+                OutputPath,
+                vsSettings,
+                ct);
+
+            return success;
+        }
+        finally
+        {
+            // Clean up temp script
+            if (scriptPath != null && File.Exists(scriptPath))
+            {
+                try { File.Delete(scriptPath); }
+                catch { /* Ignore cleanup errors */ }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Generates a complete VapourSynth script with source loading and restoration
+    /// </summary>
+    private static string GenerateRestorationScript(string sourcePath, string restorationScript)
+    {
+        var escapedPath = sourcePath.Replace("'", "\\'").Replace("\\", "\\\\");
+
+        return $@"import vapoursynth as vs
+core = vs.core
+
+# Load source video
+video_in = core.lsmas.LWLibavSource(r'{escapedPath}')
+
+# Apply restoration preset
+{restorationScript}
+";
     }
 
     [RelayCommand]
@@ -793,6 +914,25 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     private void ClearLog()
     {
         LogOutput = "";
+    }
+
+    /// <summary>
+    /// Clears restoration settings from the current source
+    /// </summary>
+    [RelayCommand]
+    private void ClearRestoration()
+    {
+        var source = _mediaPool.CurrentSource;
+        if (source == null) return;
+
+        source.AppliedRestoration = null;
+        OnPropertyChanged(nameof(HasRestoration));
+        OnPropertyChanged(nameof(RestorationPresetName));
+        OnPropertyChanged(nameof(RestorationEnabled));
+
+        StatusText = $"Cleared restoration from {source.Name}";
+        AppendLog($"Cleared restoration settings from {source.Name}");
+        ToastService.Instance.ShowInfo($"Cleared restoration from {source.Name}");
     }
 
     private ExportSettings CreateExportSettings()
