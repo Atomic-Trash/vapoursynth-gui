@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using VapourSynthPortable.Models;
 using VapourSynthPortable.Services;
@@ -14,6 +15,7 @@ namespace VapourSynthPortable.ViewModels;
 
 public partial class EditViewModel : ObservableObject, IDisposable, IProjectPersistable
 {
+    private static readonly ILogger<EditViewModel> _logger = LoggingService.GetLogger<EditViewModel>();
     private readonly IMediaPoolService _mediaPoolService;
     private readonly FrameCacheService _frameCache;
     private readonly UndoService _undoService;
@@ -63,6 +65,12 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
     [ObservableProperty]
     private bool _isScrubbing;
 
+    [ObservableProperty]
+    private bool _isLoading;
+
+    [ObservableProperty]
+    private string _loadingMessage = "Loading...";
+
     // Expose undo service properties for binding
     public bool CanUndo => _undoService.CanUndo;
     public bool CanRedo => _undoService.CanRedo;
@@ -94,12 +102,25 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
 
         // Subscribe to playhead changes for frame preview
         Timeline.PropertyChanged += OnTimelinePropertyChanged;
+
+        // Share Timeline with other pages (e.g., Export) via the MediaPoolService
+        _mediaPoolService.SetEditTimeline(Timeline);
     }
 
     // Parameterless constructor for XAML design-time support
-    public EditViewModel() : this(App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService
-        ?? new MediaPoolService())
+    public EditViewModel() : this(GetMediaPoolServiceWithFallback())
     {
+    }
+
+    private static IMediaPoolService GetMediaPoolServiceWithFallback()
+    {
+        var service = App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService;
+        if (service == null)
+        {
+            _logger.LogWarning("IMediaPoolService not available from DI, using fallback instance");
+            return new MediaPoolService();
+        }
+        return service;
     }
 
     private void OnCurrentSourceChanged(object? sender, MediaItem? item)
@@ -266,7 +287,18 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
     [RelayCommand]
     private void AddToTimeline()
     {
+        _logger.LogInformation("AddToTimeline called. SelectedMediaItem={Name}",
+            SelectedMediaItem?.Name ?? "(null)");
+
         if (SelectedMediaItem == null) return;
+
+        // Validate file exists
+        if (!File.Exists(SelectedMediaItem.FilePath))
+        {
+            StatusText = $"Source file not found: {SelectedMediaItem.Name}";
+            ToastService.Instance.ShowError("File not found", $"The source file '{SelectedMediaItem.Name}' no longer exists.");
+            return;
+        }
 
         // Find first appropriate track
         TimelineTrack? targetTrack = null;
@@ -295,6 +327,7 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
         }
 
         var durationFrames = (long)((SourceOutPoint - SourceInPoint) * Timeline.FrameRate);
+        bool usingFallbackDuration = false;
         if (durationFrames <= 0)
         {
             durationFrames = (long)(SelectedMediaItem.Duration * Timeline.FrameRate);
@@ -302,6 +335,8 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
         if (durationFrames <= 0)
         {
             durationFrames = (long)(5 * Timeline.FrameRate); // Default 5 seconds
+            usingFallbackDuration = true;
+            _logger.LogWarning("Media '{Name}' has no duration metadata, using 5 second fallback", SelectedMediaItem.Name);
         }
 
         var clip = new TimelineClip
@@ -321,9 +356,23 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
         };
 
         SaveUndoState("Add clip");
+        _logger.LogInformation("Adding clip to track. Track={TrackName}, ClipsBeforeAdd={Count}",
+            targetTrack.Name, targetTrack.Clips.Count);
         targetTrack.Clips.Add(clip);
+        _logger.LogInformation("Clip added. Track={TrackName}, ClipsAfterAdd={Count}, Timeline.HasClips={HasClips}",
+            targetTrack.Name, targetTrack.Clips.Count, Timeline.HasClips);
         Timeline.SelectedClip = clip;
-        StatusText = $"Added {clip.Name} to {targetTrack.Name}";
+
+        if (usingFallbackDuration)
+        {
+            StatusText = $"Added {clip.Name} (duration estimated - metadata unavailable)";
+            ToastService.Instance.ShowWarning("Duration estimated",
+                $"'{clip.Name}' metadata unavailable. Using 5 second estimate.");
+        }
+        else
+        {
+            StatusText = $"Added {clip.Name} to {targetTrack.Name}";
+        }
     }
 
     [RelayCommand]

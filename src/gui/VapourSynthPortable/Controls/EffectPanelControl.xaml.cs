@@ -178,7 +178,7 @@ public partial class EffectPanelControl : UserControl
                     var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(textBox.Text);
                     param.Value = color;
                 }
-                catch
+                catch (FormatException)
                 {
                     ToastService.Instance.ShowError("Invalid color format", "Please use hex format like #FF0000");
                 }

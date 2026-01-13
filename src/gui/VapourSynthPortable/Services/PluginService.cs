@@ -274,8 +274,9 @@ public class PluginService : IPluginService
             // Fall back to string comparison
             return string.Compare(available, installed, StringComparison.OrdinalIgnoreCase) > 0;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "Version comparison failed for available={Available}, installed={Installed}", available, installed);
             return false;
         }
     }

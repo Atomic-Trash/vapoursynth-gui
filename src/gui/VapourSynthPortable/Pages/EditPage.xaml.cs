@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
 using VapourSynthPortable.Models;
 using VapourSynthPortable.Services;
@@ -16,6 +17,11 @@ public partial class EditPage : UserControl
     private bool _syncingFromTimeline;
     private string? _currentProgramSource;
     private string? _currentSourceMonitor;
+
+    // Playback timer for smooth playhead movement
+    private DispatcherTimer? _playbackTimer;
+    private DateTime _playbackStartTime;
+    private long _playbackStartFrame;
 
     public EditPage()
     {
@@ -40,6 +46,36 @@ public partial class EditPage : UserControl
             // Subscribe to timeline property changes for playhead sync
             viewModel.Timeline.PropertyChanged += Timeline_PropertyChanged;
 
+            // Subscribe to clip collection changes on all tracks
+            foreach (var track in viewModel.Timeline.Tracks)
+            {
+                track.Clips.CollectionChanged += (s, args) =>
+                {
+                    _logger.LogInformation("Clips collection changed on track. HasClips={HasClips}, ProgramPlayer.Visibility={Visibility}, ProgramPlayer.IsVisible={IsVisible}",
+                        viewModel.Timeline.HasClips, ProgramPlayer.Visibility, ProgramPlayer.IsVisible);
+                    LoadProgramMonitorVideo();
+                };
+            }
+
+            // Also subscribe to track collection changes
+            viewModel.Timeline.Tracks.CollectionChanged += (s, args) =>
+            {
+                _logger.LogDebug("Tracks collection changed");
+                if (args.NewItems != null)
+                {
+                    foreach (TimelineTrack track in args.NewItems)
+                    {
+                        track.Clips.CollectionChanged += (s2, args2) =>
+                        {
+                            _logger.LogInformation("Clips collection changed (new track). HasClips={HasClips}, ProgramPlayer.Visibility={Visibility}",
+                                viewModel.Timeline.HasClips, ProgramPlayer.Visibility);
+                            LoadProgramMonitorVideo();
+                        };
+                    }
+                }
+                LoadProgramMonitorVideo();
+            };
+
             // Wire up program player position sync
             if (ProgramPlayer.Player != null)
             {
@@ -53,6 +89,9 @@ public partial class EditPage : UserControl
             // Wire up scrub events for frame preview
             TimelineControl.ScrubStarted += TimelineControl_ScrubStarted;
             TimelineControl.ScrubEnded += TimelineControl_ScrubEnded;
+
+            // Load program monitor if there are clips
+            LoadProgramMonitorVideo();
         }
     }
 
@@ -60,6 +99,9 @@ public partial class EditPage : UserControl
     {
         try
         {
+            // Stop playback timer
+            StopPlaybackTimer();
+
             if (DataContext is EditViewModel viewModel)
             {
                 viewModel.PropertyChanged -= ViewModel_PropertyChanged;
@@ -140,7 +182,7 @@ public partial class EditPage : UserControl
         }
     }
 
-    private void HandlePlaybackStateChange()
+    private async void HandlePlaybackStateChange()
     {
         try
         {
@@ -148,18 +190,111 @@ public partial class EditPage : UserControl
 
             if (viewModel.IsPlaying)
             {
-                // Load first clip on timeline if not already loaded
-                LoadProgramMonitorVideo();
+                // Load the clip at current playhead position
+                var clip = viewModel.Timeline.GetClipAtFrame(viewModel.Timeline.PlayheadFrame);
+                if (clip != null)
+                {
+                    // Ensure the clip is loaded
+                    if (clip.SourcePath != _currentProgramSource)
+                    {
+                        _currentProgramSource = clip.SourcePath;
+                        ProgramPlayer.LoadFile(clip.SourcePath);
+                    }
+
+                    // Wait for player to be ready before seeking/playing
+                    if (!ProgramPlayer.IsPlayerReady)
+                    {
+                        await ProgramPlayer.WaitForInitializationAsync();
+                    }
+
+                    // Seek to correct position in clip before playing
+                    var frameInClip = CalculateFrameInClip(clip, viewModel.Timeline.PlayheadFrame);
+                    var seconds = Math.Max(0, frameInClip / viewModel.Timeline.FrameRate);
+                    ProgramPlayer.Seek(seconds);
+                }
+
+                // Start video playback and timeline playhead timer
                 ProgramPlayer.Play();
+                StartPlaybackTimer(viewModel);
             }
             else
             {
                 ProgramPlayer.Pause();
+                StopPlaybackTimer();
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to change playback state");
+        }
+    }
+
+    private void StartPlaybackTimer(EditViewModel viewModel)
+    {
+        StopPlaybackTimer(); // Ensure no duplicate timers
+
+        _playbackStartTime = DateTime.Now;
+        _playbackStartFrame = viewModel.Timeline.PlayheadFrame;
+
+        _playbackTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(16) // ~60fps update rate
+        };
+        _playbackTimer.Tick += PlaybackTimer_Tick;
+        _playbackTimer.Start();
+    }
+
+    private void StopPlaybackTimer()
+    {
+        if (_playbackTimer != null)
+        {
+            _playbackTimer.Stop();
+            _playbackTimer.Tick -= PlaybackTimer_Tick;
+            _playbackTimer = null;
+        }
+    }
+
+    /// <summary>
+    /// Safely calculates the frame position within a clip, clamping to valid bounds.
+    /// </summary>
+    private static long CalculateFrameInClip(TimelineClip clip, long playheadFrame)
+    {
+        var frameInClip = playheadFrame - clip.StartFrame + clip.SourceInFrame;
+        var maxFrame = clip.SourceOutFrame > 0
+            ? clip.SourceOutFrame - 1
+            : clip.SourceDurationFrames - 1;
+        return Math.Max(clip.SourceInFrame, Math.Min(frameInClip, Math.Max(0, maxFrame)));
+    }
+
+    private void PlaybackTimer_Tick(object? sender, EventArgs e)
+    {
+        if (DataContext is not EditViewModel viewModel) return;
+        if (!viewModel.IsPlaying)
+        {
+            StopPlaybackTimer();
+            return;
+        }
+
+        var elapsed = (DateTime.Now - _playbackStartTime).TotalSeconds;
+        var newFrame = _playbackStartFrame + (long)(elapsed * viewModel.Timeline.FrameRate);
+
+        // Clamp to timeline duration
+        var maxFrame = viewModel.Timeline.DurationFrames;
+        if (maxFrame > 0 && newFrame >= maxFrame)
+        {
+            newFrame = maxFrame - 1;
+            viewModel.IsPlaying = false; // Stop at end
+        }
+
+        // Update playhead without triggering player sync (we're already playing)
+        _syncingFromPlayer = true;
+        try
+        {
+            viewModel.Timeline.PlayheadFrame = newFrame;
+        }
+        finally
+        {
+            _syncingFromPlayer = false;
         }
     }
 
@@ -171,15 +306,22 @@ public partial class EditPage : UserControl
 
             // Find the clip at the current playhead position
             var clip = viewModel.Timeline.GetClipAtFrame(viewModel.Timeline.PlayheadFrame);
-            if (clip != null && clip.SourcePath != _currentProgramSource)
+            if (clip != null)
             {
-                _currentProgramSource = clip.SourcePath;
-                ProgramPlayer.LoadFile(clip.SourcePath);
+                // Load new clip if source changed (LoadFile queues if player not ready)
+                if (clip.SourcePath != _currentProgramSource)
+                {
+                    _currentProgramSource = clip.SourcePath;
+                    ProgramPlayer.LoadFile(clip.SourcePath);
+                }
 
-                // Seek to the correct position within the clip
-                var frameInClip = viewModel.Timeline.PlayheadFrame - clip.StartFrame + clip.SourceInFrame;
-                var seconds = frameInClip / viewModel.Timeline.FrameRate;
-                ProgramPlayer.Seek(seconds);
+                // Only seek when player is ready and not currently playing
+                if (!viewModel.IsPlaying && ProgramPlayer.IsPlayerReady)
+                {
+                    var frameInClip = CalculateFrameInClip(clip, viewModel.Timeline.PlayheadFrame);
+                    var seconds = Math.Max(0, frameInClip / viewModel.Timeline.FrameRate);
+                    ProgramPlayer.Seek(seconds);
+                }
             }
         }
         catch (Exception ex)
@@ -211,6 +353,7 @@ public partial class EditPage : UserControl
         if (e.PropertyName == nameof(Timeline.PlayheadFrame) && !_syncingFromPlayer)
         {
             SyncPlayerToTimeline();
+            LoadProgramMonitorVideo();
         }
     }
 
@@ -232,10 +375,14 @@ public partial class EditPage : UserControl
                     ProgramPlayer.LoadFile(clip.SourcePath);
                 }
 
-                // Calculate position within the clip
-                var frameInClip = viewModel.Timeline.PlayheadFrame - clip.StartFrame + clip.SourceInFrame;
-                var seconds = frameInClip / viewModel.Timeline.FrameRate;
-                ProgramPlayer.Seek(seconds);
+                // Only seek if player is ready (file load is queued otherwise)
+                if (ProgramPlayer.IsPlayerReady)
+                {
+                    // Calculate position within the clip (clamped to valid bounds)
+                    var frameInClip = CalculateFrameInClip(clip, viewModel.Timeline.PlayheadFrame);
+                    var seconds = Math.Max(0, frameInClip / viewModel.Timeline.FrameRate);
+                    ProgramPlayer.Seek(seconds);
+                }
             }
         }
         catch (Exception ex)

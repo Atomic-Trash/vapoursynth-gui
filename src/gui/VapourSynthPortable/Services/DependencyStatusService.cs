@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using VapourSynthPortable.Models;
+using VapourSynthPortable.Services.LibMpv;
 
 namespace VapourSynthPortable.Services;
 
@@ -39,7 +40,8 @@ public class DependencyStatusService : IDependencyStatusService
         {
             VapourSynth = DependencyStatus.Unavailable("VapourSynth", "Not checked yet"),
             FFmpeg = DependencyStatus.Unavailable("FFmpeg", "Not checked yet"),
-            Python = DependencyStatus.Unavailable("Python", "Not checked yet")
+            Python = DependencyStatus.Unavailable("Python", "Not checked yet"),
+            LibMpv = DependencyStatus.Unavailable("libmpv", "Not checked yet")
         };
 
         _logger.LogDebug("DependencyStatusService initialized. Project root: {ProjectRoot}", _projectRoot);
@@ -67,6 +69,7 @@ public class DependencyStatusService : IDependencyStatusService
         var vsTask = CheckVapourSynthAsync(cancellationToken);
         var ffmpegTask = CheckFFmpegAsync(cancellationToken);
         var pythonTask = CheckPythonAsync(cancellationToken);
+        var libmpvStatus = CheckLibMpv(); // Synchronous - just checks file existence
 
         await Task.WhenAll(vsTask, ffmpegTask, pythonTask);
 
@@ -75,6 +78,7 @@ public class DependencyStatusService : IDependencyStatusService
             VapourSynth = await vsTask,
             FFmpeg = await ffmpegTask,
             Python = await pythonTask,
+            LibMpv = libmpvStatus,
             CheckedAt = DateTime.UtcNow
         };
 
@@ -82,12 +86,31 @@ public class DependencyStatusService : IDependencyStatusService
         StatusChanged?.Invoke(this, newStatus);
 
         _logger.LogInformation(
-            "Dependency check complete. VS: {VS}, FFmpeg: {FFmpeg}, Python: {Python}",
+            "Dependency check complete. VS: {VS}, FFmpeg: {FFmpeg}, Python: {Python}, libmpv: {LibMpv}",
             newStatus.VapourSynth.IsAvailable,
             newStatus.FFmpeg.IsAvailable,
-            newStatus.Python.IsAvailable);
+            newStatus.Python.IsAvailable,
+            newStatus.LibMpv.IsAvailable);
 
         return newStatus;
+    }
+
+    /// <summary>
+    /// Check if libmpv is available for video playback
+    /// </summary>
+    private DependencyStatus CheckLibMpv()
+    {
+        if (MpvPlayer.IsLibraryAvailable)
+        {
+            _logger.LogInformation("libmpv available for video playback");
+            return DependencyStatus.Available("libmpv", "2.x", MpvPlayer.LibraryPath);
+        }
+        else
+        {
+            _logger.LogWarning("libmpv not found - video playback will be unavailable");
+            return DependencyStatus.Unavailable("libmpv",
+                "libmpv-2.dll not found. Run scripts/util/install-mpv.ps1 to install.");
+        }
     }
 
     /// <summary>
@@ -100,6 +123,7 @@ public class DependencyStatusService : IDependencyStatusService
             "vapoursynth" or "vs" => Result<DependencyStatus>.Success(await CheckVapourSynthAsync(cancellationToken)),
             "ffmpeg" => Result<DependencyStatus>.Success(await CheckFFmpegAsync(cancellationToken)),
             "python" => Result<DependencyStatus>.Success(await CheckPythonAsync(cancellationToken)),
+            "libmpv" or "mpv" => Result<DependencyStatus>.Success(CheckLibMpv()),
             _ => Result<DependencyStatus>.Failure($"Unknown dependency: {dependencyName}")
         };
     }

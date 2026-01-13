@@ -159,10 +159,21 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
 
     // Parameterless constructor for XAML design-time support
     public RestoreViewModel() : this(
-        App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(),
-        App.Services?.GetService(typeof(IVapourSynthService)) as IVapourSynthService ?? new VapourSynthService(),
-        App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService())
+        GetServiceWithFallback<IMediaPoolService>(() => new MediaPoolService()),
+        GetServiceWithFallback<IVapourSynthService>(() => new VapourSynthService()),
+        GetServiceWithFallback<ISettingsService>(() => new SettingsService()))
     {
+    }
+
+    private static T GetServiceWithFallback<T>(Func<T> fallbackFactory) where T : class
+    {
+        var service = App.Services?.GetService(typeof(T)) as T;
+        if (service == null)
+        {
+            _logger.LogWarning("{ServiceType} not available from DI, using fallback instance", typeof(T).Name);
+            return fallbackFactory();
+        }
+        return service;
     }
 
     private static string? FindProjectRoot(string startDir)
@@ -488,8 +499,9 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
                                GpuName.Contains("Radeon", StringComparison.OrdinalIgnoreCase);
             }
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "GPU detection failed, falling back to software rendering");
             GpuAvailable = false;
             GpuName = "Unknown";
         }
@@ -560,9 +572,9 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
                 if (codecMatch.Success) SourceCodec = codecMatch.Groups[1].Value;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore errors
+            _logger.LogDebug(ex, "Failed to load source info for {Path}", path);
         }
     }
 
@@ -665,7 +677,7 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
                 break;
 
             // Wait while paused
-            while (IsPaused && !_cancellationTokenSource?.IsCancellationRequested == true)
+            while (IsPaused && (_cancellationTokenSource?.IsCancellationRequested != true))
             {
                 await Task.Delay(100);
             }

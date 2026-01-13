@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.Logging;
+using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable.Models;
 
@@ -295,6 +297,8 @@ public partial class TimelineTrack : ObservableObject
 /// </summary>
 public partial class Timeline : ObservableObject
 {
+    private static readonly ILogger<Timeline> _logger = LoggingService.GetLogger<Timeline>();
+
     [ObservableProperty]
     private ObservableCollection<TimelineTrack> _tracks = [];
 
@@ -333,6 +337,74 @@ public partial class Timeline : ObservableObject
 
     [ObservableProperty]
     private TimelineTextOverlay? _selectedTextOverlay;
+
+    // Track the previous HasClips state to detect changes
+    private bool _lastHasClips;
+
+    public Timeline()
+    {
+        // Subscribe to track collection changes to monitor clip additions
+        Tracks.CollectionChanged += Tracks_CollectionChanged;
+    }
+
+    private void Tracks_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        // Subscribe to new tracks' clip collections
+        if (e.NewItems != null)
+        {
+            foreach (TimelineTrack track in e.NewItems)
+            {
+                track.Clips.CollectionChanged += Clips_CollectionChanged;
+            }
+        }
+
+        // Unsubscribe from removed tracks
+        if (e.OldItems != null)
+        {
+            foreach (TimelineTrack track in e.OldItems)
+            {
+                track.Clips.CollectionChanged -= Clips_CollectionChanged;
+            }
+        }
+
+        NotifyComputedPropertiesChanged();
+    }
+
+    private void Clips_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        NotifyComputedPropertiesChanged();
+    }
+
+    /// <summary>
+    /// Notifies that computed properties (HasClips, DurationFrames, etc.) may have changed.
+    /// Call this after adding/removing clips programmatically.
+    /// </summary>
+    public void NotifyComputedPropertiesChanged()
+    {
+        var currentHasClips = HasClips;
+        _logger.LogDebug("NotifyComputedPropertiesChanged: currentHasClips={Current}, lastHasClips={Last}",
+            currentHasClips, _lastHasClips);
+
+        if (currentHasClips != _lastHasClips)
+        {
+            _logger.LogInformation("HasClips changed from {Old} to {New}, firing PropertyChanged",
+                _lastHasClips, currentHasClips);
+            _lastHasClips = currentHasClips;
+            OnPropertyChanged(nameof(HasClips));
+        }
+        OnPropertyChanged(nameof(DurationFrames));
+        OnPropertyChanged(nameof(DurationSeconds));
+        OnPropertyChanged(nameof(DurationFormatted));
+    }
+
+    /// <summary>
+    /// Subscribes to clip changes for an existing track. Call this for tracks created before Timeline was constructed.
+    /// </summary>
+    public void SubscribeToTrackClips(TimelineTrack track)
+    {
+        track.Clips.CollectionChanged -= Clips_CollectionChanged; // Avoid double subscription
+        track.Clips.CollectionChanged += Clips_CollectionChanged;
+    }
 
     public long DurationFrames
     {

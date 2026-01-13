@@ -18,6 +18,7 @@ public class MpvPlayer : IDisposable
     private bool _eventThreadRunning;
     private static bool _libLoaded;
     private static string? _libPath;
+    private static string? _libFullPath;
 
     public event EventHandler? PlaybackStarted;
     public event EventHandler? PlaybackEnded;
@@ -43,6 +44,11 @@ public class MpvPlayer : IDisposable
     public bool IsLoopEnabled => LoopStartPoint.HasValue && LoopEndPoint.HasValue;
 
     public static bool IsLibraryAvailable => FindLibrary() != null;
+
+    /// <summary>
+    /// Gets the full path to the libmpv library if found, or null if not available.
+    /// </summary>
+    public static string? LibraryPath => _libFullPath;
 
     private static string? FindProjectRoot(string startDir)
     {
@@ -98,6 +104,7 @@ public class MpvPlayer : IDisposable
             if (File.Exists(path))
             {
                 _libPath = Path.GetDirectoryName(path);
+                _libFullPath = path;
                 _logger.LogInformation("Found libmpv at: {Path}", path);
                 return _libPath;
             }

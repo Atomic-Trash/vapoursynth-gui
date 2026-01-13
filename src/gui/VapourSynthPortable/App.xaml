@@ -62,6 +62,8 @@
             <FontFamily x:Key="InterMedium">pack://application:,,,/Assets/Fonts/#Inter Medium</FontFamily>
             <FontFamily x:Key="InterSemiBold">pack://application:,,,/Assets/Fonts/#Inter SemiBold</FontFamily>
             <FontFamily x:Key="InterBold">pack://application:,,,/Assets/Fonts/#Inter Bold</FontFamily>
+            <!-- Icon Font with fallbacks for system icons -->
+            <FontFamily x:Key="IconFont">Segoe MDL2 Assets, Segoe UI Symbol, Segoe UI Emoji</FontFamily>
 
             <!-- ═══════════════════════════════════════════════════════════════════════════
                  GLOBAL FONT STYLES (Applied to all instances of these controls)

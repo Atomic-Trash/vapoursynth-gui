@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura,opencover</Format>
+          <Exclude>
+            [*]*.Migrations.*,
+            [*]*.Designer.*,
+            [*]*Tests*,
+            [*]*Mock*
+          </Exclude>
+          <ExcludeByAttribute>
+            GeneratedCodeAttribute,
+            CompilerGeneratedAttribute,
+            ExcludeFromCodeCoverageAttribute
+          </ExcludeByAttribute>
+          <ExcludeByFile>
+            **/Migrations/**/*.cs,
+            **/*.Designer.cs,
+            **/obj/**/*.cs
+          </ExcludeByFile>
+          <SingleHit>false</SingleHit>
+          <UseSourceLink>true</UseSourceLink>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <SkipAutoProps>true</SkipAutoProps>
+          <DeterministicReport>false</DeterministicReport>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+
+  <RunConfiguration>
+    <ResultsDirectory>.\TestResults</ResultsDirectory>
+    <TargetPlatform>x64</TargetPlatform>
+    <TestSessionTimeout>300000</TestSessionTimeout>
+  </RunConfiguration>
+
+  <!-- Code Coverage Thresholds -->
+  <!-- These can be enforced via CI/CD pipeline -->
+  <!--
+  Recommended thresholds:
+  - Line coverage: 70%
+  - Branch coverage: 60%
+  - Method coverage: 75%
+  -->
+</RunSettings>

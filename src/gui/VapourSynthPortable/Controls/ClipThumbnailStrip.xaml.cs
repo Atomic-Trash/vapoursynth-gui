@@ -235,8 +235,9 @@ public partial class ClipThumbnailStrip : UserControl
                 ct);
             return (index, frame);
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Thumbnail extraction failed for frame {index}: {ex.Message}");
             return (index, null);
         }
     }

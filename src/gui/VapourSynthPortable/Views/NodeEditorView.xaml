@@ -150,11 +150,11 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220" MinWidth="180" MaxWidth="350"/>
+            <ColumnDefinition Width="220" MinWidth="180" MaxWidth="300"/>
             <ColumnDefinition Width="5"/>
-            <ColumnDefinition Width="*" MinWidth="400"/>
+            <ColumnDefinition Width="*" MinWidth="500"/>
             <ColumnDefinition Width="5"/>
-            <ColumnDefinition Width="300" MinWidth="250" MaxWidth="500"/>
+            <ColumnDefinition Width="280" MinWidth="220" MaxWidth="400"/>
         </Grid.ColumnDefinitions>
 
         <!-- Left Panel: Node Palette -->

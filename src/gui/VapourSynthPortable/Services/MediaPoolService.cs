@@ -24,6 +24,11 @@ public interface IMediaPoolService
     double InPoint { get; set; }
     double OutPoint { get; set; }
 
+    // Timeline reference - shared from Edit page for Export
+    Timeline? EditTimeline { get; }
+    void SetEditTimeline(Timeline? timeline);
+    event EventHandler<Timeline?>? EditTimelineChanged;
+
     // Media operations
     Task<MediaItem?> ImportMediaAsync(string filePath);
     Task ImportMediaAsync(string[] filePaths);
@@ -73,10 +78,22 @@ public partial class MediaPoolService : ObservableObject, IMediaPoolService
     [ObservableProperty]
     private double _outPoint;
 
+    // Timeline reference for Export page
+    [ObservableProperty]
+    private Timeline? _editTimeline;
+
+    public void SetEditTimeline(Timeline? timeline)
+    {
+        EditTimeline = timeline;
+        EditTimelineChanged?.Invoke(this, timeline);
+        _logger.LogDebug("Edit timeline set: HasClips={HasClips}", timeline?.HasClips ?? false);
+    }
+
     // Events
     public event EventHandler<MediaItem?>? CurrentSourceChanged;
     public event EventHandler<double>? PlayheadPositionChanged;
     public event EventHandler? MediaPoolChanged;
+    public event EventHandler<Timeline?>? EditTimelineChanged;
 
     partial void OnCurrentSourceChanged(MediaItem? value)
     {

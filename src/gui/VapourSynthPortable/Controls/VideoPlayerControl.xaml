@@ -21,10 +21,13 @@
 
             <!-- Placeholder when no video -->
             <StackPanel x:Name="PlaceholderPanel" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="&#xE714;" FontFamily="{StaticResource IconFont}" FontSize="48"
+                           Foreground="#666" HorizontalAlignment="Center"/>
                 <TextBlock Text="No video loaded" FontSize="16" Foreground="#BBBBBB"
-                           HorizontalAlignment="Center"/>
-                <TextBlock x:Name="MpvStatusText" Text="" FontSize="11" Foreground="#DDDDDD"
-                           HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                <TextBlock x:Name="MpvStatusText" Text="" FontSize="12" Foreground="#FF8C00"
+                           HorizontalAlignment="Center" Margin="0,8,0,0" TextWrapping="Wrap"
+                           MaxWidth="280"/>
             </StackPanel>
 
             <!-- Loading overlay -->
@@ -79,26 +82,34 @@
 
                     <!-- Left Controls -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal">
-                        <Button x:Name="StepBackButton" Content="&#xE76B;" FontFamily="Segoe MDL2 Assets"
+                        <Button x:Name="StepBackButton"
                                 Style="{StaticResource SecondaryButton}" Padding="8,6" Margin="0,0,4,0"
                                 Click="StepBackButton_Click" ToolTip="Step Backward (,)"
                                 AutomationProperties.Name="Step Backward"
-                                AutomationProperties.HelpText="Move one frame backward"/>
-                        <Button x:Name="PlayPauseButton" Content="&#xE768;" FontFamily="Segoe MDL2 Assets"
+                                AutomationProperties.HelpText="Move one frame backward">
+                            <TextBlock Text="&#xE76B;" FontFamily="{StaticResource IconFont}" FontSize="14"/>
+                        </Button>
+                        <Button x:Name="PlayPauseButton"
                                 Style="{StaticResource PrimaryButton}" Padding="12,8" Margin="0,0,4,0"
                                 Click="PlayPauseButton_Click" ToolTip="Play/Pause (Space)"
                                 AutomationProperties.Name="Play Pause"
-                                AutomationProperties.HelpText="Toggle video playback"/>
-                        <Button x:Name="StopButton" Content="&#xE71A;" FontFamily="Segoe MDL2 Assets"
+                                AutomationProperties.HelpText="Toggle video playback">
+                            <TextBlock x:Name="PlayPauseIcon" Text="&#xE768;" FontFamily="{StaticResource IconFont}" FontSize="14"/>
+                        </Button>
+                        <Button x:Name="StopButton"
                                 Style="{StaticResource SecondaryButton}" Padding="8,6" Margin="0,0,4,0"
                                 Click="StopButton_Click" ToolTip="Stop"
                                 AutomationProperties.Name="Stop"
-                                AutomationProperties.HelpText="Stop playback and return to start"/>
-                        <Button x:Name="StepForwardButton" Content="&#xE76C;" FontFamily="Segoe MDL2 Assets"
+                                AutomationProperties.HelpText="Stop playback and return to start">
+                            <TextBlock Text="&#xE71A;" FontFamily="{StaticResource IconFont}" FontSize="14"/>
+                        </Button>
+                        <Button x:Name="StepForwardButton"
                                 Style="{StaticResource SecondaryButton}" Padding="8,6"
                                 Click="StepForwardButton_Click" ToolTip="Step Forward (.)"
                                 AutomationProperties.Name="Step Forward"
-                                AutomationProperties.HelpText="Move one frame forward"/>
+                                AutomationProperties.HelpText="Move one frame forward">
+                            <TextBlock Text="&#xE76C;" FontFamily="{StaticResource IconFont}" FontSize="14"/>
+                        </Button>
                     </StackPanel>
 
                     <!-- Center - Speed Control -->
@@ -121,11 +132,13 @@
 
                     <!-- Right Controls - Volume -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
-                        <Button x:Name="MuteButton" Content="&#xE767;" FontFamily="Segoe MDL2 Assets"
+                        <Button x:Name="MuteButton"
                                 Style="{StaticResource SecondaryButton}" Padding="8,6"
                                 Click="MuteButton_Click" ToolTip="Mute (M)"
                                 AutomationProperties.Name="Mute"
-                                AutomationProperties.HelpText="Toggle audio mute"/>
+                                AutomationProperties.HelpText="Toggle audio mute">
+                            <TextBlock x:Name="MuteIcon" Text="&#xE767;" FontFamily="{StaticResource IconFont}" FontSize="14"/>
+                        </Button>
                         <Slider x:Name="VolumeSlider" Width="80" Minimum="0" Maximum="100" Value="100"
                                 VerticalAlignment="Center" Margin="8,0,0,0"
                                 ValueChanged="VolumeSlider_ValueChanged"

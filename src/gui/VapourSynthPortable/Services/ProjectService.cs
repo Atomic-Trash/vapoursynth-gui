@@ -657,9 +657,10 @@ public class ProjectService : IProjectService
         {
             return JsonSerializer.Serialize(value, JsonOptions);
         }
-        catch
+        catch (JsonException ex)
         {
-            return value.ToString();
+            _logger.LogWarning(ex, "Failed to serialize effect parameter value of type {Type}", value?.GetType().Name);
+            return value?.ToString();
         }
     }
 
@@ -683,8 +684,9 @@ public class ProjectService : IProjectService
                 _ => json
             };
         }
-        catch
+        catch (JsonException ex)
         {
+            _logger.LogWarning(ex, "Failed to deserialize effect parameter value for type {ParamType}", paramType);
             return json;
         }
     }

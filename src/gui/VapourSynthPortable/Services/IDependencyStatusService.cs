@@ -28,17 +28,18 @@ public class DependencyStatusReport
     public DependencyStatus VapourSynth { get; init; } = DependencyStatus.Unavailable("VapourSynth");
     public DependencyStatus FFmpeg { get; init; } = DependencyStatus.Unavailable("FFmpeg");
     public DependencyStatus Python { get; init; } = DependencyStatus.Unavailable("Python");
+    public DependencyStatus LibMpv { get; init; } = DependencyStatus.Unavailable("libmpv");
     public DateTime CheckedAt { get; init; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Whether all required dependencies are available
+    /// Whether all required dependencies are available (VS, FFmpeg for processing)
     /// </summary>
     public bool AllRequiredAvailable => VapourSynth.IsAvailable && FFmpeg.IsAvailable;
 
     /// <summary>
-    /// Whether all dependencies are available
+    /// Whether all dependencies are available (including optional ones)
     /// </summary>
-    public bool AllAvailable => VapourSynth.IsAvailable && FFmpeg.IsAvailable && Python.IsAvailable;
+    public bool AllAvailable => VapourSynth.IsAvailable && FFmpeg.IsAvailable && Python.IsAvailable && LibMpv.IsAvailable;
 
     /// <summary>
     /// Gets a list of missing required dependencies
@@ -52,15 +53,44 @@ public class DependencyStatusReport
     }
 
     /// <summary>
+    /// Gets a list of all missing dependencies including optional ones
+    /// </summary>
+    public IReadOnlyList<DependencyStatus> GetAllMissing()
+    {
+        var missing = new List<DependencyStatus>();
+        if (!VapourSynth.IsAvailable) missing.Add(VapourSynth);
+        if (!FFmpeg.IsAvailable) missing.Add(FFmpeg);
+        if (!Python.IsAvailable) missing.Add(Python);
+        if (!LibMpv.IsAvailable) missing.Add(LibMpv);
+        return missing;
+    }
+
+    /// <summary>
     /// Gets a summary message about missing dependencies
     /// </summary>
     public string? GetMissingSummary()
     {
-        var missing = GetMissingRequired();
+        var missing = GetAllMissing();
         if (missing.Count == 0) return null;
 
-        return $"Missing dependencies: {string.Join(", ", missing.Select(d => d.Name))}";
+        var required = missing.Where(d => d.Name is "VapourSynth" or "FFmpeg").ToList();
+        var optional = missing.Where(d => d.Name is "Python" or "libmpv").ToList();
+
+        var parts = new List<string>();
+        if (required.Count > 0)
+            parts.Add($"Required: {string.Join(", ", required.Select(d => d.Name))}");
+        if (optional.Count > 0)
+            parts.Add($"Optional: {string.Join(", ", optional.Select(d => $"{d.Name} ({GetMissingFeature(d.Name)})"))}");
+
+        return string.Join(". ", parts);
     }
+
+    private static string GetMissingFeature(string name) => name switch
+    {
+        "libmpv" => "video playback",
+        "Python" => "custom scripts",
+        _ => "unknown"
+    };
 }
 
 /// <summary>

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using VapourSynthPortable.Models;
 using VapourSynthPortable.Services;
@@ -10,6 +11,7 @@ namespace VapourSynthPortable.ViewModels;
 
 public partial class ExportViewModel : ObservableObject, IDisposable
 {
+    private static readonly ILogger<ExportViewModel> _logger = LoggingService.GetLogger<ExportViewModel>();
     private readonly IMediaPoolService _mediaPool;
     private readonly ISettingsService _settingsService;
     private readonly FFmpegService _ffmpegService = new();
@@ -190,6 +192,10 @@ public partial class ExportViewModel : ObservableObject, IDisposable
         _settingsService = settingsService;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
 
+        // Get Timeline from Edit page via MediaPoolService
+        _mediaPool.EditTimelineChanged += OnEditTimelineChanged;
+        Timeline = _mediaPool.EditTimeline;
+
         LoadPresets();
         InitializeResolutions();
         LoadExportSettings();
@@ -204,6 +210,11 @@ public partial class ExportViewModel : ObservableObject, IDisposable
         _vapourSynthService.LogMessage += OnLogMessage;
         _vapourSynthService.ProcessingStarted += OnVsProcessingStarted;
         _vapourSynthService.ProcessingCompleted += OnVsProcessingCompleted;
+    }
+
+    private void OnEditTimelineChanged(object? sender, Timeline? timeline)
+    {
+        Timeline = timeline;
     }
 
     // Parameterless constructor for XAML design-time support
@@ -278,9 +289,9 @@ public partial class ExportViewModel : ObservableObject, IDisposable
                 SelectedResolution = resolution;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Use defaults on error
+            _logger.LogWarning(ex, "Failed to load export settings, using defaults");
         }
         finally
         {
