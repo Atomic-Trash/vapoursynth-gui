@@ -152,6 +152,40 @@ vapoursynth-gui/
 - **Playback**: libmpv (optional)
 - **AI Models**: Real-ESRGAN, RIFE (planned)
 
+## Testing
+
+### Test Coverage
+
+| Component | Line Coverage | Tests |
+|-----------|--------------|-------|
+| **Overall** | 37.4% | 1,878 |
+| MediaViewModel | 75.3% | 90 |
+| RestoreViewModel | 65.4% | 62 |
+| EditViewModel | 58.2% | 45 |
+| ExportViewModel | 52.1% | 35 |
+| ColorViewModel | 48.7% | 40 |
+| Models | 85%+ | 200+ |
+| Services | 45%+ | 300+ |
+
+### Running Tests
+
+```powershell
+# Run all tests
+dotnet test src/gui/VapourSynthPortable.Tests/
+
+# Run with coverage
+dotnet test src/gui/VapourSynthPortable.Tests/ --collect:"XPlat Code Coverage"
+
+# Generate coverage report
+reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"TestResults/CoverageReport" -reporttypes:Html
+```
+
+### Test Categories
+- **Unit Tests**: Models, ViewModels, Services (~1,500 tests)
+- **Integration Tests**: Pipelines, Persistence (~200 tests)
+- **E2E Tests**: User workflows, Error handling (~150 tests)
+- **UI Tests**: FlaUI automation (~30 tests)
+
 ## Configuration
 
 ### Adding LUTs
