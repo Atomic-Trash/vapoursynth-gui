@@ -51,6 +51,8 @@ public partial class MainWindow : Window
         {
             if (e.PropertyName == nameof(MainWindowViewModel.RecentProjects))
                 RefreshRecentProjectsMenu();
+            else if (e.PropertyName == nameof(MainWindowViewModel.CurrentPage))
+                SyncNavigationToCurrentPage();
         };
 
         // Register toast notification with service
@@ -222,7 +224,6 @@ public partial class MainWindow : Window
         PageRestore?.SetValue(VisibilityProperty, Visibility.Collapsed);
         PageColor?.SetValue(VisibilityProperty, Visibility.Collapsed);
         PageExport?.SetValue(VisibilityProperty, Visibility.Collapsed);
-        PageSettings?.SetValue(VisibilityProperty, Visibility.Collapsed);
 
         // Show selected page and update ViewModel
         if (sender == NavMedia && PageMedia != null)
@@ -250,10 +251,53 @@ public partial class MainWindow : Window
             PageExport.Visibility = Visibility.Visible;
             _viewModel.NavigateTo("Export");
         }
-        else if (sender == NavSettings && PageSettings != null)
+    }
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settingsWindow = new SettingsWindow
         {
-            PageSettings.Visibility = Visibility.Visible;
-            _viewModel.NavigateTo("Settings");
+            Owner = this
+        };
+        settingsWindow.ShowDialog();
+    }
+
+    /// <summary>
+    /// Syncs the UI radio buttons and page visibility to the current page from NavigationService.
+    /// Called when navigation occurs programmatically (e.g., from workflow footer).
+    /// </summary>
+    private void SyncNavigationToCurrentPage()
+    {
+        // Hide all pages
+        PageMedia?.SetValue(VisibilityProperty, Visibility.Collapsed);
+        PageEdit?.SetValue(VisibilityProperty, Visibility.Collapsed);
+        PageRestore?.SetValue(VisibilityProperty, Visibility.Collapsed);
+        PageColor?.SetValue(VisibilityProperty, Visibility.Collapsed);
+        PageExport?.SetValue(VisibilityProperty, Visibility.Collapsed);
+
+        // Show the correct page and check the correct radio button
+        switch (_viewModel.CurrentPageType)
+        {
+            case Models.PageType.Media:
+                PageMedia?.SetValue(VisibilityProperty, Visibility.Visible);
+                NavMedia.IsChecked = true;
+                break;
+            case Models.PageType.Edit:
+                PageEdit?.SetValue(VisibilityProperty, Visibility.Visible);
+                NavEdit.IsChecked = true;
+                break;
+            case Models.PageType.Restore:
+                PageRestore?.SetValue(VisibilityProperty, Visibility.Visible);
+                NavRestore.IsChecked = true;
+                break;
+            case Models.PageType.Color:
+                PageColor?.SetValue(VisibilityProperty, Visibility.Visible);
+                NavColor.IsChecked = true;
+                break;
+            case Models.PageType.Export:
+                PageExport?.SetValue(VisibilityProperty, Visibility.Visible);
+                NavExport.IsChecked = true;
+                break;
         }
     }
 

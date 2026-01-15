@@ -432,6 +432,24 @@ public class VapourSynthService : IVapourSynthService
             args.Add("-cq");
             args.Add(settings.Quality.ToString());
         }
+        else if (settings.VideoCodec == "prores_ks")
+        {
+            args.Add("-profile:v");
+            args.Add(settings.ProResProfile.ToString());
+            args.Add("-vendor");
+            args.Add("apl0");
+        }
+        else if (settings.VideoCodec == "ffv1")
+        {
+            args.Add("-level");
+            args.Add("3");
+            args.Add("-coder");
+            args.Add("1");
+            args.Add("-context");
+            args.Add("1");
+            args.Add("-slicecrc");
+            args.Add("1");
+        }
 
         // Pixel format
         if (!string.IsNullOrEmpty(settings.PixelFormat))
@@ -760,6 +778,11 @@ public class VapourSynthEncodingSettings
     public string Preset { get; set; } = "medium";
     public string HardwarePreset { get; set; } = "p4";
     public string PixelFormat { get; set; } = "yuv420p";
+
+    /// <summary>
+    /// ProRes profile (0=proxy, 1=lt, 2=standard, 3=hq, 4=4444, 5=4444xq)
+    /// </summary>
+    public int ProResProfile { get; set; } = 2;
 
     /// <summary>
     /// Path to the original source file for audio extraction.

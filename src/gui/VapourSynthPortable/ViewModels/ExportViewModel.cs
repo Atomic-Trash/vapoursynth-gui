@@ -17,6 +17,7 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     private readonly FFmpegService _ffmpegService = new();
     private readonly VapourSynthService _vapourSynthService = new();
     private readonly EffectService _effectService = EffectService.Instance;
+    private readonly ExportPipelineService _pipelineService;
     private CancellationTokenSource? _cancellationTokenSource;
     private bool _disposed;
     private bool _isLoading; // Prevent saving during load
@@ -69,6 +70,91 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     // VapourSynth availability
     public bool IsVapourSynthAvailable => _vapourSynthService.IsAvailable;
 
+    // === AUTO-DETECTION PROPERTIES ===
+    // These properties automatically determine what will be exported based on project state
+
+    /// <summary>
+    /// Whether the timeline has clips to export
+    /// </summary>
+    public bool HasTimelineContent => Timeline?.HasClips == true;
+
+    /// <summary>
+    /// Count of clips on the timeline
+    /// </summary>
+    public int TimelineClipCount => Timeline?.Tracks.SelectMany(t => t.Clips).Count() ?? 0;
+
+    /// <summary>
+    /// Whether there's a source file available
+    /// </summary>
+    public bool HasSourceFile => !string.IsNullOrEmpty(InputPath) && System.IO.File.Exists(InputPath);
+
+    /// <summary>
+    /// Auto-detected source type description
+    /// </summary>
+    public string AutoDetectedSourceType
+    {
+        get
+        {
+            if (HasTimelineContent)
+                return "Timeline";
+            if (HasSourceFile)
+                return "Source File";
+            return "No Source";
+        }
+    }
+
+    /// <summary>
+    /// Auto-detected source name for display
+    /// </summary>
+    public string AutoDetectedSourceName
+    {
+        get
+        {
+            if (HasTimelineContent)
+                return $"{TimelineClipCount} clip{(TimelineClipCount != 1 ? "s" : "")} on timeline";
+            if (HasSourceFile)
+                return System.IO.Path.GetFileName(InputPath);
+            return "Select a source";
+        }
+    }
+
+    /// <summary>
+    /// Determines if processing through VapourSynth is needed
+    /// </summary>
+    public bool RequiresVapourSynth => HasTimelineContent || (HasRestoration && IncludeRestoration);
+
+    /// <summary>
+    /// Summary of what will be included in the export
+    /// </summary>
+    public string ExportPipelineSummary
+    {
+        get
+        {
+            var parts = new List<string>();
+
+            if (HasTimelineContent)
+            {
+                parts.Add($"Timeline ({TimelineClipCount} clips)");
+            }
+            else if (HasSourceFile)
+            {
+                parts.Add(System.IO.Path.GetFileName(InputPath));
+            }
+
+            if (HasRestoration && IncludeRestoration)
+            {
+                parts.Add($"+ Restoration ({RestorationPresetName})");
+            }
+
+            return parts.Count > 0 ? string.Join(" ", parts) : "No source selected";
+        }
+    }
+
+    /// <summary>
+    /// Whether export is ready (has valid source)
+    /// </summary>
+    public bool CanExport => HasTimelineContent || HasSourceFile;
+
     // InputPath now delegates to MediaPoolService, but can be overridden
     [ObservableProperty]
     private string _inputPath = "";
@@ -108,6 +194,21 @@ public partial class ExportViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _statusText = "Ready";
+
+    /// <summary>
+    /// Status text shown in the workflow footer
+    /// </summary>
+    public string FooterStatusText
+    {
+        get
+        {
+            if (IsEncoding)
+                return StatusText;
+            if (ExportQueue.Count > 0)
+                return $"{ExportQueue.Count} job(s) in queue • Ready to export";
+            return $"Output: {SelectedVideoCodec} • {SelectedAudioCodec}";
+        }
+    }
 
     [ObservableProperty]
     private string _logOutput = "";
@@ -204,6 +305,9 @@ public partial class ExportViewModel : ObservableObject, IDisposable
         _mediaPool.EditTimelineChanged += OnEditTimelineChanged;
         Timeline = _mediaPool.EditTimeline;
 
+        // Initialize unified export pipeline service
+        _pipelineService = new ExportPipelineService(_effectService);
+
         LoadPresets();
         InitializeResolutions();
         LoadExportSettings();
@@ -223,6 +327,23 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     private void OnEditTimelineChanged(object? sender, Timeline? timeline)
     {
         Timeline = timeline;
+        NotifyAutoDetectionChanged();
+    }
+
+    /// <summary>
+    /// Notify all auto-detection properties changed
+    /// </summary>
+    private void NotifyAutoDetectionChanged()
+    {
+        OnPropertyChanged(nameof(HasTimelineContent));
+        OnPropertyChanged(nameof(TimelineClipCount));
+        OnPropertyChanged(nameof(HasSourceFile));
+        OnPropertyChanged(nameof(AutoDetectedSourceType));
+        OnPropertyChanged(nameof(AutoDetectedSourceName));
+        OnPropertyChanged(nameof(RequiresVapourSynth));
+        OnPropertyChanged(nameof(ExportPipelineSummary));
+        OnPropertyChanged(nameof(CanExport));
+        OnPropertyChanged(nameof(FooterStatusText));
     }
 
     // Parameterless constructor for XAML design-time support
@@ -251,6 +372,8 @@ public partial class ExportViewModel : ObservableObject, IDisposable
         {
             IncludeRestoration = true;
         }
+
+        NotifyAutoDetectionChanged();
     }
 
     private void LoadPresets()
@@ -369,6 +492,7 @@ public partial class ExportViewModel : ObservableObject, IDisposable
             UpdateOutputPath();
             LoadInputInfo();
         }
+        NotifyAutoDetectionChanged();
     }
 
     partial void OnSelectedFormatChanged(string value)
@@ -444,6 +568,11 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     partial void OnSelectedProresProfileChanged(string value)
     {
         SaveExportSettings();
+    }
+
+    partial void OnIncludeRestorationChanged(bool value)
+    {
+        NotifyAutoDetectionChanged();
     }
 
     private void UpdateOutputPath()
@@ -563,41 +692,30 @@ public partial class ExportViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task StartExportAsync()
     {
-        // Check if we need VapourSynth (for restoration or timeline effects)
-        var needsVapourSynth = ExportMode == ExportMode.TimelineWithEffects ||
-                               (HasRestoration && IncludeRestoration);
+        // === UNIFIED PIPELINE: All exports go through VapourSynth ===
 
-        // Validate based on export mode
-        if (ExportMode == ExportMode.TimelineWithEffects)
+        // Validate VapourSynth availability (required for all exports now)
+        if (!IsVapourSynthAvailable)
         {
-            if (Timeline == null || !Timeline.HasClips)
-            {
-                StatusText = "No timeline clips to export";
-                return;
-            }
-
-            if (!IsVapourSynthAvailable)
-            {
-                StatusText = "VapourSynth not available. Please build the distribution first.";
-                AppendLog("Error: VSPipe not found. Run scripts/build/Build-Portable.ps1 to set up VapourSynth.");
-                return;
-            }
+            StatusText = "VapourSynth not available. Please build the distribution first.";
+            AppendLog("Error: VSPipe not found. Run scripts/build/Build-Portable.ps1 to set up VapourSynth.");
+            return;
         }
-        else
-        {
-            if (string.IsNullOrEmpty(InputPath) || string.IsNullOrEmpty(OutputPath))
-            {
-                StatusText = "Please select input and output files";
-                return;
-            }
 
-            // Warn if restoration requires VapourSynth but it's not available
-            if (needsVapourSynth && !IsVapourSynthAvailable)
-            {
-                StatusText = "VapourSynth required for restoration. Please build the distribution first.";
-                AppendLog("Error: Restoration requires VapourSynth. Run scripts/build/Build-Portable.ps1.");
-                return;
-            }
+        // Determine source type and validate
+        var hasTimeline = Timeline?.HasClips == true;
+        var hasSourceFile = !string.IsNullOrEmpty(InputPath) && File.Exists(InputPath);
+
+        if (!hasTimeline && !hasSourceFile)
+        {
+            StatusText = "Please select an input file or add clips to timeline";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(OutputPath))
+        {
+            StatusText = "Please select an output file";
+            return;
         }
 
         if (IsEncoding)
@@ -623,46 +741,35 @@ public partial class ExportViewModel : ObservableObject, IDisposable
             }
         }
 
-        var settings = CreateExportSettings();
-        var sourceDescription = ExportMode == ExportMode.TimelineWithEffects
+        // Build unified export settings
+        var unifiedSettings = BuildUnifiedExportSettings();
+
+        // Create job for tracking
+        var sourceDescription = hasTimeline
             ? "Timeline"
-            : (HasRestoration && IncludeRestoration ? $"{Path.GetFileName(InputPath)} + {RestorationPresetName}" : InputPath);
+            : (HasRestoration && IncludeRestoration
+                ? $"{Path.GetFileName(InputPath)} + {RestorationPresetName}"
+                : Path.GetFileName(InputPath));
 
         var job = new ExportJob
         {
             Name = Path.GetFileName(OutputPath),
             InputPath = sourceDescription,
             OutputPath = OutputPath,
-            Settings = settings,
+            Settings = CreateExportSettings(),
             Status = ExportJobStatus.Encoding,
             StartTime = DateTime.Now
         };
 
         CurrentJob = job;
         IsEncoding = true;
+        StatusText = "Rendering with VapourSynth pipeline...";
 
         _cancellationTokenSource = new CancellationTokenSource();
 
         try
         {
-            bool success;
-
-            if (ExportMode == ExportMode.TimelineWithEffects)
-            {
-                StatusText = "Rendering timeline with VapourSynth...";
-                success = await ExportTimelineWithVapourSynthAsync(_cancellationTokenSource.Token);
-            }
-            else if (HasRestoration && IncludeRestoration)
-            {
-                StatusText = $"Rendering with restoration ({RestorationPresetName})...";
-                AppendLog($"Exporting with restoration: {RestorationPresetName}");
-                success = await ExportWithRestorationAsync(_cancellationTokenSource.Token);
-            }
-            else
-            {
-                StatusText = "Encoding...";
-                success = await _ffmpegService.EncodeAsync(settings, _cancellationTokenSource.Token);
-            }
+            var success = await ExportWithUnifiedPipelineAsync(unifiedSettings, _cancellationTokenSource.Token);
 
             job.EndTime = DateTime.Now;
             job.Status = success ? ExportJobStatus.Completed : ExportJobStatus.Failed;
@@ -670,19 +777,161 @@ public partial class ExportViewModel : ObservableObject, IDisposable
             if (success && File.Exists(OutputPath))
             {
                 job.OutputFileSize = new FileInfo(OutputPath).Length;
+                StatusText = $"Export completed: {Path.GetFileName(OutputPath)}";
             }
+            else if (!success)
+            {
+                StatusText = "Export failed";
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            job.Status = ExportJobStatus.Cancelled;
+            job.StatusText = "Cancelled by user";
+            StatusText = "Export cancelled";
+            AppendLog("Export cancelled by user");
         }
         catch (Exception ex)
         {
             job.Status = ExportJobStatus.Failed;
             job.StatusText = ex.Message;
+            StatusText = $"Export failed: {ex.Message}";
             AppendLog($"Error: {ex.Message}");
+            _logger.LogError(ex, "Export failed");
         }
         finally
         {
             IsEncoding = false;
             _cancellationTokenSource?.Dispose();
             _cancellationTokenSource = null;
+        }
+    }
+
+    /// <summary>
+    /// Builds unified export settings from current UI state
+    /// </summary>
+    private UnifiedExportSettings BuildUnifiedExportSettings()
+    {
+        var hasTimeline = Timeline?.HasClips == true;
+
+        var settings = new UnifiedExportSettings
+        {
+            // Source configuration
+            SourceType = hasTimeline ? ExportSourceType.Timeline : ExportSourceType.SingleFile,
+            SingleFilePath = InputPath,
+            Timeline = Timeline,
+
+            // Restoration
+            IncludeRestoration = IncludeRestoration && HasRestoration,
+            Restoration = _mediaPool.CurrentSource?.AppliedRestoration,
+
+            // Output configuration
+            OutputPath = OutputPath,
+            OutputWidth = SelectedResolution?.Width ?? 0,
+            OutputHeight = SelectedResolution?.Height ?? 0,
+            OutputFrameRate = SelectedFrameRate != "Source" && double.TryParse(SelectedFrameRate, out var fps) ? fps : 0,
+
+            // Video encoding - use actual UI values
+            VideoCodec = SelectedVideoCodec,
+            Quality = Quality,
+            Preset = SelectedPresetSpeed,
+            HardwarePreset = ExtractNvencPreset(),
+            ProResProfile = ExtractProResProfile(),
+            PixelFormat = "yuv420p",
+
+            // Audio encoding - use actual UI values (NOT hardcoded!)
+            AudioEnabled = AudioEnabled,
+            AudioCodec = SelectedAudioCodec,
+            AudioBitrate = SelectedAudioBitrate
+        };
+
+        // Set audio source path
+        settings.AudioSourcePath = settings.GetPrimarySourcePath();
+
+        return settings;
+    }
+
+    /// <summary>
+    /// Extract NVENC preset number from UI selection (e.g., "p4 (balanced)" -> "p4")
+    /// </summary>
+    private string ExtractNvencPreset()
+    {
+        if (string.IsNullOrEmpty(SelectedNvencPreset)) return "p4";
+        var parts = SelectedNvencPreset.Split(' ');
+        return parts.Length > 0 ? parts[0] : "p4";
+    }
+
+    /// <summary>
+    /// Extract ProRes profile number from UI selection (e.g., "2 - Standard" -> 2)
+    /// </summary>
+    private int ExtractProResProfile()
+    {
+        if (string.IsNullOrEmpty(SelectedProresProfile)) return 2;
+        var parts = SelectedProresProfile.Split(' ');
+        return parts.Length > 0 && int.TryParse(parts[0], out var profile) ? profile : 2;
+    }
+
+    /// <summary>
+    /// Export using the unified VapourSynth pipeline
+    /// </summary>
+    private async Task<bool> ExportWithUnifiedPipelineAsync(UnifiedExportSettings settings, CancellationToken ct)
+    {
+        string? scriptPath = null;
+
+        try
+        {
+            // Generate unified VapourSynth script
+            AppendLog("Generating VapourSynth script...");
+            var scriptContent = _pipelineService.GenerateUnifiedScript(settings);
+
+            // Save script to temp file
+            scriptPath = Path.Combine(Path.GetTempPath(), $"export_{Guid.NewGuid():N}.vpy");
+            await File.WriteAllTextAsync(scriptPath, scriptContent, ct);
+
+            AppendLog($"Script: {scriptPath}");
+            AppendLog($"Source: {(settings.SourceType == ExportSourceType.Timeline ? "Timeline" : settings.SingleFilePath)}");
+            if (settings.IncludeRestoration)
+            {
+                AppendLog($"Restoration: {settings.Restoration?.PresetName}");
+            }
+            AppendLog($"Video: {settings.VideoCodec} (CRF {settings.Quality})");
+            AppendLog($"Audio: {settings.AudioCodec} ({settings.AudioBitrate}k)");
+            AppendLog("Starting VapourSynth pipeline...");
+
+            // Create VS encoding settings
+            var vsSettings = new VapourSynthEncodingSettings
+            {
+                VideoCodec = settings.VideoCodec,
+                Quality = settings.Quality,
+                Preset = settings.Preset,
+                HardwarePreset = settings.HardwarePreset,
+                ProResProfile = settings.ProResProfile,
+                PixelFormat = settings.PixelFormat,
+
+                // Audio - using actual user settings
+                IncludeAudio = settings.AudioEnabled,
+                AudioSourcePath = settings.AudioSourcePath,
+                AudioCodec = settings.AudioCodec,
+                AudioBitrate = $"{settings.AudioBitrate}k"
+            };
+
+            // Process via VapourSynth pipeline
+            var success = await _vapourSynthService.ProcessScriptAsync(
+                scriptPath,
+                settings.OutputPath,
+                vsSettings,
+                ct);
+
+            return success;
+        }
+        finally
+        {
+            // Cleanup temp script
+            if (scriptPath != null && File.Exists(scriptPath))
+            {
+                try { File.Delete(scriptPath); }
+                catch { /* Ignore cleanup errors */ }
+            }
         }
     }
 

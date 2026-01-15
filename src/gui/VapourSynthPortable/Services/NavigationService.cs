@@ -13,7 +13,7 @@ public class NavigationService : INavigationService
 
     private readonly Stack<PageType> _backStack = new();
     private readonly Stack<PageType> _forwardStack = new();
-    private PageType _currentPage = PageType.Restore;
+    private PageType _currentPage = PageType.Media;
 
     /// <inheritdoc />
     public PageType CurrentPage => _currentPage;

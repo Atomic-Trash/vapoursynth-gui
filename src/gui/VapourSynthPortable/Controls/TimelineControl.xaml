@@ -134,6 +134,31 @@
                                    VerticalAlignment="Top" HorizontalAlignment="Left"
                                    TextTrimming="CharacterEllipsis"
                                    ToolTip="{Binding Name}" Margin="4,0,0,0"/>
+
+                        <!-- Processing Status Badges (top-right corner) -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,0,4,0">
+                            <!-- Restoration Badge -->
+                            <Border Background="#4ADE80" CornerRadius="2" Padding="3,1" Margin="1,0"
+                                    ToolTip="Restoration Applied"
+                                    Visibility="{Binding HasRestoration, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="&#xE773;" FontFamily="Segoe MDL2 Assets"
+                                           Foreground="#1A3D2A" FontSize="8"/>
+                            </Border>
+                            <!-- Effects Badge -->
+                            <Border Background="#6366F1" CornerRadius="2" Padding="3,1" Margin="1,0"
+                                    ToolTip="Effects Applied"
+                                    Visibility="{Binding HasEffects, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="&#xE9E9;" FontFamily="Segoe MDL2 Assets"
+                                           Foreground="White" FontSize="8"/>
+                            </Border>
+                            <!-- Color Grade Badge -->
+                            <Border Background="#F59E0B" CornerRadius="2" Padding="3,1" Margin="1,0"
+                                    ToolTip="Color Grade Applied"
+                                    Visibility="{Binding HasColorGrade, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="&#xE790;" FontFamily="Segoe MDL2 Assets"
+                                           Foreground="White" FontSize="8"/>
+                            </Border>
+                        </StackPanel>
                     </Grid>
 
                     <!-- Right trim handle -->

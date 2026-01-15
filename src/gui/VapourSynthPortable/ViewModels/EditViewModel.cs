@@ -17,6 +17,8 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
 {
     private static readonly ILogger<EditViewModel> _logger = LoggingService.GetLogger<EditViewModel>();
     private readonly IMediaPoolService _mediaPoolService;
+    private readonly IBinService _binService;
+    private readonly INavigationService _navigationService;
     private readonly FrameCacheService _frameCache;
     private readonly UndoService _undoService;
     private readonly ProjectService _projectService = new();
@@ -31,6 +33,26 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
 
     // Media pool is now shared across all pages via IMediaPoolService
     public ObservableCollection<MediaItem> MediaPool => _mediaPoolService.MediaPool;
+
+    // Bins for organizing media
+    public ObservableCollection<MediaBin> Bins => _binService.Bins;
+
+    [ObservableProperty]
+    private MediaBin? _selectedBin;
+
+    /// <summary>
+    /// Media items to display based on selected bin
+    /// </summary>
+    public IEnumerable<MediaItem> DisplayedMediaItems
+    {
+        get
+        {
+            if (SelectedBin == null || SelectedBin == _binService.AllMediaBin)
+                return MediaPool;
+
+            return SelectedBin.Items;
+        }
+    }
 
     [ObservableProperty]
     private MediaItem? _selectedMediaItem;
@@ -77,20 +99,47 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
     public string UndoDescription => _undoService.UndoDescription;
     public string RedoDescription => _undoService.RedoDescription;
 
+    /// <summary>
+    /// Status text shown in the workflow footer
+    /// </summary>
+    public string FooterStatusText
+    {
+        get
+        {
+            var clipCount = Timeline.Tracks.Sum(t => t.Clips.Count);
+            if (clipCount == 0) return "Add clips to the timeline";
+            return $"{clipCount} clips on timeline • Duration: {Timeline.DurationFormatted}";
+        }
+    }
+
+    /// <summary>
+    /// Whether the timeline has any content
+    /// </summary>
+    public bool HasTimelineContent => Timeline.HasClips;
+
+    [RelayCommand]
+    private void GoToRestore()
+    {
+        _navigationService.NavigateTo(PageType.Restore);
+    }
+
     [ObservableProperty]
     private ObservableCollection<TransitionPreset> _transitionPresets = [];
 
     [ObservableProperty]
     private TransitionPreset? _selectedTransitionPreset;
 
-    public EditViewModel(IMediaPoolService mediaPoolService, FrameCacheService frameCache, UndoService undoService)
+    public EditViewModel(IMediaPoolService mediaPoolService, IBinService binService, INavigationService navigationService, FrameCacheService frameCache, UndoService undoService)
     {
         _mediaPoolService = mediaPoolService;
+        _binService = binService;
+        _navigationService = navigationService;
         _frameCache = frameCache;
         _undoService = undoService;
 
         _mediaPoolService.CurrentSourceChanged += OnCurrentSourceChanged;
         _mediaPoolService.MediaPoolChanged += OnMediaPoolChanged;
+        _binService.BinsChanged += OnBinsChanged;
 
         _undoService.StateChanged += OnUndoStateChanged;
         _undoService.ActionExecuted += OnUndoActionExecuted;
@@ -103,11 +152,16 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
 
         // Share Timeline with other pages (e.g., Export) via the MediaPoolService
         _mediaPoolService.SetEditTimeline(Timeline);
+
+        // Default to "All Media" bin
+        SelectedBin = _binService.AllMediaBin;
     }
 
     // Parameterless constructor for XAML design-time support
     public EditViewModel() : this(
         GetServiceWithFallback<IMediaPoolService>(() => new MediaPoolService(new PathResolver())),
+        GetServiceWithFallback<IBinService>(() => new BinService(new SettingsService(), new UndoService())),
+        GetServiceWithFallback<INavigationService>(() => new NavigationService()),
         GetServiceWithFallback<FrameCacheService>(() => new FrameCacheService(new PathResolver())),
         GetServiceWithFallback<UndoService>(() => new UndoService()))
     {
@@ -141,6 +195,18 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
     {
         // Notify UI that the media pool has changed (media imported from another page)
         OnPropertyChanged(nameof(MediaPool));
+        OnPropertyChanged(nameof(DisplayedMediaItems));
+    }
+
+    private void OnBinsChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(Bins));
+        OnPropertyChanged(nameof(DisplayedMediaItems));
+    }
+
+    partial void OnSelectedBinChanged(MediaBin? value)
+    {
+        OnPropertyChanged(nameof(DisplayedMediaItems));
     }
 
     private void LoadTransitionPresets()
@@ -351,6 +417,7 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
             SourceOutFrame = (long)(SourceOutPoint * Timeline.FrameRate),
             SourceDurationFrames = (long)(SelectedMediaItem.Duration * Timeline.FrameRate),
             FrameRate = Timeline.FrameRate,
+            HasRestoration = SelectedMediaItem.HasRestoration,
             Color = trackType == TrackType.Video
                 ? System.Windows.Media.Color.FromRgb(0x2A, 0x6A, 0x9F)
                 : System.Windows.Media.Color.FromRgb(0x4A, 0xCF, 0x6A)
@@ -417,6 +484,7 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
             EndFrame = Timeline.PlayheadFrame + durationFrames,
             SourceDurationFrames = durationFrames,
             FrameRate = Timeline.FrameRate,
+            HasRestoration = SelectedMediaItem.HasRestoration,
             Color = trackType == TrackType.Video
                 ? System.Windows.Media.Color.FromRgb(0x2A, 0x6A, 0x9F)
                 : System.Windows.Media.Color.FromRgb(0x4A, 0xCF, 0x6A)
@@ -1559,6 +1627,7 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
 
         _mediaPoolService.CurrentSourceChanged -= OnCurrentSourceChanged;
         _mediaPoolService.MediaPoolChanged -= OnMediaPoolChanged;
+        _binService.BinsChanged -= OnBinsChanged;
         Timeline.PropertyChanged -= OnTimelinePropertyChanged;
         _undoService.StateChanged -= OnUndoStateChanged;
         _undoService.ActionExecuted -= OnUndoActionExecuted;

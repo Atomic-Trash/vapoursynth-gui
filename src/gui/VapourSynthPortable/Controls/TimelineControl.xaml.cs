@@ -453,6 +453,7 @@ public partial class TimelineControl : UserControl
             SourceOutFrame = durationFrames,
             SourceDurationFrames = durationFrames,
             FrameRate = Timeline.FrameRate,
+            HasRestoration = mediaItem.HasRestoration,
             Color = track.TrackType == TrackType.Video
                 ? Color.FromRgb(0x2A, 0x6A, 0x9F)  // Darker blue for video (better contrast)
                 : Color.FromRgb(0x4A, 0xCF, 0x6A)  // Green for audio

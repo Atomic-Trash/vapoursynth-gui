@@ -32,7 +32,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- Toolbar -->
-        <Border Grid.Row="0" Grid.ColumnSpan="3" Background="#333" Padding="10,8">
+        <Border Grid.Row="0" Grid.ColumnSpan="3" Background="{StaticResource CardBackground}" Padding="10,8">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
                     <Button Content="Import Grade" Command="{Binding ImportGradeCommand}"
@@ -99,7 +99,7 @@
         </Border>
 
         <!-- Left Panel: Presets & LUTs -->
-        <Border Grid.Row="1" Grid.Column="0" Background="#252526" Margin="10,10,5,5">
+        <Border Grid.Row="1" Grid.Column="0" Background="{StaticResource SurfaceBackground}" Margin="10,10,5,5">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -170,7 +170,7 @@
                 </Border>
 
                 <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch"
-                              Background="#333" ResizeDirection="Rows"/>
+                              Background="{StaticResource CardBackground}" ResizeDirection="Rows"/>
 
                 <!-- LUTs -->
                 <Border Grid.Row="2">
@@ -197,7 +197,7 @@
                             <ToggleButton Grid.Column="1" Content="★" IsChecked="{Binding ShowFavoritesOnly}"
                                           ToolTip="Show favorites only"
                                           Width="24" Height="22" FontSize="12"
-                                          Background="#333" Foreground="#AAA" BorderThickness="0"/>
+                                          Background="{StaticResource CardBackground}" Foreground="{StaticResource TextSecondary}" BorderThickness="0"/>
                         </Grid>
 
                         <!-- Category Filter -->
@@ -271,7 +271,7 @@
                                                 Background="Transparent" BorderThickness="0"
                                                 Foreground="{Binding IsFavorite, Converter={StaticResource BoolToFavoriteColorConverter}}"
                                                 ToolTip="Toggle favorite"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#AAA" FontSize="11"
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource TextSecondary}" FontSize="11"
                                                    Padding="4,4" ToolTip="{Binding Path}"
                                                    VerticalAlignment="Center"/>
                                     </Grid>
@@ -325,18 +325,18 @@
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="A/B COMPARE" Foreground="#FFA500" FontSize="11" FontWeight="Bold"/>
-                                <TextBlock Text=" (Press C to toggle)" Foreground="#AAA" FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text=" (Press C to toggle)" Foreground="{StaticResource TextSecondary}" FontSize="10" VerticalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                 <RadioButton Content="Side by Side" GroupName="CompareMode"
                                              IsChecked="{Binding CompareMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=SideBySide}"
-                                             Foreground="#AAA" FontSize="10" Margin="0,0,12,0"/>
+                                             Foreground="{StaticResource TextSecondary}" FontSize="10" Margin="0,0,12,0"/>
                                 <RadioButton Content="Vertical Split" GroupName="CompareMode"
                                              IsChecked="{Binding CompareMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=VerticalSplit}"
-                                             Foreground="#AAA" FontSize="10" Margin="0,0,12,0"/>
+                                             Foreground="{StaticResource TextSecondary}" FontSize="10" Margin="0,0,12,0"/>
                                 <RadioButton Content="Wipe" GroupName="CompareMode"
                                              IsChecked="{Binding CompareMode, Converter={StaticResource EnumBoolConverter}, ConverterParameter=Wipe}"
-                                             Foreground="#AAA" FontSize="10"/>
+                                             Foreground="{StaticResource TextSecondary}" FontSize="10"/>
                             </StackPanel>
                             <Grid Margin="0,8,0,0" Visibility="{Binding CompareMode, Converter={StaticResource WipeVisibilityConverter}}">
                                 <Grid.ColumnDefinitions>
@@ -344,10 +344,10 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Original" Foreground="#AAA" FontSize="9"/>
+                                <TextBlock Grid.Column="0" Text="Original" Foreground="{StaticResource TextSecondary}" FontSize="9"/>
                                 <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding ComparePosition}"
                                         Margin="8,0" Width="120"/>
-                                <TextBlock Grid.Column="2" Text="Graded" Foreground="#AAA" FontSize="9"/>
+                                <TextBlock Grid.Column="2" Text="Graded" Foreground="{StaticResource TextSecondary}" FontSize="9"/>
                             </Grid>
                         </StackPanel>
                     </Border>
@@ -362,25 +362,25 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="LUT Intensity" Foreground="#AAA"
+                        <TextBlock Grid.Column="0" Text="LUT Intensity" Foreground="{StaticResource TextSecondary}"
                                    VerticalAlignment="Center" FontSize="11"/>
                         <Slider Grid.Column="1" Minimum="0" Maximum="1"
                                 Value="{Binding CurrentGrade.LutIntensity}" Margin="10,0"/>
                         <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.LutIntensity, StringFormat='{}{0:P0}'}"
-                                   Foreground="#AAA" VerticalAlignment="Center" FontSize="11" HorizontalAlignment="Right"/>
+                                   Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" FontSize="11" HorizontalAlignment="Right"/>
                     </Grid>
                 </Border>
             </Grid>
         </Border>
 
         <!-- Right Panel: Scopes -->
-        <Border Grid.Row="1" Grid.Column="2" Background="#252526" Margin="5,10,10,5"
+        <Border Grid.Row="1" Grid.Column="2" Background="{StaticResource SurfaceBackground}" Margin="5,10,10,5"
                 Visibility="{Binding ShowScopes, Converter={StaticResource BoolToVisibilityConverter}}">
             <controls:ScopesControl x:Name="ScopesDisplay"/>
         </Border>
 
         <!-- Bottom: Color Wheels & Adjustments -->
-        <Border Grid.Row="2" Grid.ColumnSpan="3" Background="#252526" Margin="10,5,10,10">
+        <Border Grid.Row="2" Grid.ColumnSpan="3" Background="{StaticResource SurfaceBackground}" Margin="10,5,10,10">
             <Grid Margin="15,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -428,7 +428,7 @@
 
                         <!-- Left Column -->
                         <StackPanel Grid.Column="0" Margin="0,0,15,0">
-                            <TextBlock Text="Basic" Foreground="#AAA" FontWeight="SemiBold"
+                            <TextBlock Text="Basic" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold"
                                        FontSize="11" Margin="0,0,0,10"/>
 
                             <!-- Exposure -->
@@ -438,7 +438,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="40"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Exposure" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Exposure" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1" Minimum="-3" Maximum="3" Value="{Binding CurrentGrade.Exposure}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Exposure, StringFormat='{}{0:F2}'}"
@@ -452,7 +452,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="40"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Contrast" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Contrast" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Contrast}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Contrast, StringFormat='{}{0:F0}'}"
@@ -466,7 +466,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="40"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Saturation" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Saturation" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Saturation}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Saturation, StringFormat='{}{0:F0}'}"
@@ -480,14 +480,14 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="40"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Vibrance" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Vibrance" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Vibrance}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Vibrance, StringFormat='{}{0:F0}'}"
                                            Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
 
-                            <TextBlock Text="White Balance" Foreground="#AAA" FontWeight="SemiBold"
+                            <TextBlock Text="White Balance" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold"
                                        FontSize="11" Margin="0,15,0,10"/>
 
                             <!-- Temperature -->
@@ -497,7 +497,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="40"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Temperature" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Temperature" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Temperature}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Temperature, StringFormat='{}{0:F0}'}"
@@ -511,7 +511,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="40"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Tint" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Tint" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Tint}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Tint, StringFormat='{}{0:F0}'}"
@@ -521,7 +521,7 @@
 
                         <!-- Right Column -->
                         <StackPanel Grid.Column="1" Margin="15,0,0,0">
-                            <TextBlock Text="Tone" Foreground="#AAA" FontWeight="SemiBold"
+                            <TextBlock Text="Tone" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold"
                                        FontSize="11" Margin="0,0,0,10"/>
 
                             <!-- Highlights -->
@@ -531,7 +531,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="40"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Highlights" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Highlights" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Highlights}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Highlights, StringFormat='{}{0:F0}'}"
@@ -545,7 +545,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="40"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Shadows" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Shadows" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Shadows}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Shadows, StringFormat='{}{0:F0}'}"
@@ -559,7 +559,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="40"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Whites" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Whites" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Whites}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Whites, StringFormat='{}{0:F0}'}"
@@ -573,14 +573,14 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="40"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Blacks" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Blacks" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Blacks}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Blacks, StringFormat='{}{0:F0}'}"
                                            Foreground="#9E9E9E" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
 
-                            <TextBlock Text="Detail" Foreground="#AAA" FontWeight="SemiBold"
+                            <TextBlock Text="Detail" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold"
                                        FontSize="11" Margin="0,15,0,10"/>
 
                             <!-- Clarity -->
@@ -590,7 +590,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="40"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Clarity" Foreground="#AAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="Clarity" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding CurrentGrade.Clarity}"
                                         VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CurrentGrade.Clarity, StringFormat='{}{0:F0}'}"
@@ -602,11 +602,11 @@
             </Grid>
         </Border>
 
-        <!-- Status Bar -->
-        <Border Grid.Row="2" Grid.ColumnSpan="3" VerticalAlignment="Bottom"
-                Background="#2D2D30" Height="24" Margin="10,0,10,10">
-            <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="11"
-                       VerticalAlignment="Center" Margin="10,0"/>
-        </Border>
+        <!-- Workflow Footer -->
+        <controls:WorkflowFooter Grid.Row="2" Grid.ColumnSpan="3"
+                                 StatusText="{Binding FooterStatusText}"
+                                 NextStepText="Continue to Export"
+                                 NextStepCommand="{Binding GoToExportCommand}"
+                                 ShowNextStep="True"/>
     </Grid>
 </UserControl>

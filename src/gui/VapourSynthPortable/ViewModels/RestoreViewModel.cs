@@ -66,6 +66,25 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
     [ObservableProperty]
     private string _statusText = "Ready";
 
+    /// <summary>
+    /// Status text shown in the workflow footer
+    /// </summary>
+    public string FooterStatusText
+    {
+        get
+        {
+            if (SelectedPreset != null)
+                return $"Preset: {SelectedPreset.Name} • {JobQueue.Count} jobs in queue";
+            return "Select a restoration preset";
+        }
+    }
+
+    [RelayCommand]
+    private void GoToColor()
+    {
+        _navigationService.NavigateTo(PageType.Color);
+    }
+
     [ObservableProperty]
     private AIModelSettings _modelSettings = new();
 

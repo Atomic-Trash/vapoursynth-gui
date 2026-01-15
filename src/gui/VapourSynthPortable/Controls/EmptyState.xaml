@@ -1,0 +1,38 @@
+<UserControl x:Class="VapourSynthPortable.Controls.EmptyState"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="EmptyStateRoot">
+
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="320">
+        <!-- Icon -->
+        <Border Width="64" Height="64" CornerRadius="32"
+                Background="{StaticResource PanelBackground}" Margin="0,0,0,16"
+                HorizontalAlignment="Center">
+            <TextBlock Text="{Binding Icon, ElementName=EmptyStateRoot, FallbackValue=&#xE8B7;}"
+                       FontFamily="Segoe MDL2 Assets" FontSize="28"
+                       Foreground="{StaticResource TextMuted}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+
+        <!-- Title -->
+        <TextBlock Text="{Binding Title, ElementName=EmptyStateRoot, FallbackValue=No items}"
+                   FontSize="16" FontWeight="SemiBold"
+                   Foreground="{StaticResource TextSecondary}"
+                   HorizontalAlignment="Center" TextAlignment="Center"
+                   Margin="0,0,0,8"/>
+
+        <!-- Subtitle -->
+        <TextBlock Text="{Binding Subtitle, ElementName=EmptyStateRoot}"
+                   FontSize="12" Foreground="{StaticResource TextMuted}"
+                   HorizontalAlignment="Center" TextAlignment="Center"
+                   TextWrapping="Wrap" Margin="0,0,0,16"
+                   Visibility="{Binding Subtitle, ElementName=EmptyStateRoot, Converter={StaticResource NullOrEmptyToVisibilityConverter}}"/>
+
+        <!-- Action Button -->
+        <Button Style="{StaticResource PrimaryButton}"
+                Content="{Binding ActionText, ElementName=EmptyStateRoot}"
+                Command="{Binding ActionCommand, ElementName=EmptyStateRoot}"
+                Padding="16,8" HorizontalAlignment="Center"
+                Visibility="{Binding ShowAction, ElementName=EmptyStateRoot, Converter={StaticResource BoolToVisibilityConverter}}"/>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,50 @@
+<UserControl x:Class="VapourSynthPortable.Controls.WorkflowFooter"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="FooterRoot">
+
+    <Border Background="{StaticResource SurfaceBackground}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="16,10">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Status Text -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock x:Name="StatusIcon"
+                           Text="&#xE73E;"
+                           FontFamily="Segoe MDL2 Assets"
+                           FontSize="14"
+                           Foreground="{StaticResource SuccessBrush}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"
+                           Visibility="{Binding ShowStatusIcon, ElementName=FooterRoot, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}"/>
+                <TextBlock Text="{Binding StatusText, ElementName=FooterRoot, FallbackValue=Ready}"
+                           Foreground="{StaticResource TextSecondary}"
+                           FontSize="13"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Next Step Button -->
+            <Button Grid.Column="1"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding NextStepCommand, ElementName=FooterRoot}"
+                    Visibility="{Binding ShowNextStep, ElementName=FooterRoot, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Visible}"
+                    Padding="16,8">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding NextStepText, ElementName=FooterRoot, FallbackValue=Continue}"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="&#xE72A;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="12"
+                               VerticalAlignment="Center"
+                               Margin="8,0,0,0"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+    </Border>
+</UserControl>

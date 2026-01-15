@@ -15,6 +15,7 @@ namespace VapourSynthPortable.ViewModels;
 public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPersistable
 {
     private readonly IMediaPoolService _mediaPool;
+    private readonly INavigationService _navigationService;
     private readonly ColorGradingService _colorGradingService;
     private readonly FrameCacheService _frameCache;
     private CancellationTokenSource? _previewUpdateCts;
@@ -105,9 +106,10 @@ public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPer
     public bool CanUndo => _undoStack.Count > 0;
     public bool CanRedo => _redoStack.Count > 0;
 
-    public ColorViewModel(IMediaPoolService mediaPool, IPathResolver pathResolver)
+    public ColorViewModel(IMediaPoolService mediaPool, INavigationService navigationService, IPathResolver pathResolver)
     {
         _mediaPool = mediaPool;
+        _navigationService = navigationService;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
 
         _colorGradingService = new ColorGradingService();
@@ -123,8 +125,30 @@ public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPer
     // Parameterless constructor for XAML design-time support
     public ColorViewModel() : this(
         App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(App.Services?.GetRequiredService<IPathResolver>() ?? new PathResolver()),
+        App.Services?.GetService(typeof(INavigationService)) as INavigationService ?? new NavigationService(),
         App.Services?.GetRequiredService<IPathResolver>() ?? new PathResolver())
     {
+    }
+
+    /// <summary>
+    /// Status text shown in the workflow footer
+    /// </summary>
+    public string FooterStatusText
+    {
+        get
+        {
+            if (SelectedLut != null)
+                return $"LUT: {SelectedLut.Name}";
+            if (SelectedPreset != null)
+                return $"Preset: {SelectedPreset.Name}";
+            return "Adjust color grading";
+        }
+    }
+
+    [RelayCommand]
+    private void GoToExport()
+    {
+        _navigationService.NavigateTo(PageType.Export);
     }
 
     private void OnCurrentSourceChanged(object? sender, MediaItem? item)

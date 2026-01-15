@@ -17,6 +17,7 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     private static readonly ILogger<MediaViewModel> _logger = LoggingService.GetLogger<MediaViewModel>();
     private readonly IMediaPoolService _mediaPool;
     private readonly ISettingsService _settingsService;
+    private readonly INavigationService _navigationService;
     private readonly UndoService _undoService;
     private bool _disposed;
 
@@ -69,6 +70,24 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _statusText = "Ready";
 
+    /// <summary>
+    /// Status text shown in the workflow footer
+    /// </summary>
+    public string FooterStatusText
+    {
+        get
+        {
+            var count = _mediaPool.MediaPool.Count;
+            if (count == 0) return "Import media to get started";
+            return $"{count} media items • {VideoCount} videos, {AudioCount} audio, {ImageCount} images";
+        }
+    }
+
+    /// <summary>
+    /// Whether there are any media items in the pool
+    /// </summary>
+    public bool HasMedia => _mediaPool.MediaPool.Count > 0;
+
     [ObservableProperty]
     private bool _isLoading;
 
@@ -111,10 +130,11 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     // Media pool is now shared across all pages via IMediaPoolService
     private IEnumerable<MediaItem> AllItems => _mediaPool.MediaPool;
 
-    public MediaViewModel(IMediaPoolService mediaPool, ISettingsService settingsService, UndoService undoService)
+    public MediaViewModel(IMediaPoolService mediaPool, ISettingsService settingsService, INavigationService navigationService, UndoService undoService)
     {
         _mediaPool = mediaPool;
         _settingsService = settingsService;
+        _navigationService = navigationService;
         _undoService = undoService;
         _mediaPool.MediaPoolChanged += OnMediaPoolChanged;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
@@ -127,6 +147,7 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     public MediaViewModel() : this(
         App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(new PathResolver()),
         App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService(),
+        App.Services?.GetService(typeof(INavigationService)) as INavigationService ?? new NavigationService(),
         App.Services?.GetService(typeof(UndoService)) as UndoService ?? new UndoService())
     {
     }
@@ -144,6 +165,12 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Undo the last media pool operation
     /// </summary>
+    [RelayCommand]
+    private void GoToEdit()
+    {
+        _navigationService.NavigateTo(PageType.Edit);
+    }
+
     [RelayCommand]
     private void Undo()
     {
@@ -168,6 +195,8 @@ public partial class MediaViewModel : ObservableObject, IDisposable
     private void OnMediaPoolChanged(object? sender, EventArgs e)
     {
         RefreshDisplayedItems();
+        OnPropertyChanged(nameof(FooterStatusText));
+        OnPropertyChanged(nameof(HasMedia));
     }
 
     private void OnCurrentSourceChanged(object? sender, MediaItem? item)

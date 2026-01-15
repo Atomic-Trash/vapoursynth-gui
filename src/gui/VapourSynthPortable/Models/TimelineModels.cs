@@ -80,6 +80,10 @@ public partial class TimelineClip : ObservableObject
     [ObservableProperty]
     private ColorGrade? _colorGrade;
 
+    // Restoration applied to the source media
+    [ObservableProperty]
+    private bool _hasRestoration;
+
     /// <summary>
     /// Indicates if the clip has any enabled effects
     /// </summary>
@@ -175,6 +179,7 @@ public partial class TimelineClip : ObservableObject
             Color = Color,
             Volume = Volume,
             IsMuted = IsMuted,
+            HasRestoration = HasRestoration,
             ColorGrade = ColorGrade?.Clone()
         };
 

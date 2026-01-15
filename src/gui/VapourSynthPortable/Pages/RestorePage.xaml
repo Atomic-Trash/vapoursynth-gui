@@ -21,7 +21,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header Bar -->
-        <Border Grid.Row="0" Background="#333" Padding="12,8">
+        <Border Grid.Row="0" Background="{StaticResource CardBackground}" Padding="12,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -45,19 +45,19 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center"
                             Visibility="{Binding HasSource, Converter={StaticResource BoolToVisibilityConverter}}">
                     <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0" ToolTip="Resolution">
-                        <TextBlock Foreground="#AAA" FontSize="10">
+                        <TextBlock Foreground="{StaticResource TextSecondary}" FontSize="10">
                             <Run Text="{Binding SourceWidth}"/>x<Run Text="{Binding SourceHeight}"/>
                         </TextBlock>
                     </Border>
                     <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0" ToolTip="Frame rate">
                         <TextBlock Text="{Binding SourceFps, StringFormat='{}{0:F2} fps'}"
-                                   Foreground="#AAA" FontSize="10"/>
+                                   Foreground="{StaticResource TextSecondary}" FontSize="10"/>
                     </Border>
                     <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0" ToolTip="Duration">
-                        <TextBlock Text="{Binding SourceDuration}" Foreground="#AAA" FontSize="10"/>
+                        <TextBlock Text="{Binding SourceDuration}" Foreground="{StaticResource TextSecondary}" FontSize="10"/>
                     </Border>
                     <Border Background="#2A2A2A" CornerRadius="3" Padding="8,4" Margin="5,0" ToolTip="Video codec">
-                        <TextBlock Text="{Binding SourceCodec}" Foreground="#AAA" FontSize="10"/>
+                        <TextBlock Text="{Binding SourceCodec}" Foreground="{StaticResource TextSecondary}" FontSize="10"/>
                     </Border>
                 </StackPanel>
 
@@ -68,7 +68,7 @@
                             Visibility="{Binding GpuAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal">
                             <Ellipse Width="8" Height="8" Fill="#4ADE80" Margin="0,0,6,0"/>
-                            <TextBlock Text="{Binding GpuName}" Foreground="#AAA" FontSize="10"
+                            <TextBlock Text="{Binding GpuName}" Foreground="{StaticResource TextSecondary}" FontSize="10"
                                        MaxWidth="150" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                     </Border>
@@ -101,7 +101,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Presets Panel -->
-            <Border Grid.Column="0" Background="#252526" Margin="10,10,5,10" CornerRadius="8">
+            <Border Grid.Column="0" Background="{StaticResource SurfaceBackground}" Margin="10,10,5,10" CornerRadius="8">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -109,7 +109,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Background="#2D2D2D" Padding="12,10" CornerRadius="8,8,0,0">
+                    <Border Grid.Row="0" Background="{StaticResource ElevatedBackground}" Padding="12,10" CornerRadius="8,8,0,0">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -127,7 +127,7 @@
                             <Grid Grid.Row="1" Margin="0,10,0,0">
                                 <TextBox x:Name="SearchBox"
                                          Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
-                                         Background="#252526" Foreground="#CCC" BorderBrush="#3A3A3A"
+                                         Background="{StaticResource SurfaceBackground}" Foreground="#CCC" BorderBrush="#3A3A3A"
                                          Padding="28,6,8,6" FontSize="11"
                                          AutomationProperties.AutomationId="PresetSearchBox"
                                          AutomationProperties.Name="Search Presets"
@@ -293,7 +293,7 @@
 
                                     <!-- Icon with glow effect when selected -->
                                     <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8"
-                                            Background="#252526" Margin="0,0,10,0">
+                                            Background="{StaticResource SurfaceBackground}" Margin="0,0,10,0">
                                         <TextBlock Text="{Binding Icon}"
                                                    FontFamily="Segoe MDL2 Assets" FontSize="16"
                                                    Foreground="#0E639C"
@@ -417,7 +417,7 @@
                                             <TextBlock Text="ORIGINAL" Foreground="#9E9E9E" FontSize="9" FontWeight="Bold"
                                                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,8"/>
                                         </Grid>
-                                        <Border Grid.Column="1" Background="#333"/>
+                                        <Border Grid.Column="1" Background="{StaticResource CardBackground}"/>
                                         <Grid Grid.Column="2">
                                             <Image Source="{Binding ProcessedFrame}" Stretch="Uniform"/>
                                             <TextBlock Text="PROCESSED" Foreground="#4ADE80" FontSize="9" FontWeight="Bold"
@@ -489,7 +489,7 @@
                                 <Border Background="#80000000" Visibility="{Binding IsGeneratingPreview, Converter={StaticResource BoolToVisibilityConverter}}">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                                         <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="32"
-                                                   Foreground="#AAA" HorizontalAlignment="Center">
+                                                   Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center">
                                             <TextBlock.RenderTransform>
                                                 <RotateTransform x:Name="LoadingRotate" CenterX="16" CenterY="16"/>
                                             </TextBlock.RenderTransform>
@@ -505,7 +505,7 @@
                                                 </EventTrigger>
                                             </TextBlock.Triggers>
                                         </TextBlock>
-                                        <TextBlock Text="Generating preview..." Foreground="#AAA" FontSize="12"
+                                        <TextBlock Text="Generating preview..." Foreground="{StaticResource TextSecondary}" FontSize="12"
                                                    HorizontalAlignment="Center" Margin="0,10,0,0"/>
                                         <Button Content="Cancel" Command="{Binding CancelPreviewCommand}"
                                                 Style="{StaticResource SecondaryButton}" Margin="0,15,0,0"/>
@@ -581,7 +581,7 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Background="#333" CornerRadius="4" Padding="10,8"
+                                                <Border Background="{StaticResource CardBackground}" CornerRadius="4" Padding="10,8"
                                                         Margin="0,0,8,8">
                                                     <Grid>
                                                         <Grid.RowDefinitions>
@@ -626,7 +626,7 @@
                                                                     AutomationProperties.Name="{Binding DisplayName}"
                                                                     AutomationProperties.HelpText="{Binding Description}"/>
                                                             <TextBlock Grid.Column="1" Text="{Binding CurrentValue, StringFormat=F1}"
-                                                                       Foreground="#CCC" Background="#252526"
+                                                                       Foreground="#CCC" Background="{StaticResource SurfaceBackground}"
                                                                        TextAlignment="Center" Padding="4,2" Margin="6,0,0,0"
                                                                        FontSize="10" VerticalAlignment="Center"/>
                                                         </Grid>
@@ -649,14 +649,14 @@
                                                                     AutomationProperties.Name="{Binding DisplayName}"
                                                                     AutomationProperties.HelpText="{Binding Description}"/>
                                                             <TextBlock Grid.Column="1" Text="{Binding CurrentValue, StringFormat=F0}"
-                                                                       Foreground="#CCC" Background="#252526"
+                                                                       Foreground="#CCC" Background="{StaticResource SurfaceBackground}"
                                                                        TextAlignment="Center" Padding="4,2" Margin="6,0,0,0"
                                                                        FontSize="10" VerticalAlignment="Center"/>
                                                         </Grid>
 
                                                         <!-- Bool Toggle -->
                                                         <CheckBox Grid.Row="1" IsChecked="{Binding CurrentValue, Mode=TwoWay}"
-                                                                  Foreground="#AAA" FontSize="10"
+                                                                  Foreground="{StaticResource TextSecondary}" FontSize="10"
                                                                   Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Bool}"
                                                                   AutomationProperties.Name="{Binding DisplayName}"
                                                                   AutomationProperties.HelpText="{Binding Description}"/>
@@ -664,7 +664,7 @@
                                                         <!-- Enum ComboBox -->
                                                         <ComboBox Grid.Row="1" ItemsSource="{Binding EnumValues}"
                                                                   SelectedItem="{Binding CurrentValue, Mode=TwoWay}"
-                                                                  Background="#252526" Foreground="#CCC" BorderBrush="#444"
+                                                                  Background="{StaticResource SurfaceBackground}" Foreground="#CCC" BorderBrush="#444"
                                                                   Visibility="{Binding Type, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Enum}"
                                                                   FontSize="10"
                                                                   AutomationProperties.Name="{Binding DisplayName}"
@@ -681,7 +681,7 @@
             </Grid>
 
             <!-- Queue Panel -->
-            <Border Grid.Column="2" Background="#252526" Margin="5,10,10,10" CornerRadius="8"
+            <Border Grid.Column="2" Background="{StaticResource SurfaceBackground}" Margin="5,10,10,10" CornerRadius="8"
                     AutomationProperties.Name="Processing Queue Panel">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -691,7 +691,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Background="#2D2D2D" Padding="12,10" CornerRadius="8,8,0,0">
+                    <Border Grid.Row="0" Background="{StaticResource ElevatedBackground}" Padding="12,10" CornerRadius="8,8,0,0">
                         <Grid>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="14"
@@ -711,9 +711,9 @@
                                                FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                Foreground="{Binding IsPaused, Converter={StaticResource BoolToPauseColorConverter}}"/>
                                 </Button>
-                                <Border Background="#333" CornerRadius="10" Padding="6,2">
+                                <Border Background="{StaticResource CardBackground}" CornerRadius="10" Padding="6,2">
                                     <TextBlock Text="{Binding JobQueue.Count}"
-                                               Foreground="#AAA" FontSize="10"/>
+                                               Foreground="{StaticResource TextSecondary}" FontSize="10"/>
                                 </Border>
                             </StackPanel>
                         </Grid>
@@ -783,7 +783,7 @@
                                             <!-- Progress bar -->
                                             <Grid Grid.Row="2" Margin="0,4,0,0">
                                                 <ProgressBar Value="{Binding Progress}" Maximum="100"
-                                                             Height="3" Background="#333" Foreground="#0E639C"/>
+                                                             Height="3" Background="{StaticResource CardBackground}" Foreground="#0E639C"/>
                                                 <Grid Margin="0,4,0,0">
                                                     <TextBlock Text="{Binding Progress, StringFormat='{}{0:F0}%'}"
                                                                Foreground="#9E9E9E" FontSize="8"/>
@@ -849,7 +849,7 @@
                     </Border>
 
                     <!-- Queue Controls -->
-                    <Border Grid.Row="3" Background="#2D2D2D" Padding="10" CornerRadius="0,0,8,8">
+                    <Border Grid.Row="3" Background="{StaticResource ElevatedBackground}" Padding="10" CornerRadius="0,0,8,8">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <Button Command="{Binding ClearRestorationCommand}"
                                     ToolTip="Clear restoration settings from current source"
@@ -883,12 +883,11 @@
         <views:NodeEditorView Grid.Row="1" Panel.ZIndex="0"
                               Visibility="{Binding IsSimpleMode, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
 
-        <!-- Status Bar -->
-        <Border Grid.Row="2" Background="#2D2D30" Height="28" Padding="0,2">
-            <Grid Margin="10,0">
-                <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="10"
-                           VerticalAlignment="Center"/>
-            </Grid>
-        </Border>
+        <!-- Workflow Footer -->
+        <controls:WorkflowFooter Grid.Row="2"
+                                 StatusText="{Binding FooterStatusText}"
+                                 NextStepText="Continue to Color"
+                                 NextStepCommand="{Binding GoToColorCommand}"
+                                 ShowNextStep="True"/>
     </Grid>
 </UserControl>

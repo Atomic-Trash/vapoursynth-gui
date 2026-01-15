@@ -49,10 +49,11 @@
             <RowDefinition Height="*" MinHeight="200"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="250" MinHeight="150"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
-        <Border Grid.Row="0" Background="#333" Padding="8,6">
+        <Border Grid.Row="0" Background="{StaticResource CardBackground}" Padding="8,6">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
                     <Button Content="Add" Command="{Binding AddToTimelineCommand}"
@@ -97,7 +98,7 @@
                             <ToolTip>
                                 <StackPanel>
                                     <TextBlock Text="Undo (Ctrl+Z)" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding UndoDescription}" Foreground="#9E9E9E"
+                                    <TextBlock Text="{Binding UndoDescription}" Foreground="{StaticResource TextMuted}"
                                                Visibility="{Binding CanUndo, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                 </StackPanel>
                             </ToolTip>
@@ -111,7 +112,7 @@
                             <ToolTip>
                                 <StackPanel>
                                     <TextBlock Text="Redo (Ctrl+Y)" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding RedoDescription}" Foreground="#9E9E9E"
+                                    <TextBlock Text="{Binding RedoDescription}" Foreground="{StaticResource TextMuted}"
                                                Visibility="{Binding CanRedo, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                 </StackPanel>
                             </ToolTip>
@@ -172,7 +173,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Media Pool and Transitions Panel -->
-            <Border Grid.Column="0" Background="#252526" Margin="10,10,5,5">
+            <Border Grid.Column="0" Background="{StaticResource SurfaceBackground}" Margin="10,10,5,5">
                 <TabControl Background="Transparent" BorderThickness="0">
                     <TabControl.Resources>
                         <Style TargetType="TabItem">
@@ -206,50 +207,87 @@
                     <!-- Media Tab -->
                     <TabItem Header="Media">
                         <Grid>
-                            <ListBox ItemsSource="{Binding MediaPool}"
-                                     AutomationProperties.AutomationId="MediaPoolList"
-                                     SelectedItem="{Binding SelectedMediaItem}"
-                                     Background="Transparent" BorderThickness="0"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                <ListBox.ItemTemplate>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Bin Selector -->
+                            <ComboBox Grid.Row="0" ItemsSource="{Binding Bins}"
+                                      AutomationProperties.AutomationId="BinSelector"
+                                      SelectedItem="{Binding SelectedBin}"
+                                      Background="{StaticResource ElevatedBackground}"
+                                      Foreground="#CCC" BorderThickness="0"
+                                      Margin="8,8,8,4" Padding="8,6">
+                                <ComboBox.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Padding="6,4" Margin="2" Background="#2A2A2A"
-                                                CornerRadius="3" BorderBrush="#3A3A3A" BorderThickness="1"
-                                                AllowDrop="False" MouseMove="MediaItem_MouseMove">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="40"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-
-                                                <!-- Thumbnail -->
-                                                <Border Grid.Column="0" Background="#1A1A1A" CornerRadius="2"
-                                                        Width="36" Height="24">
-                                                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
-                                                </Border>
-
-                                                <StackPanel Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Name}" Foreground="#DDD" FontSize="10"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               ToolTip="{Binding Name}"/>
-                                                    <TextBlock Text="{Binding DurationFormatted}" Foreground="#9E9E9E" FontSize="9"/>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets"
+                                                       Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding Name}" Foreground="#CCC" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding TotalItemCount, StringFormat=' ({0})'}"
+                                                       Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" FontSize="10"/>
+                                        </StackPanel>
                                     </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
 
-                            <!-- Empty state -->
-                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                                        Visibility="{Binding MediaPool.Count, Converter={StaticResource CountToVis}}">
-                                <TextBlock Text="&#xE8B7;" FontFamily="{StaticResource IconFont}" FontSize="24"
-                                           Foreground="#444" HorizontalAlignment="Center"/>
-                                <TextBlock Text="No media" Foreground="#9E9E9E" FontSize="11"
-                                           HorizontalAlignment="Center" Margin="0,8,0,0"/>
-                                <TextBlock Text="Import media from the Media page" Foreground="#666" FontSize="10"
-                                           HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                            </StackPanel>
+                            <!-- Media Items List -->
+                            <Grid Grid.Row="1">
+                                <ListBox ItemsSource="{Binding DisplayedMediaItems}"
+                                         AutomationProperties.AutomationId="MediaPoolList"
+                                         SelectedItem="{Binding SelectedMediaItem}"
+                                         Background="Transparent" BorderThickness="0"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Padding="6,4" Margin="2" Background="#2A2A2A"
+                                                    CornerRadius="3" BorderBrush="#3A3A3A" BorderThickness="1"
+                                                    AllowDrop="False" MouseMove="MediaItem_MouseMove">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="40"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- Thumbnail -->
+                                                    <Border Grid.Column="0" Background="#1A1A1A" CornerRadius="2"
+                                                            Width="36" Height="24">
+                                                        <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
+                                                    </Border>
+
+                                                    <StackPanel Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" Foreground="#DDD" FontSize="10"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   ToolTip="{Binding Name}"/>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="{Binding DurationFormatted}" Foreground="{StaticResource TextMuted}" FontSize="9"/>
+                                                            <!-- Restoration badge -->
+                                                            <Border Background="#4ADE80" CornerRadius="2" Padding="3,0" Margin="4,0,0,0"
+                                                                    ToolTip="Restoration Applied"
+                                                                    Visibility="{Binding HasRestoration, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                                <TextBlock Text="&#xE773;" FontFamily="Segoe MDL2 Assets"
+                                                                           Foreground="#1A3D2A" FontSize="7"/>
+                                                            </Border>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <!-- Empty state -->
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                            Visibility="{Binding MediaPool.Count, Converter={StaticResource CountToVis}}">
+                                    <TextBlock Text="&#xE8B7;" FontFamily="{StaticResource IconFont}" FontSize="24"
+                                               Foreground="#444" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="No media" Foreground="{StaticResource TextMuted}" FontSize="11"
+                                               HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                                    <TextBlock Text="Import media from the Import page" Foreground="#666" FontSize="10"
+                                               HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Grid>
                         </Grid>
                     </TabItem>
 
@@ -275,7 +313,7 @@
                     </Grid.RowDefinitions>
 
                     <Border Grid.Row="0" Background="#2A2A2A" Padding="8,5">
-                        <TextBlock Text="Source" Foreground="#AAA" FontSize="11" FontWeight="SemiBold"/>
+                        <TextBlock Text="Source" Foreground="{StaticResource TextSecondary}" FontSize="11" FontWeight="SemiBold"/>
                     </Border>
 
                     <!-- Preview area -->
@@ -289,7 +327,7 @@
                                     Visibility="{Binding SourceMonitorItem, Converter={StaticResource NullToVis}}">
                             <TextBlock Text="&#xE714;" FontFamily="{StaticResource IconFont}" FontSize="36"
                                        Foreground="#333" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Select media from pool" FontSize="11" Foreground="#9E9E9E"
+                            <TextBlock Text="Select media from pool" FontSize="11" Foreground="{StaticResource TextMuted}"
                                        HorizontalAlignment="Center" Margin="0,10,0,0"/>
                         </StackPanel>
                     </Grid>
@@ -305,14 +343,14 @@
 
                             <Button Grid.Column="0" Content="I" ToolTip="Set In Point (I)"
                                     Command="{Binding SetInPointCommand}"
-                                    Width="24" Height="22" Background="#333" Foreground="#AAA"
+                                    Width="24" Height="22" Background="{StaticResource CardBackground}" Foreground="{StaticResource TextSecondary}"
                                     BorderThickness="0"/>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
                                 <Button Command="{Binding StepBackwardCommand}"
-                                        Width="28" Height="22" Background="#333"
+                                        Width="28" Height="22" Background="{StaticResource CardBackground}"
                                         BorderThickness="0" ToolTip="Step back">
-                                    <TextBlock Text="&#xE892;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="#AAA"/>
+                                    <TextBlock Text="&#xE892;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                                 </Button>
                                 <Button Command="{Binding PlayCommand}"
                                         Width="32" Height="22" Background="#0E639C"
@@ -320,15 +358,15 @@
                                     <TextBlock Text="&#xE768;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="#FFF"/>
                                 </Button>
                                 <Button Command="{Binding StepForwardCommand}"
-                                        Width="28" Height="22" Background="#333"
+                                        Width="28" Height="22" Background="{StaticResource CardBackground}"
                                         BorderThickness="0" ToolTip="Step forward">
-                                    <TextBlock Text="&#xE893;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="#AAA"/>
+                                    <TextBlock Text="&#xE893;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                                 </Button>
                             </StackPanel>
 
                             <Button Grid.Column="2" Content="O" ToolTip="Set Out Point (O)"
                                     Command="{Binding SetOutPointCommand}"
-                                    Width="24" Height="22" Background="#333" Foreground="#AAA"
+                                    Width="24" Height="22" Background="{StaticResource CardBackground}" Foreground="{StaticResource TextSecondary}"
                                     BorderThickness="0"/>
                         </Grid>
                     </Border>
@@ -336,7 +374,7 @@
             </Border>
 
             <!-- Divider -->
-            <GridSplitter Grid.Column="2" Width="4" Background="#333"
+            <GridSplitter Grid.Column="2" Width="4" Background="{StaticResource CardBackground}"
                           VerticalAlignment="Stretch" HorizontalAlignment="Center"
                           Margin="0,10,0,5"/>
 
@@ -351,7 +389,7 @@
 
                     <Border Grid.Row="0" Background="#2A2A2A" Padding="8,5">
                         <Grid>
-                            <TextBlock Text="Program" Foreground="#AAA" FontSize="11" FontWeight="SemiBold"/>
+                            <TextBlock Text="Program" Foreground="{StaticResource TextSecondary}" FontSize="11" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding Timeline.PlayheadTimecode}" Foreground="#0E639C"
                                        FontSize="11" FontFamily="Consolas" HorizontalAlignment="Right"/>
                         </Grid>
@@ -373,7 +411,7 @@
                                        MaxWidth="480" MaxHeight="270"
                                        Stretch="Uniform"/>
                                 <TextBlock Text="Scrubbing..."
-                                           Foreground="#9E9E9E" FontSize="10"
+                                           Foreground="{StaticResource TextMuted}" FontSize="10"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            Visibility="{Binding ScrubPreviewFrame, Converter={StaticResource NullToVis}}"/>
@@ -385,7 +423,7 @@
                                     Visibility="{Binding Timeline.HasClips, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                             <TextBlock Text="&#xE8B8;" FontFamily="{StaticResource IconFont}" FontSize="36"
                                        Foreground="#333" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Add clips to timeline" FontSize="11" Foreground="#9E9E9E"
+                            <TextBlock Text="Add clips to timeline" FontSize="11" Foreground="{StaticResource TextMuted}"
                                        HorizontalAlignment="Center" Margin="0,10,0,0"/>
                             <TextBlock Text="{Binding Timeline.DurationFormatted, StringFormat='Duration: {0}'}"
                                        FontSize="10" Foreground="#444"
@@ -397,14 +435,14 @@
                     <Border Grid.Row="2" Background="#2A2A2A" Padding="8,5">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <Button Command="{Binding GoToStartCommand}"
-                                    Width="28" Height="22" Background="#333"
+                                    Width="28" Height="22" Background="{StaticResource CardBackground}"
                                     BorderThickness="0" ToolTip="Go to start">
-                                <TextBlock Text="&#xE8A7;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="#AAA"/>
+                                <TextBlock Text="&#xE8A7;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                             </Button>
                             <Button Command="{Binding StepBackwardCommand}"
-                                    Width="28" Height="22" Background="#333"
+                                    Width="28" Height="22" Background="{StaticResource CardBackground}"
                                     BorderThickness="0" ToolTip="Step back">
-                                <TextBlock Text="&#xE892;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="#AAA"/>
+                                <TextBlock Text="&#xE892;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                             </Button>
                             <Button x:Name="PlayButton"
                                     AutomationProperties.AutomationId="PlayButton"
@@ -415,19 +453,19 @@
                             </Button>
                             <Button AutomationProperties.AutomationId="StopButton"
                                     Command="{Binding StopCommand}"
-                                    Width="28" Height="22" Background="#333"
+                                    Width="28" Height="22" Background="{StaticResource CardBackground}"
                                     BorderThickness="0" ToolTip="Stop">
-                                <TextBlock Text="&#xE71A;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="#AAA"/>
+                                <TextBlock Text="&#xE71A;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                             </Button>
                             <Button Command="{Binding StepForwardCommand}"
-                                    Width="28" Height="22" Background="#333"
+                                    Width="28" Height="22" Background="{StaticResource CardBackground}"
                                     BorderThickness="0" ToolTip="Step forward">
-                                <TextBlock Text="&#xE893;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="#AAA"/>
+                                <TextBlock Text="&#xE893;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                             </Button>
                             <Button Command="{Binding GoToEndCommand}"
-                                    Width="28" Height="22" Background="#333"
+                                    Width="28" Height="22" Background="{StaticResource CardBackground}"
                                     BorderThickness="0" ToolTip="Go to end">
-                                <TextBlock Text="&#xE8A8;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="#AAA"/>
+                                <TextBlock Text="&#xE8A8;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                             </Button>
                         </StackPanel>
                     </Border>
@@ -436,7 +474,7 @@
         </Grid>
 
         <!-- Timeline Splitter -->
-        <GridSplitter Grid.Row="2" Height="5" Background="#333"
+        <GridSplitter Grid.Row="2" Height="5" Background="{StaticResource CardBackground}"
                       HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
 
         <!-- Timeline and Keyframe Editor -->
@@ -450,7 +488,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Marker Panel -->
-            <Border Grid.Column="0" Background="#252526"
+            <Border Grid.Column="0" Background="{StaticResource SurfaceBackground}"
                     Visibility="{Binding ShowMarkerPanel, Converter={StaticResource BoolToVisibilityConverter}}">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -462,7 +500,7 @@
                     <!-- Marker Panel Header -->
                     <Border Grid.Row="0" Background="#2A2A2A" Padding="8,6">
                         <Grid>
-                            <TextBlock Text="Markers" Foreground="#AAA" FontSize="11" FontWeight="SemiBold"/>
+                            <TextBlock Text="Markers" Foreground="{StaticResource TextSecondary}" FontSize="11" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding Timeline.Markers.Count, StringFormat=({0})}"
                                        Foreground="#666" FontSize="10"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"/>
@@ -499,7 +537,7 @@
                                         <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                             <TextBlock Text="{Binding Name}" Foreground="#DDD" FontSize="10"
                                                        TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Foreground="#9E9E9E" FontSize="9" FontFamily="Consolas">
+                                            <TextBlock Foreground="{StaticResource TextMuted}" FontSize="9" FontFamily="Consolas">
                                                 <TextBlock.Text>
                                                     <MultiBinding StringFormat="{}{0:D5}">
                                                         <Binding Path="Frame"/>
@@ -518,7 +556,7 @@
                                 Visibility="{Binding Timeline.Markers.Count, Converter={StaticResource CountToVis}}">
                         <TextBlock Text="&#xED63;" FontFamily="{StaticResource IconFont}" FontSize="20"
                                    Foreground="#444" HorizontalAlignment="Center"/>
-                        <TextBlock Text="No markers" Foreground="#9E9E9E" FontSize="10"
+                        <TextBlock Text="No markers" Foreground="{StaticResource TextMuted}" FontSize="10"
                                    HorizontalAlignment="Center" Margin="0,6,0,0"/>
                         <TextBlock Text="Press M to add" Foreground="#666" FontSize="9"
                                    HorizontalAlignment="Center" Margin="0,2,0,0"/>
@@ -529,21 +567,21 @@
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <Button Command="{Binding PreviousMarkerCommand}"
                                     ToolTip="Previous marker (Ctrl+Left)"
-                                    Width="28" Height="22" Background="#333"
+                                    Width="28" Height="22" Background="{StaticResource CardBackground}"
                                     BorderThickness="0">
-                                <TextBlock Text="&#xE893;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="#AAA"/>
+                                <TextBlock Text="&#xE893;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                             </Button>
                             <Button Command="{Binding NextMarkerCommand}"
                                     ToolTip="Next marker (Ctrl+Right)"
-                                    Width="28" Height="22" Background="#333"
+                                    Width="28" Height="22" Background="{StaticResource CardBackground}"
                                     BorderThickness="0" Margin="4,0">
-                                <TextBlock Text="&#xE892;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="#AAA"/>
+                                <TextBlock Text="&#xE892;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                             </Button>
                             <Button Command="{Binding DeleteMarkerCommand}"
                                     ToolTip="Delete selected marker (Shift+M)"
-                                    Width="28" Height="22" Background="#333"
+                                    Width="28" Height="22" Background="{StaticResource CardBackground}"
                                     BorderThickness="0">
-                                <TextBlock Text="&#xE74D;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="#AAA"/>
+                                <TextBlock Text="&#xE74D;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                             </Button>
                         </StackPanel>
                     </Border>
@@ -551,7 +589,7 @@
             </Border>
 
             <!-- Marker Panel Splitter -->
-            <GridSplitter Grid.Column="1" Width="4" Background="#333"
+            <GridSplitter Grid.Column="1" Width="4" Background="{StaticResource CardBackground}"
                           VerticalAlignment="Stretch" HorizontalAlignment="Center"
                           Visibility="{Binding ShowMarkerPanel, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
@@ -564,12 +602,12 @@
             </Border>
 
             <!-- Keyframe Panel Splitter -->
-            <GridSplitter Grid.Column="3" Width="4" Background="#333"
+            <GridSplitter Grid.Column="3" Width="4" Background="{StaticResource CardBackground}"
                           VerticalAlignment="Stretch" HorizontalAlignment="Center"
                           Visibility="{Binding ShowKeyframePanel, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
             <!-- Keyframe Editor Panel -->
-            <Border Grid.Column="4" Background="#252526"
+            <Border Grid.Column="4" Background="{StaticResource SurfaceBackground}"
                     Visibility="{Binding ShowKeyframePanel, Converter={StaticResource BoolToVisibilityConverter}}">
                 <controls:KeyframeEditorControl
                     SelectedEffect="{Binding SelectedEffect}"
@@ -580,7 +618,7 @@
 
         <!-- Audio Mixer Panel -->
         <Border Grid.Row="3" VerticalAlignment="Bottom" Margin="10,0,10,30"
-                Background="#252526" Height="{Binding MixerPanelHeight}"
+                Background="{StaticResource SurfaceBackground}" Height="{Binding MixerPanelHeight}"
                 Visibility="{Binding ShowMixerPanel, Converter={StaticResource BoolToVisibilityConverter}}">
             <Grid>
                 <Grid.RowDefinitions>
@@ -591,7 +629,7 @@
                 <!-- Mixer Header -->
                 <Border Grid.Row="0" Background="#2A2A2A" Padding="10,4">
                     <Grid>
-                        <TextBlock Text="Audio Mixer" Foreground="#AAA" FontSize="11" FontWeight="SemiBold"
+                        <TextBlock Text="Audio Mixer" Foreground="{StaticResource TextSecondary}" FontSize="11" FontWeight="SemiBold"
                                    VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Mute All" Command="{Binding MuteAllTracksCommand}"
@@ -622,7 +660,7 @@
                                         </Grid.RowDefinitions>
 
                                         <!-- Track Name -->
-                                        <TextBlock Grid.Row="0" Text="{Binding Name}" Foreground="#AAA" FontSize="10"
+                                        <TextBlock Grid.Row="0" Text="{Binding Name}" Foreground="{StaticResource TextSecondary}" FontSize="10"
                                                    HorizontalAlignment="Center" Margin="0,2"/>
 
                                         <!-- Volume Slider (vertical) -->
@@ -685,18 +723,25 @@
         <Border Grid.Row="3" VerticalAlignment="Bottom"
                 Background="#2D2D30" Height="22" Margin="10,0,10,10">
             <Grid Margin="10,0">
-                <TextBlock Text="{Binding StatusText}" Foreground="#AAA" FontSize="10"
+                <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource TextSecondary}" FontSize="10"
                            VerticalAlignment="Center"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <TextBlock Text="Playhead: " Foreground="#9E9E9E" FontSize="10"/>
-                    <TextBlock Text="{Binding Timeline.PlayheadTimecode}" Foreground="#AAA"
+                    <TextBlock Text="Playhead: " Foreground="{StaticResource TextMuted}" FontSize="10"/>
+                    <TextBlock Text="{Binding Timeline.PlayheadTimecode}" Foreground="{StaticResource TextSecondary}"
                                FontSize="10" FontFamily="Consolas"/>
                 </StackPanel>
             </Grid>
         </Border>
 
+        <!-- Workflow Footer -->
+        <controls:WorkflowFooter Grid.Row="4"
+                                 StatusText="{Binding FooterStatusText}"
+                                 NextStepText="Continue to Restore"
+                                 NextStepCommand="{Binding GoToRestoreCommand}"
+                                 ShowNextStep="{Binding HasTimelineContent}"/>
+
         <!-- Loading Overlay -->
-        <Grid Grid.RowSpan="4"
+        <Grid Grid.RowSpan="5"
               Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
               Background="#CC1A1A1A"
               Panel.ZIndex="1000"
@@ -706,9 +751,9 @@
                              Width="200"
                              Height="4"
                              Foreground="{StaticResource PrimaryBrush}"
-                             Background="#333"/>
+                             Background="{StaticResource CardBackground}"/>
                 <TextBlock Text="{Binding LoadingMessage}"
-                           Foreground="#AAA"
+                           Foreground="{StaticResource TextSecondary}"
                            FontSize="14"
                            Margin="0,12,0,0"
                            HorizontalAlignment="Center"/>

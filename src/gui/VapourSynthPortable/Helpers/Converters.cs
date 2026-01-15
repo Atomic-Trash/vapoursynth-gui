@@ -736,3 +736,28 @@ public class StringToBooleanConverter : IValueConverter
         return "False";
     }
 }
+
+/// <summary>
+/// Converts export source type string to Segoe MDL2 icon
+/// </summary>
+public class SourceTypeToIconConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string sourceType)
+        {
+            return sourceType switch
+            {
+                "Timeline" => "\uE8A1",      // Edit icon for timeline
+                "Source File" => "\uE8B7",   // Document icon for file
+                _ => "\uE8B7"                // Default to document
+            };
+        }
+        return "\uE8B7";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return Binding.DoNothing;
+    }
+}

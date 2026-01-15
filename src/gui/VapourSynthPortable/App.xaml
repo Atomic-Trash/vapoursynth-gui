@@ -11,6 +11,7 @@
                 <ResourceDictionary Source="Styles/Buttons.xaml"/>
                 <ResourceDictionary Source="Styles/FormControls.xaml"/>
                 <ResourceDictionary Source="Styles/Cards.xaml"/>
+                <ResourceDictionary Source="Styles/Panels.xaml"/>
                 <!-- Accessibility -->
                 <ResourceDictionary Source="Styles/HighContrast.xaml"/>
             </ResourceDictionary.MergedDictionaries>
@@ -54,6 +55,7 @@
             <helpers:StringToDoubleConverter x:Key="StringToDoubleConverter"/>
             <helpers:StringToBooleanConverter x:Key="StringToBooleanConverter"/>
             <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+            <helpers:SourceTypeToIconConverter x:Key="SourceTypeToIconConverter"/>
 
             <!-- ═══════════════════════════════════════════════════════════════════════════
                  FONTS

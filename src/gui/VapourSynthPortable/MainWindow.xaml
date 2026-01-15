@@ -10,12 +10,12 @@
         WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
-        <!-- Page Navigation Button Style (uses design tokens) -->
+        <!-- Page Navigation Button Style with Step Number (uses design tokens) -->
         <Style x:Key="NavButton" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
             <Setter Property="FontSize" Value="{StaticResource FontSizeBodyLarge}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="20,12"/>
+            <Setter Property="Padding" Value="16,10"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -23,7 +23,16 @@
                         <Border x:Name="border" Background="Transparent"
                                 CornerRadius="{StaticResource RadiusS}"
                                 Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Border x:Name="stepBadge" Width="20" Height="20" CornerRadius="10"
+                                        Background="{StaticResource PanelBackground}" Margin="0,0,8,0">
+                                    <TextBlock x:Name="stepNumber" Text="{TemplateBinding Tag}"
+                                               FontSize="11" FontWeight="Bold"
+                                               Foreground="{StaticResource TextSecondary}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ContentPresenter VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -32,7 +41,9 @@
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-                                <Setter TargetName="border" Property="Background" Value="{StaticResource ElevatedBackground}"/>
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource SelectionBrush}"/>
+                                <Setter TargetName="stepBadge" Property="Background" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="stepNumber" Property="Foreground" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -153,46 +164,58 @@
                 <!-- Page Navigation -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center"
                             AutomationProperties.AutomationId="NavigationPanel">
-                    <RadioButton x:Name="NavMedia" Content="Media" Style="{StaticResource NavButton}"
-                                 GroupName="PageNav" Checked="NavButton_Checked"
+                    <RadioButton x:Name="NavMedia" Content="Import" Tag="1" Style="{StaticResource NavButton}"
+                                 GroupName="PageNav" IsChecked="True" Checked="NavButton_Checked"
                                  AutomationProperties.AutomationId="MediaNavButton"
-                                 ToolTip="Import and manage media files"/>
-                    <RadioButton x:Name="NavEdit" Content="Edit" Style="{StaticResource NavButton}"
+                                 ToolTip="Step 1: Import and manage media files"/>
+                    <RadioButton x:Name="NavEdit" Content="Edit" Tag="2" Style="{StaticResource NavButton}"
                                  GroupName="PageNav" Checked="NavButton_Checked"
                                  AutomationProperties.AutomationId="EditNavButton"
-                                 ToolTip="Timeline editing and clip arrangement"/>
-                    <RadioButton x:Name="NavRestore" Content="Restore" Style="{StaticResource NavButton}"
-                                 GroupName="PageNav" IsChecked="True" Checked="NavButton_Checked"
+                                 ToolTip="Step 2: Timeline editing and clip arrangement"/>
+                    <RadioButton x:Name="NavRestore" Content="Restore" Tag="3" Style="{StaticResource NavButton}"
+                                 GroupName="PageNav" Checked="NavButton_Checked"
                                  AutomationProperties.AutomationId="RestoreNavButton"
-                                 ToolTip="AI-powered video restoration and enhancement"/>
-                    <RadioButton x:Name="NavColor" Content="Color" Style="{StaticResource NavButton}"
+                                 ToolTip="Step 3: AI-powered video restoration and enhancement"/>
+                    <RadioButton x:Name="NavColor" Content="Color" Tag="4" Style="{StaticResource NavButton}"
                                  GroupName="PageNav" Checked="NavButton_Checked"
                                  AutomationProperties.AutomationId="ColorNavButton"
-                                 ToolTip="Color grading and correction tools"/>
-                    <RadioButton x:Name="NavExport" Content="Export" Style="{StaticResource NavButton}"
+                                 ToolTip="Step 4: Color grading and correction tools"/>
+                    <RadioButton x:Name="NavExport" Content="Export" Tag="5" Style="{StaticResource NavButton}"
                                  GroupName="PageNav" Checked="NavButton_Checked"
                                  AutomationProperties.AutomationId="ExportNavButton"
-                                 ToolTip="Render and export final video"/>
+                                 ToolTip="Step 5: Render and export final video"/>
                 </StackPanel>
 
                 <!-- Right Side Controls -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="15,8">
-                    <RadioButton x:Name="NavSettings" Content="Settings" Style="{StaticResource NavButton}"
-                                 GroupName="PageNav" Checked="NavButton_Checked"
-                                 AutomationProperties.AutomationId="SettingsNavButton"
-                                 ToolTip="Application settings and preferences"/>
+                    <Button x:Name="SettingsButton" Click="SettingsButton_Click"
+                            ToolTip="Settings (Ctrl+,)"
+                            Background="Transparent" BorderThickness="0"
+                            Padding="10,8" Cursor="Hand"
+                            AutomationProperties.AutomationId="SettingsButton">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- Page Content Area -->
         <Grid Grid.Row="1">
-            <pages:MediaPage x:Name="PageMedia" Visibility="Collapsed"/>
+            <pages:MediaPage x:Name="PageMedia" Visibility="Visible"/>
             <pages:EditPage x:Name="PageEdit" Visibility="Collapsed"/>
-            <pages:RestorePage x:Name="PageRestore" Visibility="Visible"/>
+            <pages:RestorePage x:Name="PageRestore" Visibility="Collapsed"/>
             <pages:ColorPage x:Name="PageColor" Visibility="Collapsed"/>
             <pages:ExportPage x:Name="PageExport" Visibility="Collapsed"/>
-            <pages:SettingsPage x:Name="PageSettings" Visibility="Collapsed"/>
 
             <!-- Toast Notification Overlay -->
             <controls:ToastNotification x:Name="ToastNotification"

@@ -125,9 +125,9 @@
                                             </EventTrigger>
                                         </Border.Triggers>
                                         <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="16"
-                                                   Foreground="#9E9E9E" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                   Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
-                                    <TextBlock Text="Loading..." Foreground="#9E9E9E" FontSize="9" Margin="0,4,0,0"
+                                    <TextBlock Text="Loading..." Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,4,0,0"
                                                HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
@@ -140,7 +140,7 @@
                                         <TextBlock Text="&#xE783;" FontFamily="Segoe MDL2 Assets" FontSize="16"
                                                    Foreground="#C75050" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
-                                    <TextBlock Text="{Binding ThumbnailErrorMessage}" Foreground="#AAA" FontSize="9" Margin="0,4,0,0"
+                                    <TextBlock Text="{Binding ThumbnailErrorMessage}" Foreground="{StaticResource TextSecondary}" FontSize="9" Margin="0,4,0,0"
                                                HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="140"/>
                                 </StackPanel>
                             </Border>
@@ -169,7 +169,7 @@
                     <StackPanel Grid.Row="1" Margin="8,6">
                         <TextBlock Text="{Binding Name}" Foreground="#EEE" FontSize="11"
                                    TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}"/>
-                        <TextBlock Foreground="#AAA" FontSize="9" Margin="0,2,0,0">
+                        <TextBlock Foreground="{StaticResource TextSecondary}" FontSize="9" Margin="0,2,0,0">
                             <Run Text="{Binding Resolution, Mode=OneWay}"/>
                             <Run Text=" "/>
                             <Run Text="{Binding FileSizeFormatted, Mode=OneWay}"/>
@@ -283,7 +283,7 @@
                                         </EventTrigger>
                                     </Border.Triggers>
                                     <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="10"
-                                               Foreground="#9E9E9E" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                               Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                             </Border>
 
@@ -306,19 +306,19 @@
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0">
                         <TextBlock Text="{Binding Name}" Foreground="#EEE" FontSize="12"
                                    TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{Binding Codec}" Foreground="#9E9E9E" FontSize="10"/>
+                        <TextBlock Text="{Binding Codec}" Foreground="{StaticResource TextMuted}" FontSize="10"/>
                     </StackPanel>
 
                     <!-- Resolution -->
-                    <TextBlock Grid.Column="2" Text="{Binding Resolution}" Foreground="#AAA"
+                    <TextBlock Grid.Column="2" Text="{Binding Resolution}" Foreground="{StaticResource TextSecondary}"
                                VerticalAlignment="Center" FontSize="11"/>
 
                     <!-- Duration -->
-                    <TextBlock Grid.Column="3" Text="{Binding DurationFormatted}" Foreground="#AAA"
+                    <TextBlock Grid.Column="3" Text="{Binding DurationFormatted}" Foreground="{StaticResource TextSecondary}"
                                VerticalAlignment="Center" FontSize="11"/>
 
                     <!-- Size -->
-                    <TextBlock Grid.Column="4" Text="{Binding FileSizeFormatted}" Foreground="#AAA"
+                    <TextBlock Grid.Column="4" Text="{Binding FileSizeFormatted}" Foreground="{StaticResource TextSecondary}"
                                VerticalAlignment="Center" FontSize="11"/>
                 </Grid>
             </Border>
@@ -342,7 +342,7 @@
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
-        <Border Grid.Row="0" Background="#252526" Padding="15,10">
+        <Border Grid.Row="0" Background="{StaticResource SurfaceBackground}" Padding="15,10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -385,7 +385,7 @@
 
                         <!-- Search icon -->
                         <TextBlock Grid.Column="0" Text="&#xE721;" FontFamily="Segoe MDL2 Assets"
-                                   Foreground="#9E9E9E" FontSize="14" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                   Foreground="{StaticResource TextMuted}" FontSize="14" VerticalAlignment="Center" Margin="10,0,0,0"/>
 
                         <TextBox x:Name="SearchBox" Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                  AutomationProperties.AutomationId="MediaSearchBox"
@@ -393,7 +393,7 @@
                                  Foreground="#CCC" Padding="8,8" VerticalAlignment="Center"/>
 
                         <!-- Placeholder text -->
-                        <TextBlock Grid.Column="1" Text="Search name, codec, resolution..." Foreground="#9E9E9E" Margin="8,0"
+                        <TextBlock Grid.Column="1" Text="Search name, codec, resolution..." Foreground="{StaticResource TextMuted}" Margin="8,0"
                                    VerticalAlignment="Center" IsHitTestVisible="False">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
@@ -422,7 +422,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </Button.Style>
-                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" Foreground="#9E9E9E" FontSize="10"/>
+                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource TextMuted}" FontSize="10"/>
                         </Button>
                     </Grid>
                 </Border>
@@ -432,11 +432,11 @@
                     <RadioButton Content="Grid" GroupName="ViewMode" IsChecked="True"
                                  AutomationProperties.AutomationId="GridViewButton"
                                  Command="{Binding SetViewModeCommand}" CommandParameter="Grid"
-                                 Foreground="#AAA" Margin="0,0,10,0"/>
+                                 Foreground="{StaticResource TextSecondary}" Margin="0,0,10,0"/>
                     <RadioButton Content="List" GroupName="ViewMode"
                                  AutomationProperties.AutomationId="ListViewButton"
                                  Command="{Binding SetViewModeCommand}" CommandParameter="List"
-                                 Foreground="#AAA"/>
+                                 Foreground="{StaticResource TextSecondary}"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -461,7 +461,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Bins Panel -->
-            <Border Grid.Column="0" Background="#252526" CornerRadius="8" Margin="0,0,10,0">
+            <Border Grid.Column="0" Background="{StaticResource SurfaceBackground}" CornerRadius="8" Margin="0,0,10,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -505,7 +505,7 @@
                                     </Grid.ContextMenu>
 
                                     <TextBlock Grid.Column="0" Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets"
-                                               Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                               Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
                                     <!-- Normal display mode -->
                                     <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#CCC"
@@ -521,7 +521,7 @@
                                              KeyDown="BinNameTextBox_KeyDown"
                                              LostFocus="BinNameTextBox_LostFocus"/>
 
-                                    <TextBlock Grid.Column="2" Text="{Binding TotalItemCount}" Foreground="#9E9E9E"
+                                    <TextBlock Grid.Column="2" Text="{Binding TotalItemCount}" Foreground="{StaticResource TextMuted}"
                                                VerticalAlignment="Center" FontSize="11"/>
                                 </Grid>
                             </DataTemplate>
@@ -545,20 +545,20 @@
             </Border>
 
             <!-- Media Grid/List -->
-            <Border Grid.Column="1" Background="#252526" CornerRadius="8" Margin="5,0">
+            <Border Grid.Column="1" Background="{StaticResource SurfaceBackground}" CornerRadius="8" Margin="5,0">
                 <Grid>
                     <!-- Empty state -->
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                                 Visibility="{Binding DisplayedItems.Count, Converter={StaticResource CountToVis}}">
                         <!-- Icon -->
-                        <Border Width="64" Height="64" CornerRadius="32" Background="#2D2D2D" Margin="0,0,0,16">
+                        <Border Width="64" Height="64" CornerRadius="32" Background="{StaticResource ElevatedBackground}" Margin="0,0,0,16">
                             <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="28"
-                                       Foreground="#9E9E9E" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                       Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <TextBlock Text="{Binding EmptyStateTitle}" FontSize="16" Foreground="#AAA"
+                        <TextBlock Text="{Binding EmptyStateTitle}" FontSize="16" Foreground="{StaticResource TextSecondary}"
                                    HorizontalAlignment="Center" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding EmptyStateSubtitle}" FontSize="12"
-                                   Foreground="#9E9E9E" HorizontalAlignment="Center" Margin="0,8,0,16"
+                                   Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,8,0,16"
                                    TextWrapping="Wrap" MaxWidth="300" TextAlignment="Center"/>
                         <!-- Import button in empty state (only when no media) -->
                         <Button Content="Import Media" Style="{StaticResource PrimaryButton}"
@@ -569,7 +569,7 @@
 
                     <!-- Loading indicator with progress -->
                     <Border VerticalAlignment="Center" HorizontalAlignment="Center"
-                            Background="#2D2D2D" CornerRadius="8" Padding="24,16"
+                            Background="{StaticResource ElevatedBackground}" CornerRadius="8" Padding="24,16"
                             Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
                         <StackPanel Width="200">
                             <TextBlock Text="{Binding ImportProgressText}" FontSize="13" Foreground="#CCC"
@@ -623,7 +623,7 @@
                         </Grid.RowDefinitions>
 
                         <!-- Column Headers -->
-                        <Border Grid.Row="0" Background="#2D2D2D" Padding="8,6" CornerRadius="4,4,0,0">
+                        <Border Grid.Row="0" Background="{StaticResource ElevatedBackground}" Padding="8,6" CornerRadius="4,4,0,0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="80"/>
@@ -633,13 +633,13 @@
                                     <ColumnDefinition Width="80"/>
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Column="0" Text="" Foreground="#AAA" FontSize="11"/>
+                                <TextBlock Grid.Column="0" Text="" Foreground="{StaticResource TextSecondary}" FontSize="11"/>
 
                                 <Button Grid.Column="1" Command="{Binding SortByColumnCommand}" CommandParameter="Name"
                                         Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Left" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Name" Foreground="#AAA" FontSize="11" FontWeight="SemiBold"/>
-                                        <TextBlock FontFamily="Segoe MDL2 Assets" Foreground="#9E9E9E" FontSize="10" Margin="6,0,0,0"
+                                        <TextBlock Text="Name" Foreground="{StaticResource TextSecondary}" FontSize="11" FontWeight="SemiBold"/>
+                                        <TextBlock FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="6,0,0,0"
                                                    Text="{Binding SortDirection, Converter={StaticResource SortDirectionToArrowConverter}}"
                                                    Visibility="{Binding SortColumn, Converter={StaticResource StringToVisibilityMatchConverter}, ConverterParameter=Name}"/>
                                     </StackPanel>
@@ -648,8 +648,8 @@
                                 <Button Grid.Column="2" Command="{Binding SortByColumnCommand}" CommandParameter="Resolution"
                                         Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Left" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Resolution" Foreground="#AAA" FontSize="11" FontWeight="SemiBold"/>
-                                        <TextBlock FontFamily="Segoe MDL2 Assets" Foreground="#9E9E9E" FontSize="10" Margin="6,0,0,0"
+                                        <TextBlock Text="Resolution" Foreground="{StaticResource TextSecondary}" FontSize="11" FontWeight="SemiBold"/>
+                                        <TextBlock FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="6,0,0,0"
                                                    Text="{Binding SortDirection, Converter={StaticResource SortDirectionToArrowConverter}}"
                                                    Visibility="{Binding SortColumn, Converter={StaticResource StringToVisibilityMatchConverter}, ConverterParameter=Resolution}"/>
                                     </StackPanel>
@@ -658,8 +658,8 @@
                                 <Button Grid.Column="3" Command="{Binding SortByColumnCommand}" CommandParameter="Duration"
                                         Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Left" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Duration" Foreground="#AAA" FontSize="11" FontWeight="SemiBold"/>
-                                        <TextBlock FontFamily="Segoe MDL2 Assets" Foreground="#9E9E9E" FontSize="10" Margin="6,0,0,0"
+                                        <TextBlock Text="Duration" Foreground="{StaticResource TextSecondary}" FontSize="11" FontWeight="SemiBold"/>
+                                        <TextBlock FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="6,0,0,0"
                                                    Text="{Binding SortDirection, Converter={StaticResource SortDirectionToArrowConverter}}"
                                                    Visibility="{Binding SortColumn, Converter={StaticResource StringToVisibilityMatchConverter}, ConverterParameter=Duration}"/>
                                     </StackPanel>
@@ -668,8 +668,8 @@
                                 <Button Grid.Column="4" Command="{Binding SortByColumnCommand}" CommandParameter="Size"
                                         Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Left" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Size" Foreground="#AAA" FontSize="11" FontWeight="SemiBold"/>
-                                        <TextBlock FontFamily="Segoe MDL2 Assets" Foreground="#9E9E9E" FontSize="10" Margin="6,0,0,0"
+                                        <TextBlock Text="Size" Foreground="{StaticResource TextSecondary}" FontSize="11" FontWeight="SemiBold"/>
+                                        <TextBlock FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="6,0,0,0"
                                                    Text="{Binding SortDirection, Converter={StaticResource SortDirectionToArrowConverter}}"
                                                    Visibility="{Binding SortColumn, Converter={StaticResource StringToVisibilityMatchConverter}, ConverterParameter=Size}"/>
                                     </StackPanel>
@@ -762,7 +762,7 @@
                                   ToolTip="Toggle preview panel (P)">
                         <ToggleButton.Template>
                             <ControlTemplate TargetType="ToggleButton">
-                                <Border Background="#252526" CornerRadius="4" Padding="8,6">
+                                <Border Background="{StaticResource SurfaceBackground}" CornerRadius="4" Padding="8,6">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -771,7 +771,7 @@
                                         <TextBlock Grid.Column="0" Text="Preview" FontSize="12" FontWeight="SemiBold"
                                                    Foreground="#F1F1F1" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" FontFamily="Segoe MDL2 Assets" FontSize="10"
-                                                   Foreground="#9E9E9E" VerticalAlignment="Center">
+                                                   Foreground="{StaticResource TextMuted}" VerticalAlignment="Center">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Text" Value="&#xE76C;"/>
@@ -802,7 +802,7 @@
                             <Grid>
                                 <Image Source="{Binding SelectedItem.Thumbnail}" Stretch="Uniform"
                                        RenderOptions.BitmapScalingMode="HighQuality"/>
-                                <TextBlock Text="Select an item to preview" Foreground="#9E9E9E" FontSize="12"
+                                <TextBlock Text="Select an item to preview" Foreground="{StaticResource TextMuted}" FontSize="12"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"
                                            Visibility="{Binding SelectedItem, Converter={StaticResource NullToVis}}"/>
                             </Grid>
@@ -825,7 +825,7 @@
                                                               Margin="8"/>
 
                                 <!-- Audio info bar -->
-                                <Border Grid.Row="1" Background="#252526" Padding="8,6">
+                                <Border Grid.Row="1" Background="{StaticResource SurfaceBackground}" Padding="8,6">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                         <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets"
                                                    Foreground="#4ACF6A" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -850,7 +850,7 @@
                 </Border>
 
                 <!-- Properties Panel -->
-                <Border Grid.Row="3" Background="#252526" CornerRadius="8"
+                <Border Grid.Row="3" Background="{StaticResource SurfaceBackground}" CornerRadius="8"
                         Visibility="{Binding IsPreviewPanelExpanded, Converter={StaticResource BoolToVis}}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="15,10">
                         <StackPanel DataContext="{Binding SelectedItem}">
@@ -873,22 +873,22 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Type" Foreground="#AAA" FontSize="10" Margin="0,3"/>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Type" Foreground="{StaticResource TextSecondary}" FontSize="10" Margin="0,3"/>
                                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MediaType}" Foreground="#CCC" FontSize="10" Margin="0,3"/>
 
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Resolution" Foreground="#AAA" FontSize="10" Margin="0,3"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Resolution" Foreground="{StaticResource TextSecondary}" FontSize="10" Margin="0,3"/>
                                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Resolution}" Foreground="#CCC" FontSize="10" Margin="0,3"/>
 
-                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Duration" Foreground="#AAA" FontSize="10" Margin="0,3"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Duration" Foreground="{StaticResource TextSecondary}" FontSize="10" Margin="0,3"/>
                                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DurationFormatted}" Foreground="#CCC" FontSize="10" Margin="0,3"/>
 
-                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Codec" Foreground="#AAA" FontSize="10" Margin="0,3"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Codec" Foreground="{StaticResource TextSecondary}" FontSize="10" Margin="0,3"/>
                                 <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Codec}" Foreground="#CCC" FontSize="10" Margin="0,3"/>
 
-                                <TextBlock Grid.Row="4" Grid.Column="0" Text="File Size" Foreground="#AAA" FontSize="10" Margin="0,3"/>
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="File Size" Foreground="{StaticResource TextSecondary}" FontSize="10" Margin="0,3"/>
                                 <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding FileSizeFormatted}" Foreground="#CCC" FontSize="10" Margin="0,3"/>
 
-                                <TextBlock Grid.Row="5" Grid.Column="0" Text="Path" Foreground="#AAA" FontSize="10" Margin="0,3"/>
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="Path" Foreground="{StaticResource TextSecondary}" FontSize="10" Margin="0,3"/>
                                 <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding FilePath}" Foreground="#777" FontSize="9"
                                            TextTrimming="CharacterEllipsis" ToolTip="{Binding FilePath}" Margin="0,3"/>
                             </Grid>
@@ -898,40 +898,11 @@
             </Grid>
         </Grid>
 
-        <!-- Status Bar -->
-        <Border Grid.Row="2" Background="#1E1E1E" Padding="15,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="#AAA"/>
-
-                <!-- Selection count badge -->
-                <Border Grid.Column="1" Background="{StaticResource SelectionBrush}" CornerRadius="3" Padding="8,3" Margin="0,0,20,0"
-                        Visibility="{Binding SelectionStatusText, Converter={StaticResource StringToVis}}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE762;" FontFamily="Segoe MDL2 Assets" FontSize="11"
-                                   Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="{Binding SelectionStatusText}" Foreground="{StaticResource TextPrimary}"
-                                   FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
-
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <TextBlock Foreground="#9E9E9E" Margin="0,0,15,0">
-                        <Run Text="{Binding VideoCount, Mode=OneWay}"/> <Run Text="videos"/>
-                    </TextBlock>
-                    <TextBlock Foreground="#9E9E9E" Margin="0,0,15,0">
-                        <Run Text="{Binding AudioCount, Mode=OneWay}"/> <Run Text="audio"/>
-                    </TextBlock>
-                    <TextBlock Foreground="#9E9E9E">
-                        <Run Text="{Binding ImageCount, Mode=OneWay}"/> <Run Text="images"/>
-                    </TextBlock>
-                </StackPanel>
-            </Grid>
-        </Border>
+        <!-- Workflow Footer -->
+        <controls:WorkflowFooter Grid.Row="2"
+                                 StatusText="{Binding FooterStatusText}"
+                                 NextStepText="Continue to Edit"
+                                 NextStepCommand="{Binding GoToEditCommand}"
+                                 ShowNextStep="{Binding HasMedia}"/>
     </Grid>
 </UserControl>

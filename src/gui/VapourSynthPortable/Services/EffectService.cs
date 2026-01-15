@@ -166,18 +166,31 @@ public class EffectService
             stepIndex++;
         }
 
-        // Apply LUT if specified
+        // Apply LUT if specified (with error handling for missing plugin)
         if (!string.IsNullOrEmpty(grade.LutPath) && System.IO.File.Exists(grade.LutPath))
         {
             var stepVar = $"{outputVar}_lut";
-            var lutPath = grade.LutPath.Replace("\\", "/");
+            // Use raw string to preserve backslashes, only escape single quotes
+            var lutPath = grade.LutPath.Replace("'", "\\'");
 
             lines.Add($"# LUT: {System.IO.Path.GetFileName(grade.LutPath)}");
-            // Note: Requires timecube or similar LUT plugin
-            lines.Add($"# {stepVar} = core.timecube.Cube({currentVar}, cube='{lutPath}')");
-            lines.Add($"# LUT intensity: {grade.LutIntensity:F2}");
-            // For now, just comment out LUT application as it requires specific plugin
-            // currentVar = stepVar;
+            lines.Add($"try:");
+            lines.Add($"    {stepVar}_full = core.timecube.Cube({currentVar}, cube=r'{lutPath}')");
+
+            // Apply LUT intensity via blending if not 100%
+            if (Math.Abs(grade.LutIntensity - 1.0) > 0.001)
+            {
+                lines.Add($"    {stepVar} = core.std.Merge({currentVar}, {stepVar}_full, weight=[{grade.LutIntensity:F3}])");
+            }
+            else
+            {
+                lines.Add($"    {stepVar} = {stepVar}_full");
+            }
+
+            lines.Add($"except AttributeError:");
+            lines.Add($"    {stepVar} = {currentVar}  # timecube plugin not available");
+
+            currentVar = stepVar;
         }
 
         // Final assignment
