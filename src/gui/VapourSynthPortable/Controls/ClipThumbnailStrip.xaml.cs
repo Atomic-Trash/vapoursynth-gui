@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Microsoft.Extensions.DependencyInjection;
 using VapourSynthPortable.Services;
 
 namespace VapourSynthPortable.Controls;
@@ -89,7 +90,8 @@ public partial class ClipThumbnailStrip : UserControl
     public ClipThumbnailStrip()
     {
         InitializeComponent();
-        _frameCache = new FrameCacheService(maxCacheSize: 200, maxConcurrentExtractions: 2);
+        var pathResolver = App.Services?.GetService<IPathResolver>() ?? new PathResolver();
+        _frameCache = new FrameCacheService(pathResolver, maxCacheSize: 200, maxConcurrentExtractions: 2);
         Loaded += (s, e) => LoadThumbnails();
         Unloaded += (s, e) => CancelLoading();
     }

@@ -24,12 +24,8 @@ public class VapourSynthService : IVapourSynthService
     private static readonly Regex BitsRegex = new(@"Bits:\s*(\d+)", RegexOptions.Compiled);
     private static readonly Regex FrameProgressRegex = new(@"Frame:\s*(\d+)\s*/\s*(\d+)", RegexOptions.Compiled);
 
+    private readonly IPathResolver _pathResolver;
     private readonly string _projectRoot;
-    private readonly string _vspipePath;
-    private readonly string _pythonPath;
-    private readonly string _vapourSynthPath;
-    private readonly string _ffmpegPath;
-    private readonly string _pluginsPath;
 
     private Process? _vspipeProcess;
     private Process? _ffmpegProcess;
@@ -42,51 +38,36 @@ public class VapourSynthService : IVapourSynthService
     public event EventHandler<VapourSynthCompletedEventArgs>? ProcessingCompleted;
 
     public bool IsProcessing => _isProcessing;
-    public bool IsAvailable => File.Exists(_vspipePath);
+    public bool IsAvailable => _pathResolver.IsVapourSynthAvailable;
 
-    public VapourSynthService()
+    // Path properties using PathResolver
+    private string VSPipePath => _pathResolver.VSPipePath ?? Path.Combine(_pathResolver.VapourSynthPath, "VSPipe.exe");
+    private string FFmpegPath => _pathResolver.FFmpegPath ?? "ffmpeg.exe";
+    private string PythonPath => _pathResolver.PythonPath ?? Path.Combine(_pathResolver.DistPath, "python");
+    private string VapourSynthPath => _pathResolver.VapourSynthPath;
+    private string PluginsPath => _pathResolver.PluginsPath;
+
+    public VapourSynthService(IPathResolver pathResolver)
     {
-        _projectRoot = FindProjectRoot(AppDomain.CurrentDomain.BaseDirectory)
-            ?? AppDomain.CurrentDomain.BaseDirectory;
-
-        var distPath = Path.Combine(_projectRoot, "dist");
-        _vspipePath = Path.Combine(distPath, "vapoursynth", "VSPipe.exe");
-        _pythonPath = Path.Combine(distPath, "python");
-        _vapourSynthPath = Path.Combine(distPath, "vapoursynth");
-        _pluginsPath = Path.Combine(distPath, "plugins");
-        _ffmpegPath = FindFFmpegPath(distPath);
+        _pathResolver = pathResolver;
+        _projectRoot = _pathResolver.ProjectRoot ?? _pathResolver.AppDirectory;
 
         _logger.LogInformation(
             "VapourSynthService initialized. VSPipe: {VSPipePath}, FFmpeg: {FFmpegPath}, Available: {IsAvailable}",
-            _vspipePath, _ffmpegPath, IsAvailable);
+            _pathResolver.VSPipePath ?? "(not found)",
+            _pathResolver.FFmpegPath ?? "(not found)",
+            IsAvailable);
     }
 
-    private static string? FindProjectRoot(string startDir)
+    // Parameterless constructor for backward compatibility
+    public VapourSynthService() : this(GetPathResolverWithFallback())
     {
-        var dir = new DirectoryInfo(startDir);
-        for (int i = 0; i < 10 && dir != null; i++)
-        {
-            if (File.Exists(Path.Combine(dir.FullName, "plugins.json")))
-                return dir.FullName;
-            dir = dir.Parent;
-        }
-        return null;
     }
 
-    private static string FindFFmpegPath(string distPath)
+    private static IPathResolver GetPathResolverWithFallback()
     {
-        var ffmpegDir = Path.Combine(distPath, "ffmpeg");
-        if (Directory.Exists(ffmpegDir))
-        {
-            var direct = Path.Combine(ffmpegDir, "ffmpeg.exe");
-            if (File.Exists(direct)) return direct;
-
-            var inBin = Path.Combine(ffmpegDir, "bin", "ffmpeg.exe");
-            if (File.Exists(inBin)) return inBin;
-        }
-
-        // Fall back to PATH
-        return "ffmpeg.exe";
+        var resolver = App.Services?.GetService(typeof(IPathResolver)) as IPathResolver;
+        return resolver ?? new PathResolver();
     }
 
     /// <summary>
@@ -102,7 +83,7 @@ public class VapourSynthService : IVapourSynthService
 
         if (!IsAvailable)
         {
-            _logger.LogError("VSPipe not found at: {VSPipePath}", _vspipePath);
+            _logger.LogError("VSPipe not found at: {VSPipePath}", VSPipePath);
             return null;
         }
 
@@ -266,8 +247,8 @@ public class VapourSynthService : IVapourSynthService
         // Build FFmpeg arguments
         var ffmpegArgs = BuildFFmpegArguments(settings, outputPath);
 
-        _logger.LogDebug("VSPipe: {VSPipePath} \"{ScriptPath}\" -c y4m -", _vspipePath, scriptPath);
-        _logger.LogDebug("FFmpeg: {FFmpegPath} {Args}", _ffmpegPath, ffmpegArgs);
+        _logger.LogDebug("VSPipe: {VSPipePath} \"{ScriptPath}\" -c y4m -", VSPipePath, scriptPath);
+        _logger.LogDebug("FFmpeg: {FFmpegPath} {Args}", FFmpegPath, ffmpegArgs);
 
         // Start VSPipe process
         var vspipeStartInfo = CreateVSPipeStartInfo("-c", "y4m", "-p", "-", scriptPath);
@@ -278,7 +259,7 @@ public class VapourSynthService : IVapourSynthService
         // Start FFmpeg process
         var ffmpegStartInfo = new ProcessStartInfo
         {
-            FileName = _ffmpegPath,
+            FileName = FFmpegPath,
             Arguments = ffmpegArgs,
             UseShellExecute = false,
             RedirectStandardInput = true,
@@ -416,8 +397,15 @@ public class VapourSynthService : IVapourSynthService
         var args = new List<string>
         {
             "-y",                    // Overwrite output
-            "-i", "-"                // Input from pipe
+            "-i", "-"                // Input 0: Video from pipe
         };
+
+        // Input 1: Audio source file (if provided)
+        if (settings.IncludeAudio && !string.IsNullOrEmpty(settings.AudioSourcePath) && File.Exists(settings.AudioSourcePath))
+        {
+            args.Add("-i");
+            args.Add($"\"{settings.AudioSourcePath}\"");
+        }
 
         // Video codec
         args.Add("-c:v");
@@ -452,8 +440,32 @@ public class VapourSynthService : IVapourSynthService
             args.Add(settings.PixelFormat);
         }
 
-        // Audio (none from VSPipe, but can add from original source later)
-        args.Add("-an");
+        // Audio handling
+        // If audio source is provided and audio should be included, add it
+        // Otherwise strip audio with -an
+        if (settings.IncludeAudio && !string.IsNullOrEmpty(settings.AudioSourcePath) && File.Exists(settings.AudioSourcePath))
+        {
+            // Map video from pipe (input 0) and audio from source file (input 1)
+            args.Add("-map");
+            args.Add("0:v");
+            args.Add("-map");
+            args.Add("1:a?"); // ? means optional - don't fail if no audio
+
+            // Audio codec
+            args.Add("-c:a");
+            args.Add(settings.AudioCodec);
+
+            if (settings.AudioCodec != "copy" && !string.IsNullOrEmpty(settings.AudioBitrate))
+            {
+                args.Add("-b:a");
+                args.Add(settings.AudioBitrate);
+            }
+        }
+        else
+        {
+            // No audio source - strip audio
+            args.Add("-an");
+        }
 
         // Container options
         if (outputPath.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase))
@@ -472,7 +484,7 @@ public class VapourSynthService : IVapourSynthService
     {
         var startInfo = new ProcessStartInfo
         {
-            FileName = _vspipePath,
+            FileName = VSPipePath,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -487,9 +499,9 @@ public class VapourSynthService : IVapourSynthService
 
         // Set up environment for portable VapourSynth
         var existingPath = Environment.GetEnvironmentVariable("PATH") ?? "";
-        startInfo.EnvironmentVariables["PATH"] = $"{_pythonPath};{_vapourSynthPath};{_pluginsPath};{existingPath}";
-        startInfo.EnvironmentVariables["PYTHONPATH"] = _vapourSynthPath;
-        startInfo.EnvironmentVariables["PYTHONHOME"] = _pythonPath;
+        startInfo.EnvironmentVariables["PATH"] = $"{PythonPath};{VapourSynthPath};{PluginsPath};{existingPath}";
+        startInfo.EnvironmentVariables["PYTHONPATH"] = VapourSynthPath;
+        startInfo.EnvironmentVariables["PYTHONHOME"] = PythonPath;
 
         return startInfo;
     }
@@ -748,6 +760,28 @@ public class VapourSynthEncodingSettings
     public string Preset { get; set; } = "medium";
     public string HardwarePreset { get; set; } = "p4";
     public string PixelFormat { get; set; } = "yuv420p";
+
+    /// <summary>
+    /// Path to the original source file for audio extraction.
+    /// If set and the source has audio, audio will be copied to the output.
+    /// </summary>
+    public string? AudioSourcePath { get; set; }
+
+    /// <summary>
+    /// Audio codec for encoding. Use "copy" to copy audio without re-encoding.
+    /// Common values: "aac", "libopus", "copy"
+    /// </summary>
+    public string AudioCodec { get; set; } = "aac";
+
+    /// <summary>
+    /// Audio bitrate (e.g., "192k", "256k"). Only used if AudioCodec != "copy".
+    /// </summary>
+    public string AudioBitrate { get; set; } = "192k";
+
+    /// <summary>
+    /// Whether to include audio in the output
+    /// </summary>
+    public bool IncludeAudio { get; set; } = true;
 }
 
 public class VapourSynthProgressEventArgs : EventArgs

@@ -149,6 +149,7 @@ public partial class App : Application
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
 
         // Core services - singletons shared across all pages
+        services.AddSingleton<IPathResolver, PathResolver>();
         services.AddSingleton<IMediaPoolService, MediaPoolService>();
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IProjectService, ProjectService>();
@@ -159,6 +160,8 @@ public partial class App : Application
         services.AddSingleton<IDependencyStatusService, DependencyStatusService>();
         services.AddSingleton<ThumbnailService>();
         services.AddSingleton<UndoService>();
+        services.AddSingleton<FrameCacheService>(sp =>
+            new FrameCacheService(sp.GetRequiredService<IPathResolver>(), maxCacheSize: 150, maxConcurrentExtractions: 4));
         services.AddSingleton<IBinService, BinService>();
 
         // ViewModels - transient (new instance per request)

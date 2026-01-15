@@ -83,17 +83,15 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
     [ObservableProperty]
     private TransitionPreset? _selectedTransitionPreset;
 
-    public EditViewModel(IMediaPoolService mediaPoolService)
+    public EditViewModel(IMediaPoolService mediaPoolService, FrameCacheService frameCache, UndoService undoService)
     {
         _mediaPoolService = mediaPoolService;
+        _frameCache = frameCache;
+        _undoService = undoService;
+
         _mediaPoolService.CurrentSourceChanged += OnCurrentSourceChanged;
         _mediaPoolService.MediaPoolChanged += OnMediaPoolChanged;
 
-        // Initialize frame cache for scrubbing
-        _frameCache = new FrameCacheService(maxCacheSize: 150, maxConcurrentExtractions: 4);
-
-        // Initialize centralized undo service
-        _undoService = new UndoService(maxHistorySize: 100);
         _undoService.StateChanged += OnUndoStateChanged;
         _undoService.ActionExecuted += OnUndoActionExecuted;
 
@@ -108,17 +106,20 @@ public partial class EditViewModel : ObservableObject, IDisposable, IProjectPers
     }
 
     // Parameterless constructor for XAML design-time support
-    public EditViewModel() : this(GetMediaPoolServiceWithFallback())
+    public EditViewModel() : this(
+        GetServiceWithFallback<IMediaPoolService>(() => new MediaPoolService(new PathResolver())),
+        GetServiceWithFallback<FrameCacheService>(() => new FrameCacheService(new PathResolver())),
+        GetServiceWithFallback<UndoService>(() => new UndoService()))
     {
     }
 
-    private static IMediaPoolService GetMediaPoolServiceWithFallback()
+    private static T GetServiceWithFallback<T>(Func<T> fallbackFactory) where T : class
     {
-        var service = App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService;
+        var service = App.Services?.GetService(typeof(T)) as T;
         if (service == null)
         {
-            _logger.LogWarning("IMediaPoolService not available from DI, using fallback instance");
-            return new MediaPoolService();
+            _logger.LogWarning("{ServiceType} not available from DI, using fallback instance", typeof(T).Name);
+            return fallbackFactory();
         }
         return service;
     }

@@ -14,7 +14,7 @@ public class FrameCacheService : IDisposable
 {
     private static readonly ILogger<FrameCacheService> _logger = LoggingService.GetLogger<FrameCacheService>();
 
-    private readonly string _ffmpegPath;
+    private readonly IPathResolver _pathResolver;
     private readonly int _maxCacheSize;
     private readonly ConcurrentDictionary<string, CachedFrame> _cache = new();
     private readonly LinkedList<string> _accessOrder = new();
@@ -32,45 +32,29 @@ public class FrameCacheService : IDisposable
     public int MaxCacheSize => _maxCacheSize;
 
     /// <summary>
+    /// Whether FFmpeg is available for frame extraction
+    /// </summary>
+    public bool IsAvailable => _pathResolver.IsFFmpegAvailable;
+
+    /// <summary>
+    /// Path to FFmpeg executable
+    /// </summary>
+    private string FFmpegPath => _pathResolver.FFmpegPath ?? "ffmpeg.exe";
+
+    /// <summary>
     /// Creates a new FrameCacheService
     /// </summary>
+    /// <param name="pathResolver">Path resolver service</param>
     /// <param name="maxCacheSize">Maximum number of frames to cache (default 100)</param>
     /// <param name="maxConcurrentExtractions">Max concurrent FFmpeg extractions (default 4)</param>
-    public FrameCacheService(int maxCacheSize = 100, int maxConcurrentExtractions = 4)
+    public FrameCacheService(IPathResolver pathResolver, int maxCacheSize = 100, int maxConcurrentExtractions = 4)
     {
+        _pathResolver = pathResolver;
         _maxCacheSize = maxCacheSize;
         _extractionSemaphore = new SemaphoreSlim(maxConcurrentExtractions);
 
-        // Find FFmpeg
-        var basePath = AppDomain.CurrentDomain.BaseDirectory;
-        var distPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "..", "dist"));
-        _ffmpegPath = FindFFmpegPath(distPath);
-
         _logger.LogInformation("FrameCacheService initialized. FFmpeg: {FFmpegPath}, MaxCache: {MaxCache}",
-            _ffmpegPath, _maxCacheSize);
-    }
-
-    private static string FindFFmpegPath(string distPath)
-    {
-        var ffmpegDir = Path.Combine(distPath, "ffmpeg");
-        if (Directory.Exists(ffmpegDir))
-        {
-            var direct = Path.Combine(ffmpegDir, "ffmpeg.exe");
-            if (File.Exists(direct)) return direct;
-
-            var inBin = Path.Combine(ffmpegDir, "bin", "ffmpeg.exe");
-            if (File.Exists(inBin)) return inBin;
-        }
-
-        // Check PATH
-        var pathDirs = Environment.GetEnvironmentVariable("PATH")?.Split(';') ?? [];
-        foreach (var dir in pathDirs)
-        {
-            var fullPath = Path.Combine(dir, "ffmpeg.exe");
-            if (File.Exists(fullPath)) return fullPath;
-        }
-
-        return "ffmpeg.exe";
+            _pathResolver.FFmpegPath ?? "(not found)", _maxCacheSize);
     }
 
     /// <summary>
@@ -296,7 +280,7 @@ public class FrameCacheService : IDisposable
 
             var startInfo = new ProcessStartInfo
             {
-                FileName = _ffmpegPath,
+                FileName = FFmpegPath,
                 Arguments = args,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,

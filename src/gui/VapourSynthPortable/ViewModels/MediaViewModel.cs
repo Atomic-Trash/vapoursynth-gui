@@ -125,7 +125,7 @@ public partial class MediaViewModel : ObservableObject, IDisposable
 
     // Parameterless constructor for XAML design-time support
     public MediaViewModel() : this(
-        App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(),
+        App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(new PathResolver()),
         App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService(),
         App.Services?.GetService(typeof(UndoService)) as UndoService ?? new UndoService())
     {

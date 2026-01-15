@@ -227,7 +227,7 @@ public partial class ExportViewModel : ObservableObject, IDisposable
 
     // Parameterless constructor for XAML design-time support
     public ExportViewModel() : this(
-        App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(),
+        App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(new PathResolver()),
         App.Services?.GetService(typeof(ISettingsService)) as ISettingsService ?? new SettingsService())
     {
     }
@@ -708,13 +708,23 @@ public partial class ExportViewModel : ObservableObject, IDisposable
             AppendLog($"Script saved to: {scriptPath}");
             AppendLog("Starting VapourSynth pipeline...");
 
-            // Create encoding settings for VSPipe output
+            // Get primary audio source from timeline (first clip with audio)
+            var primaryClip = Timeline?.Tracks
+                .SelectMany(t => t.Clips)
+                .FirstOrDefault(c => !string.IsNullOrEmpty(c.SourcePath) && File.Exists(c.SourcePath));
+
+            // Create encoding settings with audio source
             var vsSettings = new VapourSynthEncodingSettings
             {
                 VideoCodec = SelectedVideoCodec,
                 Quality = Quality,
                 Preset = SelectedPresetSpeed,
-                PixelFormat = "yuv420p"
+                PixelFormat = "yuv420p",
+                // Include audio from the primary clip (or first source)
+                AudioSourcePath = primaryClip?.SourcePath ?? InputPath,
+                IncludeAudio = true,
+                AudioCodec = "aac",
+                AudioBitrate = "192k"
             };
 
             // Process script with VapourSynth → FFmpeg pipeline
@@ -766,13 +776,18 @@ public partial class ExportViewModel : ObservableObject, IDisposable
             AppendLog($"Script saved to: {scriptPath}");
             AppendLog("Starting VapourSynth pipeline with restoration...");
 
-            // Create encoding settings
+            // Create encoding settings with audio source
             var vsSettings = new VapourSynthEncodingSettings
             {
                 VideoCodec = SelectedVideoCodec,
                 Quality = Quality,
                 Preset = SelectedPresetSpeed,
-                PixelFormat = "yuv420p"
+                PixelFormat = "yuv420p",
+                // Include audio from the original source file
+                AudioSourcePath = InputPath,
+                IncludeAudio = true,
+                AudioCodec = "aac",
+                AudioBitrate = "192k"
             };
 
             // Add NVENC preset if applicable

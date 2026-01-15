@@ -20,8 +20,7 @@ public class DependencyStatusService : IDependencyStatusService
     private static readonly Regex FFmpegVersionRegex = new(@"ffmpeg version (\S+)", RegexOptions.Compiled);
     private static readonly Regex PythonVersionRegex = new(@"Python (\S+)", RegexOptions.Compiled);
 
-    private readonly string _projectRoot;
-    private readonly string _distPath;
+    private readonly IPathResolver _pathResolver;
     private DependencyStatusReport _currentStatus;
 
     public event EventHandler<DependencyStatusReport>? StatusChanged;
@@ -29,11 +28,13 @@ public class DependencyStatusService : IDependencyStatusService
     public DependencyStatusReport CurrentStatus => _currentStatus;
     public bool IsReady => _currentStatus.AllRequiredAvailable;
 
-    public DependencyStatusService()
+    // Path properties via PathResolver
+    private string ProjectRoot => _pathResolver.ProjectRoot ?? _pathResolver.AppDirectory;
+    private string DistPath => _pathResolver.DistPath;
+
+    public DependencyStatusService(IPathResolver pathResolver)
     {
-        _projectRoot = FindProjectRoot(AppDomain.CurrentDomain.BaseDirectory)
-            ?? AppDomain.CurrentDomain.BaseDirectory;
-        _distPath = Path.Combine(_projectRoot, "dist");
+        _pathResolver = pathResolver;
 
         // Initialize with unknown status
         _currentStatus = new DependencyStatusReport
@@ -44,19 +45,19 @@ public class DependencyStatusService : IDependencyStatusService
             LibMpv = DependencyStatus.Unavailable("libmpv", "Not checked yet")
         };
 
-        _logger.LogDebug("DependencyStatusService initialized. Project root: {ProjectRoot}", _projectRoot);
+        _logger.LogDebug("DependencyStatusService initialized. Project root: {ProjectRoot}, Dist: {DistPath}",
+            ProjectRoot, DistPath);
     }
 
-    private static string? FindProjectRoot(string startDir)
+    // Parameterless constructor for backward compatibility
+    public DependencyStatusService() : this(GetPathResolverWithFallback())
     {
-        var dir = new DirectoryInfo(startDir);
-        for (int i = 0; i < 10 && dir != null; i++)
-        {
-            if (File.Exists(Path.Combine(dir.FullName, "plugins.json")))
-                return dir.FullName;
-            dir = dir.Parent;
-        }
-        return null;
+    }
+
+    private static IPathResolver GetPathResolverWithFallback()
+    {
+        var resolver = App.Services?.GetService(typeof(IPathResolver)) as IPathResolver;
+        return resolver ?? new PathResolver();
     }
 
     /// <summary>
@@ -130,7 +131,7 @@ public class DependencyStatusService : IDependencyStatusService
 
     private async Task<DependencyStatus> CheckVapourSynthAsync(CancellationToken cancellationToken)
     {
-        var vspipePath = Path.Combine(_distPath, "vapoursynth", "VSPipe.exe");
+        var vspipePath = Path.Combine(DistPath, "vapoursynth", "VSPipe.exe");
 
         if (!File.Exists(vspipePath))
         {
@@ -155,8 +156,8 @@ public class DependencyStatusService : IDependencyStatusService
     {
         try
         {
-            var pythonPath = Path.Combine(_distPath, "python");
-            var vsPath = Path.Combine(_distPath, "vapoursynth");
+            var pythonPath = Path.Combine(DistPath, "python");
+            var vsPath = Path.Combine(DistPath, "vapoursynth");
 
             var startInfo = new ProcessStartInfo
             {
@@ -166,7 +167,7 @@ public class DependencyStatusService : IDependencyStatusService
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 CreateNoWindow = true,
-                WorkingDirectory = _projectRoot
+                WorkingDirectory = ProjectRoot
             };
 
             // Set up environment
@@ -236,7 +237,7 @@ public class DependencyStatusService : IDependencyStatusService
 
     private string? FindFFmpegPath()
     {
-        var ffmpegDir = Path.Combine(_distPath, "ffmpeg");
+        var ffmpegDir = Path.Combine(DistPath, "ffmpeg");
 
         if (Directory.Exists(ffmpegDir))
         {
@@ -306,7 +307,7 @@ public class DependencyStatusService : IDependencyStatusService
 
     private async Task<DependencyStatus> CheckPythonAsync(CancellationToken cancellationToken)
     {
-        var pythonPath = Path.Combine(_distPath, "python", "python.exe");
+        var pythonPath = Path.Combine(DistPath, "python", "python.exe");
 
         if (!File.Exists(pythonPath))
         {

@@ -52,9 +52,9 @@ public partial class MediaPoolService : ObservableObject, IMediaPoolService
     private readonly ThumbnailService _thumbnailService;
     private readonly AudioWaveformService _waveformService;
 
-    public MediaPoolService()
+    public MediaPoolService(IPathResolver pathResolver)
     {
-        _thumbnailService = new ThumbnailService();
+        _thumbnailService = new ThumbnailService(pathResolver);
         _waveformService = new AudioWaveformService();
         MediaPool = [];
         _logger.LogInformation("MediaPoolService initialized");

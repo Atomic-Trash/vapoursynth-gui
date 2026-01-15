@@ -3,6 +3,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using VapourSynthPortable.Helpers;
 using VapourSynthPortable.Models;
 using VapourSynthPortable.Services;
@@ -21,8 +22,9 @@ public partial class PreviewViewModel : ObservableObject, IDisposable
 
     public PreviewViewModel()
     {
+        var pathResolver = App.Services?.GetService<IPathResolver>() ?? new PathResolver();
         _frameService = new FrameExtractionService();
-        _cacheService = new FrameCacheService(50);
+        _cacheService = new FrameCacheService(pathResolver, maxCacheSize: 50);
 
         // Debounce timer for slider changes (store handler for cleanup)
         _debounceTimer = new DispatcherTimer

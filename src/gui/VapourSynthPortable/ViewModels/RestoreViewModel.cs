@@ -161,7 +161,7 @@ public partial class RestoreViewModel : ObservableObject, IDisposable, IProjectP
 
     // Parameterless constructor for XAML design-time support
     public RestoreViewModel() : this(
-        GetServiceWithFallback<IMediaPoolService>(() => new MediaPoolService()),
+        GetServiceWithFallback<IMediaPoolService>(() => new MediaPoolService(new PathResolver())),
         GetServiceWithFallback<IVapourSynthService>(() => new VapourSynthService()),
         GetServiceWithFallback<ISettingsService>(() => new SettingsService()),
         GetServiceWithFallback<INavigationService>(() => new NavigationService()))

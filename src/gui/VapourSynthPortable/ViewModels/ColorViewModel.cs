@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using VapourSynthPortable.Controls;
 using VapourSynthPortable.Models;
@@ -104,13 +105,13 @@ public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPer
     public bool CanUndo => _undoStack.Count > 0;
     public bool CanRedo => _redoStack.Count > 0;
 
-    public ColorViewModel(IMediaPoolService mediaPool)
+    public ColorViewModel(IMediaPoolService mediaPool, IPathResolver pathResolver)
     {
         _mediaPool = mediaPool;
         _mediaPool.CurrentSourceChanged += OnCurrentSourceChanged;
 
         _colorGradingService = new ColorGradingService();
-        _frameCache = new FrameCacheService(maxCacheSize: 50);
+        _frameCache = new FrameCacheService(pathResolver, maxCacheSize: 50);
 
         LoadPresets();
         LoadLuts();
@@ -120,8 +121,9 @@ public partial class ColorViewModel : ObservableObject, IDisposable, IProjectPer
     }
 
     // Parameterless constructor for XAML design-time support
-    public ColorViewModel() : this(App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService
-        ?? new MediaPoolService())
+    public ColorViewModel() : this(
+        App.Services?.GetService(typeof(IMediaPoolService)) as IMediaPoolService ?? new MediaPoolService(App.Services?.GetRequiredService<IPathResolver>() ?? new PathResolver()),
+        App.Services?.GetRequiredService<IPathResolver>() ?? new PathResolver())
     {
     }
 

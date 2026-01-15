@@ -12,53 +12,37 @@ public class ThumbnailService
 {
     private static readonly ILogger<ThumbnailService> _logger = LoggingService.GetLogger<ThumbnailService>();
 
-    private readonly string _ffmpegPath;
-    private readonly string _ffprobePath;
+    private readonly IPathResolver _pathResolver;
     private readonly string _cacheDir;
     private readonly SemaphoreSlim _semaphore = new(4); // Limit concurrent operations
 
-    public ThumbnailService()
+    public ThumbnailService(IPathResolver pathResolver)
     {
-        // Look for FFmpeg in common locations
-        var basePath = AppDomain.CurrentDomain.BaseDirectory;
-        var distPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "..", "dist"));
-
-        _ffmpegPath = FindExecutable("ffmpeg.exe", distPath);
-        _ffprobePath = FindExecutable("ffprobe.exe", distPath);
+        _pathResolver = pathResolver;
 
         _cacheDir = Path.Combine(Path.GetTempPath(), "VapourSynthStudio", "thumbnails");
         Directory.CreateDirectory(_cacheDir);
 
-        _logger.LogInformation("ThumbnailService initialized. FFmpeg: {FFmpegPath}, Cache: {CacheDir}",
-            _ffmpegPath, _cacheDir);
+        _logger.LogInformation("ThumbnailService initialized. FFmpeg: {FFmpegPath}, FFprobe: {FFprobePath}, Cache: {CacheDir}",
+            _pathResolver.FFmpegPath ?? "(not found)",
+            _pathResolver.FFprobePath ?? "(not found)",
+            _cacheDir);
     }
 
-    private static string FindExecutable(string name, string distPath)
-    {
-        // Check dist/ffmpeg folder
-        var ffmpegDir = Path.Combine(distPath, "ffmpeg");
-        if (Directory.Exists(ffmpegDir))
-        {
-            var inFfmpegDir = Path.Combine(ffmpegDir, name);
-            if (File.Exists(inFfmpegDir)) return inFfmpegDir;
+    /// <summary>
+    /// Whether FFmpeg is available for thumbnail generation
+    /// </summary>
+    public bool IsAvailable => _pathResolver.IsFFmpegAvailable;
 
-            // Check bin subfolder
-            var inBin = Path.Combine(ffmpegDir, "bin", name);
-            if (File.Exists(inBin)) return inBin;
-        }
+    /// <summary>
+    /// Path to FFmpeg executable
+    /// </summary>
+    private string FFmpegPath => _pathResolver.FFmpegPath ?? "ffmpeg.exe";
 
-        // Check PATH
-        var pathDirs = Environment.GetEnvironmentVariable("PATH")?.Split(';') ?? [];
-        foreach (var dir in pathDirs)
-        {
-            var fullPath = Path.Combine(dir, name);
-            if (File.Exists(fullPath)) return fullPath;
-        }
-
-        return name; // Fall back to just the name, hope it's in PATH
-    }
-
-    public bool IsAvailable => File.Exists(_ffmpegPath) || _ffmpegPath == "ffmpeg.exe";
+    /// <summary>
+    /// Path to FFprobe executable
+    /// </summary>
+    private string FFprobePath => _pathResolver.FFprobePath ?? "ffprobe.exe";
 
     public async Task<MediaInfo?> GetMediaInfoAsync(string filePath)
     {
@@ -75,7 +59,7 @@ public class ThumbnailService
 
             var startInfo = new ProcessStartInfo
             {
-                FileName = _ffprobePath,
+                FileName = FFprobePath,
                 Arguments = $"-v quiet -print_format json -show_format -show_streams \"{filePath}\"",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -231,7 +215,7 @@ public class ThumbnailService
             // Generate thumbnail with FFmpeg - preserve aspect ratio without padding
             var startInfo = new ProcessStartInfo
             {
-                FileName = _ffmpegPath,
+                FileName = FFmpegPath,
                 Arguments = $"-i \"{filePath}\" -ss 00:00:01 -vframes 1 -vf \"scale='min({maxWidth},iw)':'min({maxHeight},ih)':force_original_aspect_ratio=decrease\" -y \"{cachePath}\"",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
